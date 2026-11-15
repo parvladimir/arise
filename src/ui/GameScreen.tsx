@@ -5,6 +5,7 @@ import { content } from "@/content";
 import { currentGoal } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
+import { boardQuests } from "@/core/engine";
 import { activePromptQuest, goalTarget, type View } from "./nav";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
@@ -175,22 +176,31 @@ function Laptop({
 }) {
   const { t } = game;
   const openApp = app && state.apps.includes(app) ? app : null;
+  // Значки на иконках: сколько новых заказов, есть ли задача для Нейры, куда ведёт текущая цель
+  const goalApp = goalTarget(state).app;
+  const badges: Partial<Record<AppId, string>> = {};
+  const newOrders = boardQuests(state, content).filter((q) => state.quests[q.id]?.status === "available").length;
+  if (newOrders > 0) badges.orders = String(newOrders);
+  if (activePromptQuest(state)) badges.neira = "!";
+  if (goalApp && !badges[goalApp]) badges[goalApp] = "!";
 
   return (
     <section aria-label={t("ui.laptop.title")} className="anim-rise flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#2a3658] bg-[#0d1426] shadow-2xl shadow-black/50">
       <div className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2">
-        <span className="flex gap-1.5" aria-hidden>
+        <span className="hidden gap-1.5 sm:flex" aria-hidden>
           <span className="h-3 w-3 rounded-full bg-bad/80" />
           <span className="h-3 w-3 rounded-full bg-gold/80" />
           <span className="h-3 w-3 rounded-full bg-ok/80" />
         </span>
         {openApp ? (
-          <button onClick={() => setApp(null)} className="ml-2 rounded px-2 py-0.5 text-sm text-muted hover:text-ink">‹ {t("ui.laptop.title")}</button>
+          <button onClick={() => setApp(null)} className="whitespace-nowrap rounded px-1 py-0.5 text-sm text-muted hover:text-ink sm:ml-2 sm:px-2">‹ {t("ui.laptop.title")}</button>
         ) : (
           <span className="ml-2 text-sm text-muted">{t("ui.laptop.title")}</span>
         )}
-        <span className="ml-1 text-sm font-semibold">{openApp ? t(`app.${openApp}`) : ""}</span>
-        <button onClick={onClose} className="ml-auto rounded px-2 py-0.5 text-sm text-muted hover:text-ink" aria-label={t("ui.close")}>✕</button>
+        <span className="ml-1 truncate text-sm font-semibold">{openApp ? t(`app.${openApp}`) : ""}</span>
+        <button onClick={onClose} aria-label={t("ui.laptop.toRoom")} className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-surface-2/70 px-3 py-1 text-sm text-ink hover:border-ai/60 hover:bg-surface-2">
+          <span aria-hidden>⌂</span> <span className="hidden sm:inline">{t("ui.laptop.toRoom")}</span>
+        </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -217,12 +227,17 @@ function Laptop({
                     style={{ animationDelay: `${i * 60}ms` }}
                   >
                     <span
-                      className={`app-icon grid h-14 w-14 place-items-center rounded-2xl text-2xl text-white ${unlocked ? "" : "app-icon-locked text-muted/50"}`}
+                      className={`app-icon relative grid h-14 w-14 place-items-center rounded-2xl text-2xl text-white ${unlocked ? "" : "app-icon-locked text-muted/50"} ${unlocked && goalApp === a ? "app-goal" : ""}`}
                       style={unlocked ? { background: APP_GRADIENT[a], boxShadow: `0 8px 24px -6px ${APP_GLOW[a]}` } : undefined}
                     >
                       {unlocked ? APP_ICON[a] : "?"}
+                      {unlocked && badges[a] && (
+                        <span className="app-badge absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-bad px-1 text-[11px] font-bold text-white">{badges[a]}</span>
+                      )}
                     </span>
                     <span className={`text-xs ${unlocked ? "" : "text-muted/60"}`}>{unlocked ? t(`app.${a}`) : "···"}</span>
+                    {unlocked && a === "orders" && newOrders > 0 && <span className="-mt-1 text-[11px] font-semibold text-gold">{t("ui.laptop.newOrders", { n: newOrders })}</span>}
+                    {unlocked && goalApp === a && a !== "orders" && <span className="-mt-1 text-[11px] font-semibold text-ok">{t("ui.laptop.goalHere")}</span>}
                   </button>
                 );
               })}

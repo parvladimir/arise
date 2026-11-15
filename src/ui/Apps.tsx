@@ -24,7 +24,10 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
           return (
             <li key={q.id} className="anim-rise rounded-xl border border-line bg-surface-2/60 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-semibold">{t(q.titleKey)}</h3>
+                <h3 className="flex items-center gap-2 font-semibold">
+                  {status === "available" && <span className="rounded-full bg-bad px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("ui.orders.new")}</span>}
+                  {t(q.titleKey)}
+                </h3>
                 {pay > 0 && <span className="font-mono text-sm text-gold">{t("ui.orders.pay", { pay })}</span>}
               </div>
               {from && <p className="mt-0.5 text-sm text-muted">{t(`npc.${from}`)}</p>}
