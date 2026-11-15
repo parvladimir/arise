@@ -101,6 +101,7 @@ export function PromptLab({
   };
 
   const clientNpc = viewQuest.client;
+  const totalWeight = stage.criteria.reduce((n, c) => n + c.weight, 0) || 1;
   const r = resultForThisStage?.result;
 
   return (
@@ -164,14 +165,21 @@ export function PromptLab({
           <ul className="mt-2 space-y-1">
             {stage.criteria.map((c) => {
               const res = r?.criteria.find((x) => x.id === c.id);
-              const mark = !res || !done ? "idle" : res.passed ? "ok" : "bad";
+              // Критерий, который зависит только от ещё закрытых слотов, честно показываем закрытым, а не проваленным
+              const needsLocked = c.kind === "cards" && Object.keys(c.when).every((s) => !state.slots.includes(s as SlotId));
+              const mark = needsLocked ? "lock" : !res || !done ? "idle" : res.passed ? "ok" : "bad";
+              const share = Math.round((c.weight / totalWeight) * 100);
               return (
-                <li key={c.id} className="flex items-center gap-2 text-sm">
-                  <span aria-hidden className={`grid h-5 w-5 place-items-center rounded-full text-xs ${mark === "ok" ? "bg-ok/20 text-ok" : mark === "bad" ? "bg-bad/20 text-bad" : "bg-surface-2 text-muted"}`}>
-                    {mark === "ok" ? "✓" : mark === "bad" ? "✕" : "•"}
+                <li key={c.id} className="flex items-start gap-2 text-sm leading-5">
+                  <span aria-hidden className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs ${mark === "ok" ? "bg-ok/20 text-ok" : mark === "bad" ? "bg-bad/20 text-bad" : "bg-surface-2 text-muted"}`}>
+                    {mark === "ok" ? "✓" : mark === "bad" ? "✕" : mark === "lock" ? "🔒" : "•"}
                   </span>
-                  <span className={mark === "bad" ? "text-bad" : ""}>{t(c.labelKey)}</span>
-                  {c.hard && <span className="text-xs text-muted">(обязательно)</span>}
+                  <span className="min-w-0 flex-1">
+                    <span className={mark === "bad" ? "text-bad" : mark === "lock" ? "text-muted" : ""}>{t(c.labelKey)}</span>
+                    {c.hard && <span className="ml-1.5 text-xs text-muted">({t("ui.neira.required2")})</span>}
+                    {mark === "lock" && <span className="ml-1.5 text-xs text-muted">({t("ui.neira.critLocked")})</span>}
+                  </span>
+                  <span className={`shrink-0 font-mono text-xs ${mark === "ok" ? "text-ok" : "text-muted"}`} title={t("ui.neira.critWeight")}>+{share}%</span>
                   <span className="sr-only">{mark === "ok" ? "выполнено" : mark === "bad" ? "не выполнено" : ""}</span>
                 </li>
               );
@@ -210,6 +218,7 @@ export function PromptLab({
                     </span>
                     {resultForThisStage?.finished && resultForThisStage.pay > 0 && <span className="font-mono font-semibold text-gold">+{resultForThisStage.pay} ₵</span>}
                   </div>
+                  {!r.passed && r.criteria.some((c) => c.hard && !c.passed) && <p className="text-sm text-bad">{t("ui.neira.hardFailed")}</p>}
                   {!r.passed && <p className="text-sm text-muted">{t("ui.neira.retry")}</p>}
                   {r.passed && (
                     <button onClick={next} className="w-full rounded-xl bg-ok py-3 font-semibold text-bg hover:brightness-110">
