@@ -118,6 +118,20 @@ export function simulate(profile: Profile, seed = 1): SimResult {
         }
       }
       if (state.quests[quest.id]?.status !== "done") break; // застрял: не хватает денег
+    } else if (quest.kind === "classify") {
+      // Аккуратный решает без ошибок; средний ошибается в одном пункте с первой попытки;
+      // торопливый идёт коротким путём, если он есть.
+      const correct = Object.fromEntries(quest.items.map((i) => [i.id, i.answer]));
+      if (profile === "hasty" && quest.shortcut && progress.attempts === 0) {
+        act({ type: "takeShortcut", questId: quest.id });
+      } else if (profile !== "careful" && progress.attempts === 0) {
+        const first = quest.items[0]!;
+        const wrong = quest.options.find((o) => o.id !== first.answer)!.id;
+        act({ type: "submitClassify", questId: quest.id, answers: { ...correct, [first.id]: wrong } });
+      } else {
+        act({ type: "submitClassify", questId: quest.id, answers: correct });
+      }
+      seconds += SECONDS[profile].attempt * 2;
     } else {
       const stage = quest.stages[progress.stage]!;
       const tries = progress.attempts;
@@ -137,7 +151,7 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     attempts,
     bought: [...state.inventory],
     minutes: Math.round((seconds / 60) * 10) / 10,
-    finished: Object.keys(state.quests).length === content.quests.length && Object.values(state.quests).every((q) => q.status === "done"),
+    finished: state.quests[content.quests.at(-1)!.id]?.status === "done" && Object.values(state.quests).every((q) => q.status === "done"),
   };
 }
 

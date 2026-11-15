@@ -39,6 +39,37 @@ const cards: PromptCard[] = [
   card("f.letter", "format"),
   card("f.list", "format"),
   card("e.sms", "examples"),
+  // Q6 — ответ на отзыв
+  card("g.rev.reply", "goal"),
+  card("g.rev.defend", "goal"),
+  card("d.rev.coffee", "data"),
+  card("d.rev.rush", "data"),
+  card("l.noPromise", "limits"),
+  // Q8 — расписание йоги
+  card("g.yoga.schedule", "goal"),
+  card("g.yoga.summary", "goal"),
+  card("d.yoga.chat", "data"),
+  card("f.table", "format"),
+  card("f.text", "format"),
+  card("l.moves", "limits"),
+  // Q9 — роль
+  card("ro.prof", "role"),
+  card("ro.grandson", "role"),
+  card("ro.engineer", "role"),
+  card("g.cloud", "goal"),
+  card("l.noTerms", "limits"),
+  card("l.detailed", "limits"),
+  // Q11v — заказ «Волны»
+  card("g.fit.launch", "goal"),
+  card("g.fit.brand", "goal"),
+  card("a.fit.young", "audience"),
+  card("d.fit.facts", "data"),
+  card("l.noGuarantee", "limits"),
+  // Q13 — осенняя кампания
+  card("f.post", "format"),
+  card("f.sign", "format"),
+  card("d.camp.oct", "data"),
+  card("d.camp.old", "data"),
 ];
 
 // ---------- Q2: письмо про кран ----------
@@ -153,6 +184,135 @@ const q5Segments: ResponseSegment[] = [
     variants: [{ when: { tone: ["t.hype"] }, textKey: "q5.seg.hypeFree", hallucination: true }, { textKey: "" }],
   },
 ];
+
+// ---------- Q6: ответ на отзыв в одну звезду ----------
+
+const q6Segments: ResponseSegment[] = [
+  {
+    id: "greet",
+    variants: [
+      { when: { tone: ["t.angry"] }, textKey: "q6.seg.greetAngry" },
+      { textKey: "q6.seg.greet" },
+    ],
+  },
+  {
+    id: "body",
+    variants: [
+      { when: { goal: ["g.rev.defend"] }, textKey: "q6.seg.defend" },
+      { when: { data: ["d.rev.coffee"] }, textKey: "q6.seg.sorry" },
+      { when: { data: ["d.rev.rush"] }, textKey: "q6.seg.rush" },
+      { textKey: "q6.seg.vague" },
+    ],
+  },
+  {
+    id: "offer",
+    variants: [
+      { when: { goal: ["g.rev.defend"] }, textKey: "" },
+      { when: { data: ["d.rev.coffee"] }, textKey: "q6.seg.coffee" },
+      { when: { data: ["d.rev.rush"] }, textKey: "q6.seg.barista" },
+      { when: { limits: ["l.noPromise"] }, textKey: "q6.seg.welcome" },
+      { textKey: "q6.seg.lunch", hallucination: true },
+    ],
+  },
+  { id: "sign", variants: [{ textKey: "q6.seg.sign" }] },
+];
+
+// ---------- Q8: расписание студии йоги ----------
+
+const q8Segments: ResponseSegment[] = [
+  {
+    id: "main",
+    variants: [
+      { when: { data: ["none"] }, textKey: "q8.seg.invented", hallucination: true },
+      { when: { goal: ["g.yoga.summary"] }, textKey: "q8.seg.summary" },
+      { when: { format: ["f.table"], limits: ["l.moves"] }, textKey: "q8.seg.tableGood" },
+      { when: { format: ["f.table"] }, textKey: "q8.seg.tableBad" },
+      { when: { limits: ["l.moves"] }, textKey: "q8.seg.textGood" },
+      { textKey: "q8.seg.textBad" },
+    ],
+  },
+];
+
+// ---------- Q9: объяснить маме Алекса, что такое облако ----------
+
+const q9Segments: ResponseSegment[] = [
+  {
+    id: "main",
+    variants: [
+      { when: { role: ["ro.grandson"], limits: ["l.noTerms"] }, textKey: "q9.seg.grandsonClean" },
+      { when: { role: ["ro.grandson"] }, textKey: "q9.seg.grandsonTerms" },
+      { when: { role: ["ro.prof"] }, textKey: "q9.seg.prof" },
+      { when: { role: ["ro.engineer"] }, textKey: "q9.seg.engineer" },
+      { textKey: "q9.seg.plain" },
+    ],
+  },
+  { id: "more", variants: [{ when: { limits: ["l.detailed"] }, textKey: "q9.seg.detailed" }, { textKey: "" }] },
+];
+
+// ---------- Q11v: заказ агентства «Волна» ----------
+
+const q11vSegments: ResponseSegment[] = [
+  {
+    id: "head",
+    variants: [
+      { when: { goal: ["g.fit.brand"] }, textKey: "q11v.seg.brand" },
+      { when: { tone: ["t.hype"] }, textKey: "q11v.seg.headHype" },
+      { textKey: "q11v.seg.head" },
+    ],
+  },
+  {
+    id: "facts",
+    variants: [
+      { when: { data: ["d.fit.facts"] }, textKey: "q11v.seg.facts" },
+      { textKey: "q11v.seg.inventedSale", hallucination: true },
+    ],
+  },
+  {
+    id: "promise",
+    variants: [
+      { when: { limits: ["l.noGuarantee"] }, textKey: "" },
+      { when: { tone: ["t.hype"] }, textKey: "q11v.seg.guarantee", hallucination: true },
+      { textKey: "" },
+    ],
+  },
+  { id: "aud", variants: [{ when: { audience: ["a.fit.young"] }, textKey: "q11v.seg.young" }, { textKey: "" }] },
+];
+
+// ---------- Q13: осенняя кампания (пост, SMS, табличка) ----------
+
+const campSegments = (part: "post" | "sms" | "sign"): ResponseSegment[] => [
+  {
+    id: "main",
+    variants: [
+      { when: { format: ["f.letter"] }, textKey: "q13.seg.letter" },
+      { when: { data: ["d.camp.oct"], tone: ["t.formal"] }, textKey: `q13.seg.${part}.octFormal` },
+      { when: { data: ["d.camp.oct"] }, textKey: `q13.seg.${part}.oct` },
+      { when: { data: ["d.camp.old"] }, textKey: `q13.seg.${part}.old` },
+      { textKey: `q13.seg.${part}.invented`, hallucination: true },
+    ],
+  },
+];
+
+const campStage = (part: "post" | "sms" | "sign", index: number, max: number) => ({
+  taskKey: `q13.task.${part}`,
+  slots: ["format", "data", "tone"] as SlotId[],
+  cards: ["f.post", "f.sms", "f.sign", "f.letter", "d.camp.oct", "d.camp.old", "t.playful", "t.formal", "t.hype"],
+  required: ["format"] as SlotId[],
+  segments: campSegments(part),
+  pass: 0.7,
+  criteria: [
+    { id: "format", labelKey: `q13.crit.format.${part}`, weight: 30, kind: "cards" as const, when: { format: [part === "post" ? "f.post" : part === "sms" ? "f.sms" : "f.sign"] } },
+    { id: "data", labelKey: "q13.crit.data", weight: 30, kind: "cards" as const, when: { data: ["d.camp.oct"] } },
+    { id: "length", labelKey: `q13.crit.length.${part}`, weight: 20, kind: "maxLength" as const, max, hard: true },
+    { id: "tone", labelKey: "q13.crit.tone", weight: 20, kind: "cards" as const, when: { tone: ["t.playful", "t.formal", "none"] } },
+    { id: "truth", labelKey: "q13.crit.truth", weight: 0, kind: "noHallucination" as const, hard: true },
+    ...(index > 0 ? [{ id: "same", labelKey: "q13.crit.same", weight: 0, kind: "sameAsStage" as const, stage: 0, slot: "data" as SlotId, hard: true }] : []),
+  ],
+  reactions: [
+    { when: { data: ["d.camp.old"] }, from: "anna" as const, textKey: "q13.react.old" },
+    { when: { format: ["f.letter"] }, from: "anna" as const, textKey: "q13.react.letter" },
+  ],
+});
 
 export const content: Content = {
   cards,
@@ -320,11 +480,289 @@ export const content: Content = {
         rep: 2,
         skills: { aiComm: 1 },
         achievements: ["regular"],
-        milestoneKey: "milestone.prototypeEnd",
       },
       onComplete: [
         { from: "sergey", textKey: "q5.sergey.perfect", minQuality: 0.9 },
         { from: "sergey", textKey: "q5.sergey.ok", maxQuality: 0.9 },
+      ],
+    },
+    {
+      id: "q6",
+      kind: "prompt",
+      titleKey: "q6.title",
+      stage: 1,
+      requires: ["q5"],
+      offer: { type: "message", from: "anna", textKey: "q6.offer" },
+      goalKey: "q6.goal",
+      activeGoalKey: "q6.goalActive",
+      client: "anna",
+      stages: [
+        {
+          taskKey: "q6.task",
+          slots: ["goal", "tone", "data", "limits"],
+          cards: ["g.rev.reply", "g.rev.defend", "t.business", "t.warm", "t.angry", "d.rev.coffee", "d.rev.rush", "l.noPromise", "l.emoji"],
+          required: ["goal"],
+          segments: q6Segments,
+          pass: 0.7,
+          criteria: [
+            { id: "calm", labelKey: "q6.crit.calm", weight: 30, kind: "cards", when: { goal: ["g.rev.reply"], tone: ["t.business", "t.warm", "none"] } },
+            { id: "step", labelKey: "q6.crit.step", weight: 35, kind: "cards", when: { data: ["d.rev.coffee", "d.rev.rush"] } },
+            { id: "tone", labelKey: "q6.crit.tone", weight: 35, kind: "cards", when: { tone: ["t.warm", "t.business"] } },
+            { id: "truth", labelKey: "q6.crit.truth", weight: 0, kind: "noHallucination", hard: true },
+          ],
+          reactions: [
+            { when: { goal: ["g.rev.defend"] }, from: "anna", textKey: "q6.react.defend" },
+            { when: { tone: ["t.angry"] }, from: "anna", textKey: "q6.react.angry" },
+            { when: { data: ["none"], limits: ["none", "l.emoji"] }, from: "anna", textKey: "q6.react.lunch" },
+          ],
+        },
+      ],
+      reward: { xp: 30, pay: { complexity: 0.6, client: 1 }, rel: { anna: 1 }, skills: { aiComm: 1 } },
+      onComplete: [
+        { from: "anna", textKey: "q6.anna.coffee", whenSel: { data: ["d.rev.coffee"] } },
+        { from: "anna", textKey: "q6.anna.rush", whenSel: { data: ["d.rev.rush"] } },
+      ],
+    },
+    {
+      id: "q7",
+      kind: "classify",
+      game: "factcheck",
+      titleKey: "q7.title",
+      stage: 1,
+      requires: ["q6"],
+      offer: { type: "message", from: "dima", textKey: "q7.offer" },
+      goalKey: "q7.goal",
+      activeGoalKey: "q7.goalActive",
+      client: "dima",
+      introKey: "q7.intro",
+      sourceTitleKey: "q7.sourceTitle",
+      sourceKeys: ["q7.src.1", "q7.src.2", "q7.src.3", "q7.src.4"],
+      options: [
+        { id: "source", labelKey: "q7.opt.source" },
+        { id: "contra", labelKey: "q7.opt.contra" },
+        { id: "missing", labelKey: "q7.opt.missing" },
+      ],
+      items: [
+        { id: "year", textKey: "q7.claim.year", answer: "contra", weight: 2, explainKey: "q7.explain.year" },
+        { id: "founders", textKey: "q7.claim.founders", answer: "source", weight: 1, explainKey: "q7.explain.founders" },
+        { id: "hub", textKey: "q7.claim.hub", answer: "source", weight: 1, explainKey: "q7.explain.hub" },
+        { id: "staff", textKey: "q7.claim.staff", answer: "missing", weight: 2, explainKey: "q7.explain.staff" },
+        { id: "docs", textKey: "q7.claim.docs", answer: "source", weight: 1, explainKey: "q7.explain.docs" },
+        { id: "jobs", textKey: "q7.claim.jobs", answer: "source", weight: 1, explainKey: "q7.explain.jobs" },
+      ],
+      pass: 0.75,
+      onMissed: [
+        { itemId: "staff", from: "dima", textKey: "q7.dima.staff" },
+        { itemId: "year", from: "dima", textKey: "q7.dima.year" },
+      ],
+      reward: { xp: 50, skills: { aiLiteracy: 2 }, achievements: ["factChecker"], rel: { dima: 1 } },
+      onComplete: [{ from: "dima", textKey: "q7.dima.thanks" }],
+    },
+    {
+      id: "q8",
+      kind: "prompt",
+      titleKey: "q8.title",
+      stage: 1,
+      requires: ["q7"],
+      offer: { type: "board", from: "olga", textKey: "q8.offer" },
+      goalKey: "q8.goal",
+      activeGoalKey: "q8.goalActive",
+      client: "olga",
+      stages: [
+        {
+          taskKey: "q8.task",
+          slots: ["goal", "data", "format", "limits"],
+          cards: ["g.yoga.schedule", "g.yoga.summary", "d.yoga.chat", "f.table", "f.text", "f.list", "l.moves", "l.emoji"],
+          required: ["goal"],
+          segments: q8Segments,
+          pass: 0.7,
+          criteria: [
+            { id: "data", labelKey: "q8.crit.data", weight: 20, kind: "cards", when: { data: ["d.yoga.chat"] } },
+            { id: "goal", labelKey: "q8.crit.goal", weight: 15, kind: "cards", when: { goal: ["g.yoga.schedule"] } },
+            { id: "table", labelKey: "q8.crit.table", weight: 30, kind: "cards", when: { format: ["f.table"] } },
+            { id: "moves", labelKey: "q8.crit.moves", weight: 35, kind: "cards", when: { limits: ["l.moves"] } },
+            { id: "truth", labelKey: "q8.crit.truth", weight: 0, kind: "noHallucination", hard: true },
+          ],
+          reactions: [
+            { when: { data: ["none"] }, from: "olga", textKey: "q8.react.invented" },
+            { when: { goal: ["g.yoga.summary"] }, from: "olga", textKey: "q8.react.summary" },
+            { when: { limits: ["none", "l.emoji"] }, from: "olga", textKey: "q8.react.moves" },
+            { when: { format: ["f.text", "f.list", "none"] }, from: "olga", textKey: "q8.react.text" },
+          ],
+        },
+      ],
+      reward: { xp: 40, pay: { complexity: 1.1, client: 1 }, rep: 2, skills: { aiComm: 1 } },
+      onComplete: [{ from: "olga", textKey: "q8.olga.done" }],
+    },
+    {
+      id: "q9a",
+      kind: "dialog",
+      titleKey: "q9a.title",
+      stage: 1,
+      requires: ["q8"],
+      offer: { type: "auto" },
+      goalKey: "q9a.goal",
+      npc: "dima",
+      promptKey: "q9a.dima",
+      choices: [
+        { id: "yes", textKey: "q9a.c.yes", replyKey: "q9a.r.yes" },
+        { id: "nervous", textKey: "q9a.c.nervous", replyKey: "q9a.r.nervous" },
+      ],
+      reward: { xp: 5, unlockSlots: ["role"] },
+    },
+    {
+      id: "q9",
+      kind: "prompt",
+      titleKey: "q9.title",
+      stage: 1,
+      requires: ["q9a"],
+      offer: { type: "message", from: "alex", textKey: "q9.offer" },
+      goalKey: "q9.goal",
+      activeGoalKey: "q9.goalActive",
+      client: "alex",
+      stages: [
+        {
+          taskKey: "q9.task",
+          slots: ["role", "goal", "limits"],
+          cards: ["ro.prof", "ro.grandson", "ro.engineer", "g.cloud", "l.noTerms", "l.detailed"],
+          required: ["goal"],
+          segments: q9Segments,
+          pass: 0.75,
+          criteria: [
+            { id: "analogy", labelKey: "q9.crit.analogy", weight: 40, kind: "cards", when: { role: ["ro.grandson"] } },
+            { id: "terms", labelKey: "q9.crit.terms", weight: 35, kind: "cards", when: { limits: ["l.noTerms"] } },
+            { id: "short", labelKey: "q9.crit.short", weight: 25, kind: "maxLength", max: 330 },
+          ],
+          reactions: [
+            { when: { role: ["ro.prof"] }, from: "alex", textKey: "q9.react.prof" },
+            { when: { role: ["ro.engineer"] }, from: "alex", textKey: "q9.react.engineer" },
+            { when: { role: ["none"] }, from: "alex", textKey: "q9.react.none" },
+            { when: { role: ["ro.grandson"], limits: ["none", "l.detailed"] }, from: "alex", textKey: "q9.react.terms" },
+            { when: { role: ["ro.grandson"], limits: ["l.noTerms"] }, from: "alex", textKey: "q9.react.good" },
+          ],
+        },
+      ],
+      reward: { xp: 60, skills: { aiComm: 2 }, rel: { alex: 2 }, achievements: ["mentor"] },
+      onComplete: [{ from: "alex", textKey: "q9.alex.done" }],
+    },
+    {
+      id: "q10",
+      kind: "classify",
+      game: "privacy",
+      titleKey: "q10.title",
+      stage: 1,
+      requires: ["q9"],
+      offer: { type: "message", from: "sergey", textKey: "q10.offer" },
+      goalKey: "q10.goal",
+      activeGoalKey: "q10.goalActive",
+      client: "sergey",
+      introKey: "q10.intro",
+      sourceTitleKey: "q10.sourceTitle",
+      sourceKeys: ["q10.src.head", "q10.src.1", "q10.src.2", "q10.src.3"],
+      options: [
+        { id: "keep", labelKey: "q10.opt.keep" },
+        { id: "mask", labelKey: "q10.opt.mask" },
+        { id: "remove", labelKey: "q10.opt.remove" },
+      ],
+      items: [
+        { id: "name", textKey: "q10.f.name", answer: "mask", weight: 1, explainKey: "q10.explain.name" },
+        { id: "phone", textKey: "q10.f.phone", answer: "remove", weight: 1, explainKey: "q10.explain.phone" },
+        { id: "plate", textKey: "q10.f.plate", answer: "remove", weight: 1, explainKey: "q10.explain.plate" },
+        { id: "car", textKey: "q10.f.car", answer: "keep", weight: 1, explainKey: "q10.explain.car" },
+        { id: "date", textKey: "q10.f.date", answer: "keep", weight: 1, explainKey: "q10.explain.date" },
+        { id: "debt", textKey: "q10.f.debt", answer: "remove", weight: 2, explainKey: "q10.explain.debt" },
+      ],
+      pass: 0.7,
+      shortcut: { labelKey: "q10.shortcut", flags: ["leakedData"], rep: -2, replyKey: "q10.sergey.fast" },
+      reward: { xp: 45, pay: { complexity: 1.3, client: 1 }, rep: 3, flags: ["careful"], achievements: ["careful"], skills: { aiLiteracy: 1 } },
+      onComplete: [
+        { from: "sergey", textKey: "q10.sergey.clean", noFlag: "leakedData" },
+        { from: "anna", textKey: "q10.anna.campaign" },
+      ],
+    },
+    {
+      id: "q11",
+      kind: "dialog",
+      titleKey: "q11.title",
+      stage: 1,
+      requires: ["q10"],
+      offer: { type: "auto" },
+      goalKey: "q11.goal",
+      npc: "nick",
+      promptKey: "q11.nick",
+      choices: [
+        { id: "volna", textKey: "q11.c.volna", replyKey: "q11.r.volna", effects: { flags: ["tookVolna", "annaLate"], rel: { anna: -2, nick: 1 } } },
+        { id: "anna", textKey: "q11.c.anna", replyKey: "q11.r.anna", effects: { flags: ["declinedVolna"], rel: { anna: 2, nick: -1 } } },
+        { id: "both", textKey: "q11.c.both", replyKey: "q11.r.both", effects: { flags: ["tookVolna", "tookBoth"] } },
+      ],
+      reward: { xp: 40 },
+      onComplete: [
+        { from: "anna", textKey: "q11.anna.late", flag: "annaLate" },
+        { from: "anna", textKey: "q11.anna.thanks", flag: "declinedVolna" },
+        { from: "sergey", textKey: "q11.sergey.leak", flag: "leakedData" },
+      ],
+    },
+    {
+      id: "q11v",
+      kind: "prompt",
+      titleKey: "q11v.title",
+      stage: 1,
+      requires: ["q11"],
+      requiresFlag: "tookVolna",
+      offer: { type: "board", from: "nick", textKey: "q11v.offer" },
+      goalKey: "q11v.goal",
+      activeGoalKey: "q11v.goalActive",
+      client: "nick",
+      stages: [
+        {
+          taskKey: "q11v.task",
+          slots: ["goal", "audience", "tone", "data", "limits"],
+          cards: ["g.fit.launch", "g.fit.brand", "a.fit.young", "a.all", "t.playful", "t.hype", "t.formal", "d.fit.facts", "l.noGuarantee", "l.emoji"],
+          required: ["goal"],
+          segments: q11vSegments,
+          pass: 0.7,
+          criteria: [
+            { id: "launch", labelKey: "q11v.crit.launch", weight: 30, kind: "cards", when: { goal: ["g.fit.launch"] } },
+            { id: "facts", labelKey: "q11v.crit.facts", weight: 35, kind: "cards", when: { data: ["d.fit.facts"] } },
+            { id: "aud", labelKey: "q11v.crit.aud", weight: 15, kind: "cards", when: { audience: ["a.fit.young"] } },
+            { id: "safe", labelKey: "q11v.crit.safe", weight: 20, kind: "cards", when: { limits: ["l.noGuarantee"] } },
+            { id: "truth", labelKey: "q11v.crit.truth", weight: 0, kind: "noHallucination", hard: true },
+          ],
+          reactions: [
+            { when: { tone: ["t.hype"], limits: ["none", "l.emoji"] }, from: "nick", textKey: "q11v.react.guarantee" },
+            { when: { data: ["none"] }, from: "nick", textKey: "q11v.react.sale" },
+          ],
+        },
+      ],
+      reward: { xp: 60, pay: { complexity: 4, client: 1 }, payByFlag: { tookBoth: 0.85 }, rel: { nick: 1 } },
+      onComplete: [{ from: "nick", textKey: "q11v.nick.done" }],
+    },
+    {
+      id: "q13",
+      kind: "prompt",
+      titleKey: "q13.title",
+      stage: 1,
+      requires: ["q11"],
+      offer: { type: "message", from: "anna", textKey: "q13.offer" },
+      goalKey: "q13.goal",
+      activeGoalKey: "q13.goalActive",
+      client: "anna",
+      stages: [campStage("post", 0, 320), campStage("sms", 1, 160), campStage("sign", 2, 60)].map((st, i) => ({
+        ...st,
+        afterPass: i === 0 ? { from: "anna" as const, textKey: "q13.anna.post" } : i === 1 ? { from: "anna" as const, textKey: "q13.anna.sms" } : undefined,
+      })),
+      reward: {
+        xp: 150,
+        pay: { complexity: 3.5, client: 1 },
+        payByFlag: { annaLate: 0.8, tookBoth: 0.9 },
+        rep: 4,
+        rel: { anna: 1 },
+        achievements: ["firstCampaign"],
+        milestoneKey: "milestone.actEnd",
+      },
+      onComplete: [
+        { from: "anna", textKey: "q13.anna.done", noFlag: "annaLate" },
+        { from: "anna", textKey: "q13.anna.doneLate", flag: "annaLate" },
       ],
     },
   ],

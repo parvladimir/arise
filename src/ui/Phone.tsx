@@ -8,6 +8,9 @@ const AVATAR_COLOR: Record<NpcId, string> = {
   dima: "#4f8cff",
   anna: "#e9a35b",
   sergey: "#94a3b8",
+  olga: "#a78bfa",
+  alex: "#34d399",
+  nick: "#f472b6",
   neira: "#2dd4bf",
   system: "#64748b",
 };

@@ -15,7 +15,10 @@ export interface SaveStorage {
 type Migration = (raw: Record<string, unknown>) => Record<string, unknown>;
 
 /** migrations[n] переводит сохранение из версии n в n+1. */
-const migrations: Record<number, Migration> = {};
+const migrations: Record<number, Migration> = {
+  // v2: решения игрока и отношения с персонажами
+  1: (raw) => ({ ...raw, flags: [], relations: {} }),
+};
 
 export function serialize(state: GameState): string {
   const { toasts: _toasts, ...rest } = state;
@@ -70,6 +73,8 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
     slots: isStrArray(raw.slots) ? (raw.slots as GameState["slots"]) : ["goal", "recipient", "tone"],
     unread: isStrArray(raw.unread) ? (raw.unread as GameState["unread"]) : [],
     achievements: isStrArray(raw.achievements) ? raw.achievements : [],
+    flags: isStrArray(raw.flags) ? raw.flags : [],
+    relations: typeof raw.relations === "object" && raw.relations !== null ? raw.relations : {},
     toasts: [],
     nextMessageId: num(raw.nextMessageId, raw.messages.length + 1),
   };

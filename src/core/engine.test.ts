@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { content } from "@/content";
 import { hasKey, makeTranslator } from "@/content/i18n";
-import { apply, currentGoal, newGameState, type Ctx } from "./engine";
+import { apply, currentGoal, newGameState, refreshQuests, type Ctx } from "./engine";
 import { runPrompt } from "./promptSim";
 import { deserialize, serialize } from "./save";
 import { ru } from "@/content/locales/ru";
@@ -239,8 +239,21 @@ describe("контент", () => {
           if (st.afterPass) keys.add(st.afterPass.textKey);
           for (const c of st.criteria) keys.add(c.labelKey);
           for (const seg of st.segments) for (const v of seg.variants) if (v.textKey) keys.add(v.textKey);
+          for (const r of st.reactions ?? []) keys.add(r.textKey);
         }
       }
+      if (q.kind === "classify") {
+        keys.add(q.introKey).add(q.sourceTitleKey);
+        for (const k of q.sourceKeys) keys.add(k);
+        for (const o of q.options) keys.add(o.labelKey);
+        for (const i of q.items) {
+          keys.add(i.textKey);
+          if (i.explainKey) keys.add(i.explainKey);
+        }
+        for (const m of q.onMissed ?? []) keys.add(m.textKey);
+        if (q.shortcut) keys.add(q.shortcut.labelKey).add(q.shortcut.replyKey);
+      }
+      if (q.activeGoalKey) keys.add(q.activeGoalKey);
     }
     const missing = [...keys].filter((k) => !hasKey(k));
     expect(missing).toEqual([]);
@@ -285,5 +298,115 @@ describe("тексты и цели", () => {
   it("длина ответа считает эмодзи за один знак", () => {
     const st: PromptStage = { taskKey: "x", slots: [], cards: [], required: [], pass: 0, criteria: [], segments: [{ id: "e", variants: [{ textKey: "q3.seg.emoji" }] }] };
     expect(runPrompt(st, {}, ctx.t).length).toBe(8);
+  });
+});
+
+/** Состояние, в котором все задания до `id` уже закрыты, а `id` взят в работу. */
+function at(id: string, flags: string[] = []): GameState {
+  const s = newGameState(profile, ctx);
+  s.messages = [];
+  s.quests = {};
+  s.flags = [...flags];
+  for (const q of content.quests) {
+    if (q.id === id) break;
+    s.quests[q.id] = { status: "done", stage: 0, attempts: 1, bestQuality: 1, selections: {} };
+    for (const slot of q.reward.unlockSlots ?? []) if (!s.slots.includes(slot)) s.slots.push(slot);
+  }
+  refreshQuests(s, ctx);
+  if (s.quests[id]?.status === "available") s.quests[id]!.status = "active";
+  return s;
+}
+
+const factsRight = { year: "contra", founders: "source", hub: "source", staff: "missing", docs: "source", jobs: "source" };
+const privacyRight = { name: "mask", phone: "remove", plate: "remove", car: "keep", date: "keep", debt: "remove" };
+
+describe("Q6–Q13 — вторая половина акта", () => {
+  it("Q6: без данных Нейра обещает обед на двоих — не принимается", () => {
+    const { state, events } = play([{ type: "submitPrompt", questId: "q6", selection: { goal: "g.rev.reply", tone: "t.warm" } }], at("q6"));
+    expect(state.quests.q6?.status).toBe("active");
+    expect(events.find((e) => e.type === "promptResult")).toMatchObject({ result: { passed: false } });
+  });
+
+  it("Q6: кофе за счёт кафе — Анна пишет про четыре звезды", () => {
+    const { state } = play([{ type: "submitPrompt", questId: "q6", selection: { goal: "g.rev.reply", tone: "t.warm", data: "d.rev.coffee" } }], at("q6"));
+    expect(state.quests.q6?.status).toBe("done");
+    expect(state.messages.some((m) => m.textKey === "q6.anna.coffee")).toBe(true);
+    expect(state.relations.anna).toBe(1);
+  });
+
+  it("Q7: нужно отметить все утверждения", () => {
+    const { events } = play([{ type: "submitClassify", questId: "q7", answers: { year: "contra" } }], at("q7"));
+    expect(events[0]).toMatchObject({ type: "rejected", reasonKey: "err.classifyIncomplete" });
+  });
+
+  it("Q7: пропущенная выдумка про 2 000 сотрудников всплывает в сообщении Димы", () => {
+    const { state, events } = play([{ type: "submitClassify", questId: "q7", answers: { ...factsRight, staff: "source" } }], at("q7"));
+    expect(events.find((e) => e.type === "classifyResult")).toMatchObject({ passed: true, wrong: ["staff"] });
+    expect(state.messages.some((m) => m.textKey === "q7.dima.staff")).toBe(true);
+  });
+
+  it("Q7: две пропущенные выдумки — не принято", () => {
+    const { state } = play([{ type: "submitClassify", questId: "q7", answers: { ...factsRight, staff: "source", year: "source" } }], at("q7"));
+    expect(state.quests.q7?.status).toBe("active");
+  });
+
+  it("Q10: короткий путь — заказ закрыт, но репутация падает, а «Аккуратный» не выдаётся", () => {
+    const start = at("q10");
+    start.rep = 5;
+    const { state } = play([{ type: "takeShortcut", questId: "q10" }], start);
+    expect(state.quests.q10?.status).toBe("done");
+    expect(state.flags).toContain("leakedData");
+    expect(state.flags).not.toContain("careful");
+    expect(state.achievements).not.toContain("careful");
+    expect(state.rep).toBe(3);
+  });
+
+  it("Q10: маскировка — флаг «аккуратный» и благодарность Сергея", () => {
+    const { state } = play([{ type: "submitClassify", questId: "q10", answers: privacyRight }], at("q10"));
+    expect(state.flags).toContain("careful");
+    expect(state.messages.some((m) => m.textKey === "q10.sergey.clean")).toBe(true);
+  });
+
+  it("Q11: отказ «Волне» не открывает её заказ, согласие — открывает", () => {
+    const refuse = play([{ type: "choose", questId: "q11", choiceId: "anna" }], at("q11")).state;
+    expect(refuse.quests.q11v).toBeUndefined();
+    expect(refuse.relations.anna).toBe(2);
+    const take = play([{ type: "choose", questId: "q11", choiceId: "volna" }], at("q11")).state;
+    expect(take.quests.q11v?.status).toBe("available");
+    expect(take.flags).toContain("annaLate");
+  });
+
+  it("Q13: SMS с другими данными, чем в посте, не принимается", () => {
+    const { state } = play(
+      [
+        { type: "submitPrompt", questId: "q13", selection: { format: "f.post", data: "d.camp.oct", tone: "t.playful" } },
+        { type: "submitPrompt", questId: "q13", selection: { format: "f.sms", data: "d.camp.old", tone: "t.playful" } },
+      ],
+      at("q13"),
+    );
+    expect(state.quests.q13?.stage).toBe(1);
+  });
+
+  it("Q13: опоздание из-за «Волны» уменьшает оплату кампании", () => {
+    const camp: Action[] = [
+      { type: "submitPrompt", questId: "q13", selection: { format: "f.post", data: "d.camp.oct", tone: "t.playful" } },
+      { type: "submitPrompt", questId: "q13", selection: { format: "f.sms", data: "d.camp.oct", tone: "t.playful" } },
+      { type: "submitPrompt", questId: "q13", selection: { format: "f.sign", data: "d.camp.oct", tone: "t.playful" } },
+    ];
+    const onTime = play(camp, at("q13")).state;
+    const late = play(camp, at("q13", ["annaLate"])).state;
+    expect(onTime.quests.q13?.status).toBe("done");
+    expect(late.money).toBeLessThan(onTime.money);
+    expect(onTime.toasts.some((t) => t.kind === "milestone")).toBe(true);
+  });
+
+  it("старое сохранение версии 1 получает флаги и отношения", () => {
+    const s = newGameState(profile, ctx) as unknown as Record<string, unknown>;
+    delete s.flags;
+    delete s.relations;
+    s.version = 1;
+    const loaded = deserialize(JSON.stringify(s));
+    expect(loaded?.flags).toEqual([]);
+    expect(loaded?.relations).toEqual({});
   });
 });

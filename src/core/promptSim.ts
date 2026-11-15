@@ -44,6 +44,11 @@ export function runPrompt(
       case "noHallucination":
         passed = !hasHallucination;
         break;
+      case "sameAsStage": {
+        const before = previous[c.stage]?.[c.slot];
+        passed = before !== undefined && before === selection[c.slot];
+        break;
+      }
       case "differsFromStage": {
         const before = previous[c.stage]?.[c.slot];
         passed = before !== undefined && before !== selection[c.slot];

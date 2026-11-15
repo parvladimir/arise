@@ -2,7 +2,7 @@
 // Чистые функции, без React и без браузера — их же можно запускать на сервере.
 
 import { orderPay, skillLevel } from "./economy";
-import { runPrompt, type Translate } from "./promptSim";
+import { matches, runPrompt, type Translate } from "./promptSim";
 import type {
   Action,
   Content,
@@ -14,7 +14,7 @@ import type {
   TextKey,
 } from "./types";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
 
@@ -46,6 +46,8 @@ export function newGameState(profile: GameState["profile"], ctx: Ctx): GameState
     unread: [],
     ledger: [],
     achievements: [],
+    flags: [],
+    relations: {},
     toasts: [],
     nextMessageId: 1,
   };
@@ -76,6 +78,9 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       const choice = quest.choices.find((c) => c.id === action.choiceId);
       if (!choice) return reject("err.questUnavailable");
       progress.choice = choice.id;
+      for (const f of choice.effects?.flags ?? []) addFlag(state, f);
+      for (const [npc, d] of Object.entries(choice.effects?.rel ?? {}) as [NpcId, number][]) changeRel(state, npc, d);
+      if (choice.effects?.rep) state.rep = Math.max(0, state.rep + choice.effects.rep);
       for (const m of state.messages) if (m.choices?.questId === quest.id) delete m.choices;
       postMessage(state, quest.npc, "player", choice.textKey);
       postMessage(state, quest.npc, "npc", choice.replyKey);
@@ -132,6 +137,42 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       return { state, events };
     }
 
+    case "submitClassify": {
+      const quest = findQuest(ctx, action.questId);
+      const progress = state.quests[action.questId];
+      if (!quest || quest.kind !== "classify" || !progress || progress.status !== "active") return reject("err.questUnavailable");
+      const optionIds = quest.options.map((o) => o.id);
+      for (const item of quest.items) if (!optionIds.includes(action.answers[item.id] ?? "")) return reject("err.classifyIncomplete");
+      const total = quest.items.reduce((n, i) => n + i.weight, 0) || 1;
+      const wrong = quest.items.filter((i) => action.answers[i.id] !== i.answer).map((i) => i.id);
+      const lost = quest.items.filter((i) => wrong.includes(i.id)).reduce((n, i) => n + i.weight, 0);
+      const quality = Math.round((1 - lost / total) * 100) / 100;
+      const passed = quality >= quest.pass;
+      progress.attempts += 1;
+      progress.bestQuality = Math.max(progress.bestQuality, quality);
+      advanceClock(state, 1);
+      let pay = 0;
+      if (passed) {
+        pay = completeQuest(state, quest, quality, ctx, events);
+        for (const m of quest.onMissed ?? []) if (wrong.includes(m.itemId)) postMessage(state, m.from, "npc", m.textKey);
+      }
+      events.unshift({ type: "classifyResult", questId: quest.id, quality, passed, wrong, pay });
+      return { state, events };
+    }
+
+    case "takeShortcut": {
+      const quest = findQuest(ctx, action.questId);
+      const progress = state.quests[action.questId];
+      if (!quest || quest.kind !== "classify" || !quest.shortcut || !progress || progress.status !== "active") return reject("err.questUnavailable");
+      for (const f of quest.shortcut.flags) addFlag(state, f);
+      state.rep = Math.max(0, state.rep + quest.shortcut.rep);
+      progress.attempts += 1;
+      if (quest.client) postMessage(state, quest.client, "npc", quest.shortcut.replyKey);
+      const pay = completeQuest(state, quest, 0.75, ctx, events, true);
+      events.unshift({ type: "classifyResult", questId: quest.id, quality: 0.75, passed: true, wrong: [], pay });
+      return { state, events };
+    }
+
     case "buy": {
       const item = ctx.content.items.find((i) => i.id === action.itemId);
       if (!item) return reject("err.noItem");
@@ -168,6 +209,14 @@ function addLedger(state: GameState, key: string, delta: number, reasonKey: Text
   return true;
 }
 
+function addFlag(state: GameState, flag: string) {
+  if (!state.flags.includes(flag)) state.flags.push(flag);
+}
+
+function changeRel(state: GameState, npc: NpcId, delta: number) {
+  state.relations[npc] = Math.max(-5, Math.min(5, (state.relations[npc] ?? 0) + delta));
+}
+
 function advanceClock(state: GameState, hours: number) {
   state.hour += hours;
   while (state.hour >= 24) {
@@ -176,15 +225,19 @@ function advanceClock(state: GameState, hours: number) {
   }
 }
 
-function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: Ctx, events: GameEvent[]): number {
+/** shortcut: задание закрыто коротким путём — без бонусов за аккуратность (флаги, репутация, навыки, достижения). */
+function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: Ctx, events: GameEvent[], shortcut = false): number {
   const progress = state.quests[quest.id];
   if (!progress || progress.status === "done") return 0;
   progress.status = "done";
   const r = quest.reward;
 
   let pay = 0;
+  if (!shortcut) for (const f of r.flags ?? []) addFlag(state, f);
+  for (const [npc, d] of Object.entries(r.rel ?? {}) as [NpcId, number][]) changeRel(state, npc, d);
   if (r.pay) {
-    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
+    const flagMul = Object.entries(r.payByFlag ?? {}).reduce((m, [f, k]) => (state.flags.includes(f) ? m * k : m), 1);
+    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
     if (pay > 0 && addLedger(state, `quest:${quest.id}`, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;
   }
@@ -192,15 +245,15 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
     state.xp += r.xp;
     state.toasts.push({ kind: "xp", amount: r.xp });
   }
-  if (r.rep) state.rep += quality >= 0.9 ? r.rep : Math.ceil(r.rep / 3);
-  for (const [skill, uses] of Object.entries(r.skills ?? {}) as [SkillId, number][]) {
+  if (r.rep && !shortcut) state.rep += quality >= 0.9 ? r.rep : Math.ceil(r.rep / 3);
+  for (const [skill, uses] of Object.entries(shortcut ? {} : (r.skills ?? {})) as [SkillId, number][]) {
     const def = ctx.content.skills.find((s) => s.id === skill);
     const before = def ? skillLevel(state.skills[skill], def.levels) : 0;
     state.skills[skill] += uses;
     const after = def ? skillLevel(state.skills[skill], def.levels) : 0;
     if (after > before) state.toasts.push({ kind: "skill", skill, level: after });
   }
-  for (const a of r.achievements ?? []) {
+  for (const a of shortcut ? [] : (r.achievements ?? [])) {
     if (!state.achievements.includes(a)) {
       state.achievements.push(a);
       state.toasts.push({ kind: "achievement", id: a });
@@ -215,9 +268,13 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   for (const slot of r.unlockSlots ?? []) if (!state.slots.includes(slot)) state.slots.push(slot);
   if (r.milestoneKey) state.toasts.push({ kind: "milestone", textKey: r.milestoneKey });
 
+  const lastSel = Object.values(progress.selections).at(-1) ?? {};
   for (const m of quest.onComplete ?? []) {
     if (m.minQuality !== undefined && quality < m.minQuality) continue;
     if (m.maxQuality !== undefined && quality >= m.maxQuality) continue;
+    if (m.whenSel && !matches(m.whenSel, lastSel)) continue;
+    if (m.flag && !state.flags.includes(m.flag)) continue;
+    if (m.noFlag && state.flags.includes(m.noFlag)) continue;
     postMessage(state, m.from, "npc", m.textKey, { vars: { pay } });
   }
 
@@ -232,6 +289,8 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
     if (state.quests[quest.id]) continue;
     const ready = quest.requires.every((id) => state.quests[id]?.status === "done");
     if (!ready) continue;
+    if (quest.requiresFlag && !state.flags.includes(quest.requiresFlag)) continue;
+    if (quest.requiresNoFlag && state.flags.includes(quest.requiresNoFlag)) continue;
     const auto = quest.offer.type === "auto" || quest.kind === "dialog";
     state.quests[quest.id] = { status: auto ? "active" : "available", stage: 0, attempts: 0, bestQuality: 0, selections: {} };
     if (quest.kind === "dialog") {

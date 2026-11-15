@@ -6,7 +6,7 @@ export type Locale = "ru" | "en" | "de" | "uk";
 /** Ключ строки в словаре локализации. */
 export type TextKey = string;
 
-export type NpcId = "dima" | "anna" | "sergey" | "neira" | "system";
+export type NpcId = "dima" | "anna" | "sergey" | "olga" | "alex" | "nick" | "neira" | "system";
 export type AppId = "neira" | "orders" | "shop" | "skills" | "journal";
 export type SlotId = "role" | "goal" | "recipient" | "audience" | "tone" | "data" | "limits" | "format" | "examples";
 export type SkillId = "aiComm" | "aiLiteracy";
@@ -42,7 +42,16 @@ export type Criterion =
   | { id: string; labelKey: TextKey; weight: number; kind: "cards"; when: When; hard?: boolean }
   | { id: string; labelKey: TextKey; weight: number; kind: "maxLength"; max: number; hard?: boolean }
   | { id: string; labelKey: TextKey; weight: number; kind: "noHallucination"; hard?: boolean; /** Подсказка, если причину выдумки не свести к одной карточке */ hintKey?: TextKey }
-  | { id: string; labelKey: TextKey; weight: number; kind: "differsFromStage"; stage: number; slot: SlotId; hard?: boolean };
+  | { id: string; labelKey: TextKey; weight: number; kind: "differsFromStage"; stage: number; slot: SlotId; hard?: boolean }
+  /** Карточка в слоте совпадает с выбранной на одной из прошлых стадий (согласованность кампании). */
+  | { id: string; labelKey: TextKey; weight: number; kind: "sameAsStage"; stage: number; slot: SlotId; hard?: boolean };
+
+/** Реплика заказчика под ответом Нейры: показывается первая подходящая. */
+export interface Reaction {
+  when?: When;
+  from: NpcId;
+  textKey: TextKey;
+}
 
 export interface PromptStage {
   taskKey: TextKey;
@@ -57,6 +66,7 @@ export interface PromptStage {
   pass: number;
   /** Сообщение NPC после успешной стадии (кроме последней). */
   afterPass?: { from: NpcId; textKey: TextKey };
+  reactions?: Reaction[];
 }
 
 export interface Reward {
@@ -69,18 +79,53 @@ export interface Reward {
   unlockSlots?: SlotId[];
   rep?: number;
   milestoneKey?: TextKey;
+  /** Флаги сюжета: запоминают решения игрока. */
+  flags?: string[];
+  /** Изменение отношений с персонажами. */
+  rel?: Partial<Record<NpcId, number>>;
+  /** Множитель оплаты, если у игрока есть флаг (например, скидка после сорванного срока). */
+  payByFlag?: Record<string, number>;
 }
 
 export interface Choice {
   id: string;
   textKey: TextKey;
   replyKey: TextKey;
+  /** Последствия выбора: флаги, отношения, репутация. */
+  effects?: { flags?: string[]; rel?: Partial<Record<NpcId, number>>; rep?: number };
+}
+
+/** Мини-игра «разложи по корзинам»: факт-чек, приватность. */
+export interface ClassifyItem {
+  id: string;
+  textKey: TextKey;
+  answer: string;
+  /** Вес ошибки: пропущенная выдумка весит больше ложной тревоги. */
+  weight: number;
+  /** Пояснение после проверки. */
+  explainKey?: TextKey;
 }
 
 export type QuestDef =
   | (QuestBase & { kind: "dialog"; npc: NpcId; promptKey: TextKey; choices: Choice[] })
   | (QuestBase & { kind: "prompt"; stages: PromptStage[]; client?: NpcId })
-  | (QuestBase & { kind: "purchase" });
+  | (QuestBase & { kind: "purchase" })
+  | (QuestBase & {
+      kind: "classify";
+      client?: NpcId;
+      game: "factcheck" | "privacy";
+      introKey: TextKey;
+      /** Текст-источник (абзацы статьи или строки выгрузки). */
+      sourceKeys: TextKey[];
+      sourceTitleKey: TextKey;
+      items: ClassifyItem[];
+      options: { id: string; labelKey: TextKey }[];
+      pass: number;
+      /** Быстрый путь без мини-игры (например, «вставить всё как есть»). */
+      shortcut?: { labelKey: TextKey; flags: string[]; rep: number; replyKey: TextKey };
+      /** Сообщение, если игрок ошибся в конкретном пункте. */
+      onMissed?: { itemId: string; from: NpcId; textKey: TextKey }[];
+    });
 
 export interface QuestBase {
   id: string;
@@ -88,6 +133,9 @@ export interface QuestBase {
   stage: number;
   /** Задание появляется, когда выполнены все перечисленные. */
   requires: string[];
+  /** Задание появляется только при этом флаге / только без этого флага. */
+  requiresFlag?: string;
+  requiresNoFlag?: string;
   /** Как задание приходит к игроку. */
   offer:
     | { type: "auto" }
@@ -98,7 +146,7 @@ export interface QuestBase {
   activeGoalKey?: TextKey;
   reward: Reward;
   /** Сообщения после выполнения: можно зависеть от качества. */
-  onComplete?: { from: NpcId; textKey: TextKey; minQuality?: number; maxQuality?: number }[];
+  onComplete?: { from: NpcId; textKey: TextKey; minQuality?: number; maxQuality?: number; whenSel?: When; flag?: string; noFlag?: string }[];
   hours?: number;
 }
 
@@ -177,6 +225,10 @@ export interface GameState {
   unread: NpcId[];
   ledger: LedgerEntry[];
   achievements: string[];
+  /** Решения игрока, которые влияют на сюжет. */
+  flags: string[];
+  /** Отношения с персонажами: от −5 до +5. */
+  relations: Partial<Record<NpcId, number>>;
   /** Всплывающие события для интерфейса (сбрасываются интерфейсом). */
   toasts: Toast[];
   nextMessageId: number;
@@ -196,6 +248,8 @@ export type Action =
   | { type: "acceptQuest"; questId: string }
   | { type: "submitPrompt"; questId: string; selection: Partial<Record<SlotId, string>> }
   | { type: "buy"; itemId: string }
+  | { type: "submitClassify"; questId: string; answers: Record<string, string> }
+  | { type: "takeShortcut"; questId: string }
   | { type: "readChat"; npc: NpcId }
   | { type: "clearToasts" };
 
@@ -219,4 +273,5 @@ export type GameEvent =
   | { type: "rejected"; reasonKey: TextKey }
   | { type: "promptResult"; questId: string; stage: number; result: PromptResult; pay: number; finished: boolean }
   | { type: "questDone"; questId: string }
-  | { type: "bought"; itemId: string };
+  | { type: "bought"; itemId: string }
+  | { type: "classifyResult"; questId: string; quality: number; passed: boolean; wrong: string[]; pay: number };
