@@ -67,7 +67,7 @@ export function CreateCharacter({ game }: { game: GameApi }) {
                 key={id}
                 aria-pressed={avatar === id}
                 onClick={() => setAvatar(id)}
-                className={`rounded-full p-0.5 transition ${avatar === id ? "ring-2 ring-ai" : "opacity-70 hover:opacity-100"}`}
+                className={`grid place-items-center justify-self-center rounded-full p-0.5 transition ${avatar === id ? "ring-2 ring-ai" : "opacity-70 hover:opacity-100"}`}
               >
                 <Avatar id={id} size={44} label={`Вариант ${looks.indexOf(id) + 1}`} />
               </button>

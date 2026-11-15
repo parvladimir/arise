@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { AvatarId, Pronoun } from "@/core/types";
 
 type HairStyle = "short" | "long" | "curly" | "bun" | "buzz" | "bob" | "quiff" | "ponytail" | "afro";
@@ -39,8 +40,16 @@ export function avatarsFor(pronoun: Pronoun): AvatarId[] {
 
 export function Avatar({ id, size = 48, label }: { id: AvatarId; size?: number; label?: string }) {
   const l = LOOKS[id] ?? LOOKS.a1;
+  const clip = `av-${useId().replace(/:/g, "")}`;
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={label ?? "Аватар"}>
+      <defs>
+        <clipPath id={clip}>
+          <circle cx="32" cy="32" r="32" />
+        </clipPath>
+      </defs>
+      {/* Всё содержимое обрезается по кругу: плечи и причёски не вылезают за иконку. */}
+      <g clipPath={`url(#${clip})`}>
       <circle cx="32" cy="32" r="32" fill="#17223b" />
       {l.style === "afro" && <circle cx="32" cy="25" r="18" fill={l.hair} />}
       <path d="M12 64c2-12 10-18 20-18s18 6 20 18z" fill={l.shirt} />
@@ -75,6 +84,7 @@ export function Avatar({ id, size = 48, label }: { id: AvatarId; size?: number; 
       <circle cx="27.5" cy="30" r="1.6" fill="#1b1b1b" />
       <circle cx="36.5" cy="30" r="1.6" fill="#1b1b1b" />
       <path d="M28 36c2.5 2 5.5 2 8 0" stroke={l.beard ? "#f3e7dc" : "#7a3e2b"} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      </g>
     </svg>
   );
 }
