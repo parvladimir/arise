@@ -42,6 +42,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const [view, setView] = useState<View>("room");
   const [app, setApp] = useState<AppId | null>(null);
   const [chat, setChat] = useState<NpcId | null>(null);
+  const [phonePulse, setPhonePulse] = useState(0);
   const [motion, setMotion] = useMotionPref();
   const target = goalTarget(state);
   const highlight = target.view === "room" ? null : target.view;
@@ -52,6 +53,20 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
     if (c) setChat(c);
   };
   const goToGoal = () => go(target.view, target.app ?? null, target.chat);
+
+  // Телефон в комнате: открываем чат, куда ведёт цель, иначе непрочитанный, иначе последний.
+  // На широком экране телефон и так виден справа, поэтому панель ещё и подсвечивается.
+  const openPhone = () => {
+    const last = state.messages[state.messages.length - 1]?.npc;
+    const c = (target.view === "phone" ? target.chat : undefined) ?? state.unread[0] ?? last;
+    go("phone", undefined, c);
+    setPhonePulse((n) => n + 1);
+  };
+  useEffect(() => {
+    if (!phonePulse) return;
+    const id = window.setTimeout(() => setPhonePulse(0), 900);
+    return () => window.clearTimeout(id);
+  }, [phonePulse]);
   const openNeira = () => go("laptop", "neira");
 
   const laptop = (
@@ -67,13 +82,13 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         {/* Основная сцена: комната или ноутбук */}
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
           <div className={`h-full overflow-hidden rounded-2xl border border-line bg-surface ${view === "laptop" ? "hidden lg:block" : ""}`}>
-            <Room state={state} highlight={highlight} open={(v) => go(v, v === "laptop" ? app : undefined)} />
+            <Room state={state} highlight={highlight} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
           </div>
           {view === "laptop" && <div className="absolute inset-0 lg:inset-4">{laptop}</div>}
         </main>
 
         {/* Телефон: колонка на широком экране, отдельный экран на телефоне */}
-        <aside className={`min-h-0 w-full flex-1 lg:block lg:w-[340px] lg:flex-none lg:shrink-0 ${view === "phone" ? "block" : "hidden"}`}>{phone}</aside>
+        <aside className={`min-h-0 w-full flex-1 rounded-[28px] transition-shadow duration-300 lg:block lg:w-[340px] lg:flex-none lg:shrink-0 ${view === "phone" ? "block" : "hidden"} ${phonePulse ? "shadow-[0_0_0_3px_var(--color-ai)]" : ""}`}>{phone}</aside>
       </div>
 
       {/* Нижняя навигация на телефоне */}
