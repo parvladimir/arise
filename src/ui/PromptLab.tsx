@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { content } from "@/content";
 import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/core/types";
+import { matches } from "@/core/promptSim";
 import type { GameApi } from "./useGame";
+
+const NPC_COLOR: Record<string, string> = { anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
 
 type PromptQuest = Extract<QuestDef, { kind: "prompt" }>;
 type Shown = { questId: string; stage: number; result: PromptResult; pay: number; finished: boolean; sel: Partial<Record<SlotId, string>> };
@@ -136,6 +139,8 @@ export function PromptLab({
   };
 
   const clientNpc = viewQuest.client;
+  // Живая реакция заказчика на конкретный ответ: «Профессор всё сказал верно. Мама не поняла ни слова».
+  const reactions = resultForThisStage ? (stage.reactions ?? []).filter((re) => matches(re.when, resultForThisStage.sel)) : [];
   const totalWeight = stage.criteria.reduce((n, c) => n + c.weight, 0) || 1;
   const r = resultForThisStage?.result;
   // Для проваленной «правдивости» объясняем: что именно выдумано и из-за какой карточки
@@ -288,6 +293,21 @@ export function PromptLab({
                     </span>
                     {resultForThisStage?.finished && resultForThisStage.pay > 0 && <span className="font-mono font-semibold text-gold">+{resultForThisStage.pay} ₵</span>}
                   </div>
+                  {reactions.length > 0 && (
+                    <ul className="space-y-2" aria-label={t("ui.neira.reactions")}>
+                      {reactions.map((re) => (
+                        <li key={re.textKey} className="anim-rise flex items-start gap-2.5 rounded-xl border border-line bg-surface-2/60 p-3">
+                          <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-bg" style={{ background: NPC_COLOR[re.from] ?? "#8ea3c7" }}>
+                            {t(`npc.${re.from}`).slice(0, 1)}
+                          </span>
+                          <span className="min-w-0 text-sm leading-snug">
+                            <span className="block text-xs font-semibold text-muted">{t(`npc.${re.from}`)}</span>
+                            «{t(re.textKey)}»
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {!r.passed && r.criteria.some((c) => c.hard && !c.passed) && <p className="text-sm text-bad">{t("ui.neira.hardFailed")}</p>}
                   {!r.passed && <p className="text-sm text-muted">{t("ui.neira.retry")}</p>}
                   {r.passed && (
@@ -357,6 +377,7 @@ function Typed({
     if (take === 0) return null;
     const visible = s.tokens.slice(0, take).join("").trimEnd();
     const isLast = take === s.tokens.length && i < segments.length - 1;
+    if (showMarks && !s.invented && take === s.tokens.length && isTable(visible)) return <TextTable key={i} text={visible} />;
     return (
       <span key={i}>
         {s.invented && showMarks ? (
@@ -376,5 +397,31 @@ function Typed({
       {out}
       {streaming && <span className="neira-cursor" aria-hidden />}
     </>
+  );
+}
+
+/** Ответ-таблица («День | Время | …») после печати показывается настоящей таблицей. */
+function isTable(text: string) {
+  const lines = text.split("\n");
+  return lines.length >= 3 && lines.every((l) => l.includes(" | "));
+}
+
+function TextTable({ text }: { text: string }) {
+  const [head, ...rows] = text.split("\n").map((l) => l.split("|").map((c) => c.trim()));
+  return (
+    <span className="anim-rise -mx-1 my-1 block overflow-x-auto">
+      <table className="w-full border-separate border-spacing-0 font-sans text-[13px] leading-snug">
+        <thead>
+          <tr>{head!.map((h, i) => <th key={i} className="border-b border-ai/40 px-1.5 pb-1.5 text-left font-mono text-[11px] uppercase tracking-wide text-ai">{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="odd:bg-surface-2/40">
+              {r.map((c, j) => <td key={j} className={`px-1.5 py-1.5 align-top ${c.includes("(") ? "text-gold" : ""}`}>{c}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </span>
   );
 }

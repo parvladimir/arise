@@ -9,7 +9,7 @@ import type { GameApi } from "./useGame";
 export function Orders({ game, state, openNeira }: { game: GameApi; state: GameState; openNeira: () => void }) {
   const { t, dispatch } = game;
   const list = [
-    ...content.quests.filter((q) => q.kind === "prompt" && q.offer.type !== "board" && state.quests[q.id]?.status === "active"),
+    ...content.quests.filter((q) => (q.kind === "prompt" || q.kind === "classify") && q.offer.type !== "board" && state.quests[q.id]?.status === "active"),
     ...boardQuests(state, content),
   ];
   return (

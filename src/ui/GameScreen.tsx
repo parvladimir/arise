@@ -6,7 +6,8 @@ import { currentGoal } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
 import { boardQuests } from "@/core/engine";
-import { activePromptQuest, goalTarget, type View } from "./nav";
+import { activeClassifyQuest, activePromptQuest, goalTarget, type View } from "./nav";
+import { ClassifyLab } from "./ClassifyLab";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room } from "./Room";
@@ -181,7 +182,7 @@ function Laptop({
   const badges: Partial<Record<AppId, string>> = {};
   const newOrders = boardQuests(state, content).filter((q) => state.quests[q.id]?.status === "available").length;
   if (newOrders > 0) badges.orders = String(newOrders);
-  if (activePromptQuest(state)) badges.neira = "!";
+  if (activePromptQuest(state) || activeClassifyQuest(state)) badges.neira = "!";
   if (goalApp && !badges[goalApp]) badges[goalApp] = "!";
 
   return (
@@ -250,7 +251,7 @@ function Laptop({
             </div>
           </div>
         )}
-        {openApp === "neira" && <PromptLab game={game} state={state} quest={activePromptQuest(state)} motion={motion} onFinished={onFinished} />}
+        {openApp === "neira" && <NeiraApp game={game} state={state} motion={motion} onFinished={onFinished} />}
         {openApp === "orders" && <Orders game={game} state={state} openNeira={openNeira} />}
         {openApp === "shop" && <Shop game={game} state={state} />}
         {openApp === "skills" && <Skills game={game} state={state} />}
@@ -258,4 +259,28 @@ function Laptop({
       </div>
     </section>
   );
+}
+
+/** Нейра показывает либо конструктор запроса, либо мини-игру проверки — смотря какое задание в работе. */
+function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: GameState; motion: boolean; onFinished: () => void }) {
+  const prompt = activePromptQuest(state);
+  const classify = activeClassifyQuest(state);
+  const [checking, setChecking] = useState(classify?.id ?? null);
+  // Пока на экране результат проверки, держим её открытой, даже если задание уже закрыто.
+  const shownClassify = classify ?? (checking ? content.quests.find((q) => q.id === checking && q.kind === "classify") : undefined);
+  if (classify && checking !== classify.id) setChecking(classify.id);
+  if (shownClassify && shownClassify.kind === "classify" && (!prompt || classify)) {
+    return (
+      <ClassifyLab
+        key={shownClassify.id}
+        game={game}
+        quest={shownClassify}
+        onFinished={() => {
+          setChecking(null);
+          onFinished();
+        }}
+      />
+    );
+  }
+  return <PromptLab game={game} state={state} quest={prompt} motion={motion} onFinished={onFinished} />;
 }

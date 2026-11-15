@@ -31,3 +31,9 @@ export function activePromptQuest(state: GameState) {
     | Extract<QuestDef, { kind: "prompt" }>
     | undefined;
 }
+
+export function activeClassifyQuest(state: GameState) {
+  return content.quests.find((q) => q.kind === "classify" && state.quests[q.id]?.status === "active") as
+    | Extract<QuestDef, { kind: "classify" }>
+    | undefined;
+}
