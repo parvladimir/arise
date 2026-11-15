@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { QuestDef } from "@/core/types";
+import { Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
 
 type ClassifyQuest = Extract<QuestDef, { kind: "classify" }>;
@@ -28,7 +29,7 @@ const toneClasses = (tone: string, on: boolean) => {
 };
 
 /** Мини-игры «Факт-чек» и «Скрой личное»: каждому пункту — один из трёх ответов. */
-export function ClassifyLab({ game, quest, onFinished }: { game: GameApi; quest: ClassifyQuest; onFinished: () => void }) {
+export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameApi; quest: ClassifyQuest; onFinished: () => void; onLesson?: () => void }) {
   const { t, dispatch } = game;
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Result | null>(null);
@@ -68,7 +69,10 @@ export function ClassifyLab({ game, quest, onFinished }: { game: GameApi; quest:
         <div className="rounded-xl border border-line bg-surface-2/60 p-3.5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-semibold uppercase tracking-wider text-ok">{t(privacy ? "ui.check.privacy" : "ui.check.factcheck")}</span>
-            {quest.client && <span className="text-muted">{t("ui.neira.client")}: {t(`npc.${quest.client}`)}</span>}
+            <span className="flex items-center gap-2">
+              {quest.client && <span className="text-muted">{t("ui.neira.client")}: {t(`npc.${quest.client}`)}</span>}
+              {onLesson && <button onClick={onLesson} className="rounded-md border border-ok/40 px-2 py-0.5 font-semibold text-ok hover:bg-ok/10">📘 {t("ui.lesson.open")}</button>}
+            </span>
           </div>
           <p className="mt-1.5 leading-snug">{t(quest.introKey)}</p>
         </div>
@@ -171,9 +175,12 @@ export function ClassifyLab({ game, quest, onFinished }: { game: GameApi; quest:
               )}
             </div>
           ) : (
+            <>
+            {!result?.shortcut && <div className="mt-4"><Takeaway game={game} questId={quest.id} /></div>}
             <button onClick={onFinished} className="mt-4 w-full rounded-xl bg-ok py-3 font-semibold text-bg hover:brightness-110">
               {t("ui.neira.next")}
             </button>
+            </>
           )}
         </section>
       </div>

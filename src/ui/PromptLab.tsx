@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { content } from "@/content";
 import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/core/types";
 import { matches } from "@/core/promptSim";
+import { PromptPreview, Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
 
 const NPC_COLOR: Record<string, string> = { anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
@@ -29,12 +30,14 @@ export function PromptLab({
   quest,
   motion,
   onFinished,
+  onLesson,
 }: {
   game: GameApi;
   state: GameState;
   quest: PromptQuest | undefined;
   motion: boolean;
   onFinished: () => void;
+  onLesson?: () => void;
 }) {
   const { t, dispatch } = game;
   const [shown, setShown] = useState<Shown | null>(null);
@@ -176,7 +179,12 @@ export function PromptLab({
           <div className="rounded-xl border border-line bg-surface-2/60 p-3.5">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
               <span className="font-semibold uppercase tracking-wider text-ok">{t("ui.neira.task")}</span>
-              {viewQuest.stages.length > 1 && <span>{t("ui.neira.stage", { n: stageIndex + 1, total: viewQuest.stages.length })}</span>}
+              <span className="flex items-center gap-2">
+                {viewQuest.stages.length > 1 && <span>{t("ui.neira.stage", { n: stageIndex + 1, total: viewQuest.stages.length })}</span>}
+                {onLesson && (
+                  <button onClick={onLesson} className="rounded-md border border-ok/40 px-2 py-0.5 font-semibold text-ok hover:bg-ok/10">📘 {t("ui.lesson.open")}</button>
+                )}
+              </span>
             </div>
             {clientNpc && <div className="mt-1 text-sm text-muted">{t("ui.neira.client")}: {t(`npc.${clientNpc}`)}</div>}
             <p className="mt-1.5 leading-snug">{t(stage.taskKey)}</p>
@@ -215,6 +223,10 @@ export function PromptLab({
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-5">
+            <PromptPreview game={game} slots={slots.filter((s) => state.slots.includes(s))} selection={resultForThisStage ? resultForThisStage.sel : selection} />
           </div>
 
           <h3 className="mt-5 text-sm font-semibold text-muted">{t("ui.neira.criteria")}</h3>
@@ -310,6 +322,12 @@ export function PromptLab({
                   )}
                   {!r.passed && r.criteria.some((c) => c.hard && !c.passed) && <p className="text-sm text-bad">{t("ui.neira.hardFailed")}</p>}
                   {!r.passed && <p className="text-sm text-muted">{t("ui.neira.retry")}</p>}
+                  {r.passed && resultForThisStage?.finished && (
+                    <>
+                      <Takeaway game={game} questId={viewQuest.id} />
+                      <p className="text-xs text-muted">💡 {t("ui.prompt.tryReal")}</p>
+                    </>
+                  )}
                   {r.passed && (
                     <button onClick={next} className="w-full rounded-xl bg-ok py-3 font-semibold text-bg hover:brightness-110">
                       {t("ui.neira.next")}

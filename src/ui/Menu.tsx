@@ -11,10 +11,10 @@ const DEMO = [
 ];
 
 const FEATURES = [
-  { icon: "◆", label: "Карьера", tone: "#4f8cff" },
-  { icon: "▲", label: "Бизнес", tone: "#f5b544" },
-  { icon: "●", label: "Сюжет", tone: "#2dd4bf" },
-  { icon: "✦", label: "ИИ-навыки", tone: "#a78bfa" },
+  { icon: "✦", label: "Промпты", tone: "#a78bfa" },
+  { icon: "◆", label: "Основы ИИ", tone: "#4f8cff" },
+  { icon: "●", label: "9 уроков", tone: "#2dd4bf" },
+  { icon: "▲", label: "Сюжет и карьера", tone: "#f5b544" },
 ];
 
 // Узлы «нейросети» на фоне: координаты в процентах, связи — пары индексов.

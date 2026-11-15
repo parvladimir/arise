@@ -18,6 +18,8 @@ type Migration = (raw: Record<string, unknown>) => Record<string, unknown>;
 const migrations: Record<number, Migration> = {
   // v2: решения игрока и отношения с персонажами
   1: (raw) => ({ ...raw, flags: [], relations: {} }),
+  // v3: прочитанные уроки
+  2: (raw) => ({ ...raw, lessons: [] }),
 };
 
 export function serialize(state: GameState): string {
@@ -74,6 +76,7 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
     unread: isStrArray(raw.unread) ? (raw.unread as GameState["unread"]) : [],
     achievements: isStrArray(raw.achievements) ? raw.achievements : [],
     flags: isStrArray(raw.flags) ? raw.flags : [],
+    lessons: isStrArray(raw.lessons) ? raw.lessons : [],
     relations: typeof raw.relations === "object" && raw.relations !== null ? raw.relations : {},
     toasts: [],
     nextMessageId: num(raw.nextMessageId, raw.messages.length + 1),

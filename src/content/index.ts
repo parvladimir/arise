@@ -1,7 +1,7 @@
 // Контент первого акта: задания Q1–Q5, карточки Prompt Lab, предметы, навыки.
 // Только структура и ключи текстов — сами тексты лежат в locales/.
 
-import type { Content, PromptCard, ResponseSegment, SlotId } from "@/core/types";
+import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
 const card = (id: string, slot: SlotId): PromptCard => ({ id, slot, textKey: `card.${id}` });
 
@@ -314,7 +314,38 @@ const campStage = (part: "post" | "sms" | "sign", index: number, max: number) =>
   ],
 });
 
+// Уроки: короткая теория перед заданием. Задание — практика урока.
+const lessons: LessonDef[] = [
+  { id: "prompt", questId: "q2", titleKey: "lesson.prompt.title", bodyKeys: ["lesson.prompt.1", "lesson.prompt.2", "lesson.prompt.3"], badKey: "lesson.prompt.bad", goodKey: "lesson.prompt.good", takeawayKey: "lesson.prompt.takeaway" },
+  { id: "hallucination", questId: "q3", titleKey: "lesson.hallucination.title", bodyKeys: ["lesson.hallucination.1", "lesson.hallucination.2", "lesson.hallucination.3"], badKey: "lesson.hallucination.bad", goodKey: "lesson.hallucination.good", takeawayKey: "lesson.hallucination.takeaway" },
+  { id: "format", questId: "q5", titleKey: "lesson.format.title", bodyKeys: ["lesson.format.1", "lesson.format.2"], badKey: "lesson.format.bad", goodKey: "lesson.format.good", takeawayKey: "lesson.format.takeaway" },
+  { id: "responsibility", questId: "q6", titleKey: "lesson.responsibility.title", bodyKeys: ["lesson.responsibility.1", "lesson.responsibility.2"], badKey: "lesson.responsibility.bad", goodKey: "lesson.responsibility.good", takeawayKey: "lesson.responsibility.takeaway" },
+  { id: "factcheck", questId: "q7", titleKey: "lesson.factcheck.title", bodyKeys: ["lesson.factcheck.1", "lesson.factcheck.2", "lesson.factcheck.3"], takeawayKey: "lesson.factcheck.takeaway" },
+  { id: "structure", questId: "q8", titleKey: "lesson.structure.title", bodyKeys: ["lesson.structure.1", "lesson.structure.2"], badKey: "lesson.structure.bad", goodKey: "lesson.structure.good", takeawayKey: "lesson.structure.takeaway" },
+  { id: "role", questId: "q9", titleKey: "lesson.role.title", bodyKeys: ["lesson.role.1", "lesson.role.2"], badKey: "lesson.role.bad", goodKey: "lesson.role.good", takeawayKey: "lesson.role.takeaway" },
+  { id: "privacy", questId: "q10", titleKey: "lesson.privacy.title", bodyKeys: ["lesson.privacy.1", "lesson.privacy.2", "lesson.privacy.3"], takeawayKey: "lesson.privacy.takeaway" },
+  { id: "template", questId: "q13", titleKey: "lesson.template.title", bodyKeys: ["lesson.template.1", "lesson.template.2"], badKey: "lesson.template.bad", goodKey: "lesson.template.good", takeawayKey: "lesson.template.takeaway" },
+];
+
+// Словарь: термин открывается, когда появляется задание, где он нужен.
+const glossary: GlossaryDef[] = [
+  { id: "llm", termKey: "term.llm", defKey: "term.llm.def", questId: "q2" },
+  { id: "prompt", termKey: "term.prompt", defKey: "term.prompt.def", questId: "q2" },
+  { id: "context", termKey: "term.context", defKey: "term.context.def", questId: "q2" },
+  { id: "hallucination", termKey: "term.hallucination", defKey: "term.hallucination.def", questId: "q3" },
+  { id: "format", termKey: "term.format", defKey: "term.format.def", questId: "q5" },
+  { id: "fewshot", termKey: "term.fewshot", defKey: "term.fewshot.def", questId: "q5" },
+  { id: "token", termKey: "term.token", defKey: "term.token.def", questId: "q5" },
+  { id: "factcheck", termKey: "term.factcheck", defKey: "term.factcheck.def", questId: "q7" },
+  { id: "role", termKey: "term.role", defKey: "term.role.def", questId: "q9" },
+  { id: "pii", termKey: "term.pii", defKey: "term.pii.def", questId: "q10" },
+  { id: "anonymization", termKey: "term.anonymization", defKey: "term.anonymization.def", questId: "q10" },
+  { id: "template", termKey: "term.template", defKey: "term.template.def", questId: "q13" },
+];
+
 export const content: Content = {
+  lessons,
+  glossary,
   cards,
   finalGoalKey: "goal.end",
   skills: [

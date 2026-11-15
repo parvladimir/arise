@@ -14,7 +14,7 @@ import type {
   TextKey,
 } from "./types";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
 
@@ -48,6 +48,7 @@ export function newGameState(profile: GameState["profile"], ctx: Ctx): GameState
     achievements: [],
     flags: [],
     relations: {},
+    lessons: [],
     toasts: [],
     nextMessageId: 1,
   };
@@ -65,6 +66,11 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
   switch (action.type) {
     case "clearToasts":
       state.toasts = [];
+      return { state, events };
+
+    case "seeLesson":
+      if (!ctx.content.lessons.some((l) => l.id === action.lessonId)) return reject("err.questUnavailable");
+      if (!state.lessons.includes(action.lessonId)) state.lessons.push(action.lessonId);
       return { state, events };
 
     case "readChat":

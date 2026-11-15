@@ -8,6 +8,7 @@ import { Journal, Orders, Shop, Skills } from "./Apps";
 import { boardQuests } from "@/core/engine";
 import { activeClassifyQuest, activePromptQuest, goalTarget, type View } from "./nav";
 import { ClassifyLab } from "./ClassifyLab";
+import { LessonCard, lessonFor } from "./Learn";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room } from "./Room";
@@ -269,12 +270,31 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
   // Пока на экране результат проверки, держим её открытой, даже если задание уже закрыто.
   const shownClassify = classify ?? (checking ? content.quests.find((q) => q.id === checking && q.kind === "classify") : undefined);
   if (classify && checking !== classify.id) setChecking(classify.id);
+  // Урок перед заданием: показывается сам при первом открытии, потом — по кнопке «Урок».
+  const lesson = lessonFor(classify?.id ?? prompt?.id);
+  const [reading, setReading] = useState<string | null>(null);
+  const unseen = lesson && !state.lessons.includes(lesson.id);
+  if (lesson && (unseen || reading === lesson.id)) {
+    return (
+      <LessonCard
+        key={lesson.id}
+        game={game}
+        lesson={lesson}
+        onDone={() => {
+          if (unseen) game.dispatch({ type: "seeLesson", lessonId: lesson.id });
+          setReading(null);
+        }}
+      />
+    );
+  }
+  const openLesson = lesson ? () => setReading(lesson.id) : undefined;
   if (shownClassify && shownClassify.kind === "classify" && (!prompt || classify)) {
     return (
       <ClassifyLab
         key={shownClassify.id}
         game={game}
         quest={shownClassify}
+        onLesson={classify ? openLesson : undefined}
         onFinished={() => {
           setChecking(null);
           onFinished();
@@ -282,5 +302,5 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
       />
     );
   }
-  return <PromptLab game={game} state={state} quest={prompt} motion={motion} onFinished={onFinished} />;
+  return <PromptLab game={game} state={state} quest={prompt} motion={motion} onFinished={onFinished} onLesson={openLesson} />;
 }

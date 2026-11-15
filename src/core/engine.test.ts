@@ -255,6 +255,15 @@ describe("контент", () => {
       }
       if (q.activeGoalKey) keys.add(q.activeGoalKey);
     }
+    for (const l of content.lessons) {
+      keys.add(l.titleKey).add(l.takeawayKey);
+      for (const k of l.bodyKeys) keys.add(k);
+      if (l.badKey) keys.add(l.badKey);
+      if (l.goodKey) keys.add(l.goodKey);
+    }
+    for (const g of content.glossary) {
+      keys.add(g.termKey).add(g.defKey);
+    }
     const missing = [...keys].filter((k) => !hasKey(k));
     expect(missing).toEqual([]);
   });
@@ -410,13 +419,21 @@ describe("Q6–Q13 — вторая половина акта", () => {
     expect(s.messages.some((m) => m.textKey === "q6.offer")).toBe(true);
   });
 
+  it("уроки привязаны к существующим заданиям, урок отмечается прочитанным один раз", () => {
+    for (const l of content.lessons) expect(content.quests.some((q) => q.id === l.questId), l.id).toBe(true);
+    const { state } = play([{ type: "seeLesson", lessonId: "prompt" }, { type: "seeLesson", lessonId: "prompt" }]);
+    expect(state.lessons).toEqual(["prompt"]);
+  });
+
   it("старое сохранение версии 1 получает флаги и отношения", () => {
     const s = newGameState(profile, ctx) as unknown as Record<string, unknown>;
     delete s.flags;
     delete s.relations;
-    s.version = 1;
+    delete s.lessons;
+    s.schemaVersion = 1;
     const loaded = deserialize(JSON.stringify(s));
     expect(loaded?.flags).toEqual([]);
     expect(loaded?.relations).toEqual({});
+    expect(loaded?.lessons).toEqual([]);
   });
 });

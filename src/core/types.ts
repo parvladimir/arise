@@ -166,7 +166,28 @@ export interface SkillDef {
   levels: number[];
 }
 
+/** Короткий урок перед заданием: теория, плохой и хороший пример, вывод. */
+export interface LessonDef {
+  id: string;
+  questId: string;
+  titleKey: TextKey;
+  bodyKeys: TextKey[];
+  badKey?: TextKey;
+  goodKey?: TextKey;
+  takeawayKey: TextKey;
+}
+
+/** Термин словаря: открывается, когда задание взято в работу. */
+export interface GlossaryDef {
+  id: string;
+  termKey: TextKey;
+  defKey: TextKey;
+  questId: string;
+}
+
 export interface Content {
+  lessons: LessonDef[];
+  glossary: GlossaryDef[];
   quests: QuestDef[];
   cards: PromptCard[];
   items: ItemDef[];
@@ -229,6 +250,8 @@ export interface GameState {
   flags: string[];
   /** Отношения с персонажами: от −5 до +5. */
   relations: Partial<Record<NpcId, number>>;
+  /** Прочитанные уроки. */
+  lessons: string[];
   /** Всплывающие события для интерфейса (сбрасываются интерфейсом). */
   toasts: Toast[];
   nextMessageId: number;
@@ -251,6 +274,7 @@ export type Action =
   | { type: "submitClassify"; questId: string; answers: Record<string, string> }
   | { type: "takeShortcut"; questId: string }
   | { type: "readChat"; npc: NpcId }
+  | { type: "seeLesson"; lessonId: string }
   | { type: "clearToasts" };
 
 export interface CriterionResult {

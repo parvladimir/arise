@@ -125,8 +125,43 @@ export function Skills({ game, state }: { game: GameApi; state: GameState }) {
 export function Journal({ game, state }: { game: GameApi; state: GameState }) {
   const { t } = game;
   const done = content.quests.filter((q) => state.quests[q.id]?.status === "done");
+  const lessons = content.lessons.filter((l) => state.lessons.includes(l.id));
+  const terms = content.glossary.filter((g) => state.quests[g.questId]);
   return (
     <div className="grid gap-6 p-4 md:grid-cols-3">
+      <section className="md:col-span-2">
+        <h2 className="font-semibold">📘 {t("ui.journal.lessons")}</h2>
+        {lessons.length === 0 && <p className="mt-2 text-sm text-muted">{t("ui.journal.noLessons")}</p>}
+        <ul className="mt-2 space-y-2">
+          {lessons.map((l, i) => (
+            <li key={l.id}>
+              <details className="group rounded-xl border border-line bg-surface-2/50 p-3">
+                <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ok/15 text-xs text-ok">{i + 1}</span>
+                  {t(l.titleKey)}
+                  <span className="ml-auto text-muted transition group-open:rotate-90">›</span>
+                </summary>
+                <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink/90">
+                  {l.bodyKeys.map((k) => <p key={k}>{t(k)}</p>)}
+                  {l.goodKey && <p className="rounded-lg border border-ok/30 bg-ok/5 p-2 font-mono text-[13px]">✓ {t(l.goodKey)}</p>}
+                  <p className="font-semibold text-ok">{t(l.takeawayKey)}</p>
+                </div>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h2 className="font-semibold">{t("ui.journal.glossary")}</h2>
+        <dl className="mt-2 space-y-2.5 text-sm">
+          {terms.map((g) => (
+            <div key={g.id}>
+              <dt className="font-semibold text-ai">{t(g.termKey)}</dt>
+              <dd className="leading-snug text-ink/85">{t(g.defKey)}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
       <section>
         <h2 className="font-semibold">{t("ui.journal.achievements")}</h2>
         {state.achievements.length === 0 && <p className="mt-2 text-sm text-muted">{t("ui.journal.noAch")}</p>}
