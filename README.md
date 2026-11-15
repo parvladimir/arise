@@ -7,7 +7,7 @@
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:4317
 npm test           # движок, экономика, сохранения, симуляция
 npm run lint       # проверка типов
 npm run sim        # прогон экономики тремя профилями игроков

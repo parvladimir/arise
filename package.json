@@ -5,9 +5,9 @@
   "type": "module",
   "description": "AI RISE — игра о том, как обычный человек становится создателем ИИ-компании",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 4317",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 4317",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "sim": "tsx tools/sim/run.ts"
