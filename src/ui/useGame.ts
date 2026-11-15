@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { content } from "@/content";
 import { makeTranslator } from "@/content/i18n";
-import { apply, type Ctx } from "@/core/engine";
+import { apply, refreshQuests, type Ctx } from "@/core/engine";
 import { browserStorage, deserialize, serialize } from "@/core/save";
 import type { Action, GameEvent, GameState } from "@/core/types";
 
@@ -51,10 +51,13 @@ export function useGame() {
       setHasSave(false);
       return;
     }
+    // Сохранение могло быть сделано до выхода новых заданий: открываем те, чьи условия уже выполнены.
+    refreshQuests(loaded, ctx);
+    storage.write(serialize(loaded));
     stateRef.current = loaded;
     setState(loaded);
     setScreen("game");
-  }, [storage]);
+  }, [storage, ctx]);
 
   const startNew = useCallback(
     (profile: GameState["profile"]) => {

@@ -400,6 +400,16 @@ describe("Q6–Q13 — вторая половина акта", () => {
     expect(onTime.toasts.some((t) => t.kind === "milestone")).toBe(true);
   });
 
+  it("сохранение, сделанное до выхода Q6, после загрузки получает новое задание", () => {
+    const s = at("q6");
+    const id = "q6" as string;
+    delete s.quests[id];
+    s.messages = [];
+    refreshQuests(s, ctx);
+    expect(s.quests[id]?.status).toBe("available");
+    expect(s.messages.some((m) => m.textKey === "q6.offer")).toBe(true);
+  });
+
   it("старое сохранение версии 1 получает флаги и отношения", () => {
     const s = newGameState(profile, ctx) as unknown as Record<string, unknown>;
     delete s.flags;
