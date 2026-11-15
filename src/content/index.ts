@@ -258,7 +258,7 @@ export const content: Content = {
             { id: "discount", labelKey: "q3.crit.discount", weight: 20, kind: "cards", when: { data: ["d.menu3", "d.menuFull"], limits: ["none", "l.300", "l.emoji"] } },
             { id: "students", labelKey: "q3.crit.students", weight: 15, kind: "cards", when: { audience: ["a.students"], tone: ["t.playful"] } },
             { id: "length", labelKey: "q3.crit.length", weight: 15, kind: "maxLength", max: 300 },
-            { id: "truth", labelKey: "q3.crit.truth", weight: 0, kind: "noHallucination", hard: true },
+            { id: "truth", labelKey: "q3.crit.truth", weight: 0, kind: "noHallucination", hard: true, hintKey: "q3.crit.truthHint" },
           ],
         },
       ],

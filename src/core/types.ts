@@ -41,7 +41,7 @@ export interface ResponseSegment {
 export type Criterion =
   | { id: string; labelKey: TextKey; weight: number; kind: "cards"; when: When; hard?: boolean }
   | { id: string; labelKey: TextKey; weight: number; kind: "maxLength"; max: number; hard?: boolean }
-  | { id: string; labelKey: TextKey; weight: number; kind: "noHallucination"; hard?: boolean }
+  | { id: string; labelKey: TextKey; weight: number; kind: "noHallucination"; hard?: boolean; /** Подсказка, если причину выдумки не свести к одной карточке */ hintKey?: TextKey }
   | { id: string; labelKey: TextKey; weight: number; kind: "differsFromStage"; stage: number; slot: SlotId; hard?: boolean };
 
 export interface PromptStage {

@@ -58,12 +58,15 @@ function allSelections(stage: PromptStage, state: GameState): Selection[] {
 
 function pickSelection(profile: Profile, stage: PromptStage, state: GameState, attempt: number, rand: () => number, previous: Record<number, Selection>): Selection {
   const all = allSelections(stage, state);
-  const scored = all.map((sel) => ({ sel, q: runPrompt(stage, sel, ctx.t, previous).quality }));
-  if (profile === "careful") return scored.sort((a, b) => b.q - a.q)[0]!.sel;
+  const scored = all.map((sel) => {
+    const r = runPrompt(stage, sel, ctx.t, previous);
+    return { sel, q: r.quality, ok: r.passed };
+  });
+  if (profile === "careful") return scored.sort((a, b) => Number(b.ok) - Number(a.ok) || b.q - a.q)[0]!.sel;
   if (profile === "average") {
     // Пропускает необязательные слоты, если без них проходит; иначе берёт лучшее.
-    const minimal = scored.filter((s) => s.q >= stage.pass).sort((a, b) => Object.keys(a.sel).length - Object.keys(b.sel).length || b.q - a.q);
-    return (attempt === 0 ? minimal[0] : scored.sort((a, b) => b.q - a.q)[0])!.sel;
+    const minimal = scored.filter((s) => s.ok).sort((a, b) => Object.keys(a.sel).length - Object.keys(b.sel).length || b.q - a.q);
+    return (attempt === 0 ? minimal[0] : scored.sort((a, b) => Number(b.ok) - Number(a.ok) || b.q - a.q)[0])!.sel;
   }
   // Торопливый: первая попытка — первая карточка в обязательных слотах, дальше случайно, к 4-й попытке «читает критерии».
   if (attempt === 0) {
@@ -71,7 +74,7 @@ function pickSelection(profile: Profile, stage: PromptStage, state: GameState, a
     for (const g of optionsBySlot(stage, state)) if (stage.required.includes(g.slot)) sel[g.slot] = g.cards[0];
     return sel;
   }
-  if (attempt >= 3) return scored.filter((s) => s.q >= stage.pass).sort((a, b) => a.q - b.q)[0]!.sel;
+  if (attempt >= 3) return scored.filter((s) => s.ok).sort((a, b) => a.q - b.q)[0]!.sel;
   return scored[Math.floor(rand() * scored.length)]!.sel;
 }
 

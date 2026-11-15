@@ -56,13 +56,14 @@ export function runPrompt(
   const total = criteria.reduce((sum, c) => sum + c.weight, 0) || 1;
   const earned = criteria.reduce((sum, c) => sum + (c.passed ? c.weight : 0), 0);
   const hardFailed = criteria.some((c) => c.hard && !c.passed);
-  const quality = hardFailed ? Math.min(earned / total, stage.pass - 0.01) : earned / total;
+  // Качество — честная сумма весов; провал обязательного условия отдельно блокирует приёмку
+  const quality = earned / total;
 
   return {
     segments,
     length,
     quality: Math.round(quality * 100) / 100,
     criteria,
-    passed: quality >= stage.pass,
+    passed: !hardFailed && quality >= stage.pass,
   };
 }

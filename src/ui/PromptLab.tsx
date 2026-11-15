@@ -103,6 +103,22 @@ export function PromptLab({
   const clientNpc = viewQuest.client;
   const totalWeight = stage.criteria.reduce((n, c) => n + c.weight, 0) || 1;
   const r = resultForThisStage?.result;
+  // Для проваленной «правдивости» объясняем: что именно выдумано и из-за какой карточки
+  const usedSelection = resultForThisStage ? (state.quests[viewQuest.id]?.selections?.[stageIndex] ?? selection) : selection;
+  const inventions = (r?.segments ?? [])
+    .filter((s) => s.hallucination)
+    .map((s) => {
+      const variant = stage.segments.find((g) => g.id === s.id)?.variants.find((v) => v.textKey === s.textKey);
+      const causes = Object.entries(variant?.when ?? {}).map(([slot, allowed]) => {
+        const picked = usedSelection[slot as SlotId];
+        if (picked && allowed.includes(picked)) {
+          const card = content.cards.find((c) => c.id === picked);
+          return t("ui.neira.causeCard", { card: card ? t(card.textKey) : picked });
+        }
+        return t("ui.neira.causeMissing", { slot: t(`slot.${slot}`) });
+      });
+      return { text: t(s.textKey), causes };
+    });
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -178,8 +194,13 @@ export function PromptLab({
                     <span className={mark === "bad" ? "text-bad" : mark === "lock" ? "text-muted" : ""}>{t(c.labelKey)}</span>
                     {c.hard && <span className="ml-1.5 text-xs text-muted">({t("ui.neira.required2")})</span>}
                     {mark === "lock" && <span className="ml-1.5 text-xs text-muted">({t("ui.neira.critLocked")})</span>}
+                    {mark === "bad" && c.kind === "noHallucination" && inventions.map((inv, i) => (
+                      <span key={i} className="mt-0.5 block text-xs text-muted">
+                        {t("ui.neira.invention", { text: inv.text })}{inv.causes.length > 0 ? ` ${inv.causes.join(", ")}.` : "."}{inv.causes.length === 0 && c.hintKey ? ` ${t(c.hintKey)}` : ""}
+                      </span>
+                    ))}
                   </span>
-                  <span className={`shrink-0 font-mono text-xs ${mark === "ok" ? "text-ok" : "text-muted"}`} title={t("ui.neira.critWeight")}>+{share}%</span>
+                  {share > 0 && <span className={`shrink-0 font-mono text-xs ${mark === "ok" ? "text-ok" : "text-muted"}`} title={t("ui.neira.critWeight")}>+{share}%</span>}
                   <span className="sr-only">{mark === "ok" ? "выполнено" : mark === "bad" ? "не выполнено" : ""}</span>
                 </li>
               );
