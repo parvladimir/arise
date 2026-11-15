@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { content } from "@/content";
+import { currentGoal } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
 import { activePromptQuest, goalTarget, type View } from "./nav";
@@ -14,6 +16,14 @@ import type { GameApi } from "./useGame";
 const ALL_APPS: AppId[] = ["neira", "orders", "shop", "skills", "journal"];
 const FUTURE_APPS = ["pixela", "flow", "code"] as const;
 const APP_ICON: Record<AppId, string> = { neira: "◉", orders: "▤", shop: "◈", skills: "✦", journal: "☰" };
+const APP_GRADIENT: Record<AppId, string> = {
+  neira: "linear-gradient(135deg, #2dd4bf, #4f8cff 55%, #a78bfa)",
+  orders: "linear-gradient(135deg, #f5b544, #f97316)",
+  shop: "linear-gradient(135deg, #f472b6, #a78bfa)",
+  skills: "linear-gradient(135deg, #34d399, #0ea5e9)",
+  journal: "linear-gradient(135deg, #64748b, #334155)",
+};
+const APP_GLOW: Record<AppId, string> = { neira: "#4f8cff", orders: "#f59e0b", shop: "#ec4899", skills: "#10b981", journal: "#475569" };
 
 function useMotionPref(): [boolean, (v: boolean) => void] {
   const [motion, setMotionState] = useState(true);
@@ -37,6 +47,19 @@ function useMotionPref(): [boolean, (v: boolean) => void] {
   return [motion, setMotion];
 }
 
+/** Узкий экран (телефон): комната показывается крупным планом стола. */
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return narrow;
+}
+
 export function GameScreen({ game, state }: { game: GameApi; state: GameState }) {
   const { t } = game;
   const [view, setView] = useState<View>("room");
@@ -44,6 +67,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const [chat, setChat] = useState<NpcId | null>(null);
   const [phonePulse, setPhonePulse] = useState(0);
   const [motion, setMotion] = useMotionPref();
+  const narrow = useNarrow();
   const target = goalTarget(state);
   const highlight = target.view === "room" ? null : target.view;
 
@@ -81,8 +105,25 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-4 p-3 pb-20 lg:p-4 lg:pb-4">
         {/* Основная сцена: комната или ноутбук */}
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
-          <div className={`h-full overflow-hidden rounded-2xl border border-line bg-surface ${view === "laptop" ? "hidden lg:block" : ""}`}>
-            <Room state={state} highlight={highlight} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
+          <div className={`flex h-full flex-col gap-3 lg:block ${view === "laptop" ? "hidden lg:block" : ""}`}>
+            <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
+              <Room t={t} compact={narrow} state={state} highlight={highlight} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
+            </div>
+            {/* На телефоне под комнатой — цель и быстрые кнопки */}
+            <div className="glass-card rounded-2xl p-4 lg:hidden">
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-ok">{t("ui.goal")}</p>
+              <p className="mt-1.5 leading-snug">{t(currentGoal(state, content).textKey)}</p>
+              {target.view !== "room" && (
+                <button onClick={goToGoal} className="mt-3 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/30">{t("ui.go")}</button>
+              )}
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <button onClick={() => go("laptop", app)} className="rounded-xl border border-line bg-surface-2/60 py-2.5">▭ {t("ui.nav.laptop")}</button>
+                <button onClick={openPhone} className="relative rounded-xl border border-line bg-surface-2/60 py-2.5">
+                  ▯ {t("ui.nav.phone")}
+                  {state.unread.length > 0 && <span className="absolute right-3 top-2.5 h-2 w-2 rounded-full bg-bad" aria-hidden />}
+                </button>
+              </div>
+            </div>
           </div>
           {view === "laptop" && <div className="absolute inset-0 lg:inset-4">{laptop}</div>}
         </main>
@@ -154,31 +195,44 @@ function Laptop({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!openApp && (
-          <div className="grid grid-cols-3 gap-3 p-5 sm:grid-cols-4 md:grid-cols-6">
-            {ALL_APPS.map((a) => {
-              const unlocked = state.apps.includes(a);
-              return (
-                <button
-                  key={a}
-                  disabled={!unlocked}
-                  onClick={() => setApp(a)}
-                  title={unlocked ? undefined : t("ui.laptop.locked")}
-                  aria-label={unlocked ? t(`app.${a}`) : t("ui.laptop.locked")}
-                  className="group flex flex-col items-center gap-2 rounded-xl p-3 enabled:hover:bg-surface disabled:cursor-not-allowed"
-                >
-                  <span className={`grid h-14 w-14 place-items-center rounded-2xl text-2xl ${unlocked ? (a === "neira" ? "bg-ai text-white shadow-lg shadow-ai/30" : "bg-surface-2 text-ink") : "border border-dashed border-line text-muted/50"}`}>
-                    {unlocked ? APP_ICON[a] : "?"}
-                  </span>
-                  <span className={`text-xs ${unlocked ? "" : "text-muted/60"}`}>{unlocked ? t(`app.${a}`) : "···"}</span>
-                </button>
-              );
-            })}
-            {FUTURE_APPS.map((a) => (
-              <div key={a} className="flex flex-col items-center gap-2 p-3 opacity-40" title={t("ui.laptop.soon")}>
-                <span className="grid h-14 w-14 place-items-center rounded-2xl border border-dashed border-line text-xl text-muted">🔒</span>
-                <span className="text-xs text-muted">{t(`app.${a}`)}</span>
+          <div className="desk-wallpaper relative min-h-full p-5">
+            <div className="relative mb-6 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-[0.25em] text-ok/80">{t("ui.laptop.os")}</p>
+                <p className="mt-1 text-2xl font-semibold">{t("ui.laptop.hello", { name: state.profile.name })}</p>
               </div>
-            ))}
+              <p className="font-mono text-3xl font-light tabular-nums text-ink/80">{String(state.hour % 24).padStart(2, "0")}:00</p>
+            </div>
+            <div className="relative grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+              {ALL_APPS.map((a, i) => {
+                const unlocked = state.apps.includes(a);
+                return (
+                  <button
+                    key={a}
+                    disabled={!unlocked}
+                    onClick={() => setApp(a)}
+                    title={unlocked ? undefined : t("ui.laptop.locked")}
+                    aria-label={unlocked ? t(`app.${a}`) : t("ui.laptop.locked")}
+                    className="app-tile group flex flex-col items-center gap-2 rounded-xl p-3 disabled:cursor-not-allowed"
+                    style={{ animationDelay: `${i * 60}ms` }}
+                  >
+                    <span
+                      className={`app-icon grid h-14 w-14 place-items-center rounded-2xl text-2xl text-white ${unlocked ? "" : "app-icon-locked text-muted/50"}`}
+                      style={unlocked ? { background: APP_GRADIENT[a], boxShadow: `0 8px 24px -6px ${APP_GLOW[a]}` } : undefined}
+                    >
+                      {unlocked ? APP_ICON[a] : "?"}
+                    </span>
+                    <span className={`text-xs ${unlocked ? "" : "text-muted/60"}`}>{unlocked ? t(`app.${a}`) : "···"}</span>
+                  </button>
+                );
+              })}
+              {FUTURE_APPS.map((a) => (
+                <div key={a} className="flex flex-col items-center gap-2 p-3 opacity-45" title={t("ui.laptop.soon")}>
+                  <span className="app-icon-locked grid h-14 w-14 place-items-center rounded-2xl text-xl text-muted">🔒</span>
+                  <span className="text-xs text-muted">{t(`app.${a}`)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         {openApp === "neira" && <PromptLab game={game} state={state} quest={activePromptQuest(state)} motion={motion} onFinished={onFinished} />}

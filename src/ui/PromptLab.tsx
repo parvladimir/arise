@@ -6,7 +6,15 @@ import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/cor
 import type { GameApi } from "./useGame";
 
 type PromptQuest = Extract<QuestDef, { kind: "prompt" }>;
-type Shown = { questId: string; stage: number; result: PromptResult; pay: number; finished: boolean };
+type Shown = { questId: string; stage: number; result: PromptResult; pay: number; finished: boolean; sel: Partial<Record<SlotId, string>> };
+type Phase = "thinking" | "streaming" | "done";
+
+const THINK_STEPS = ["ui.neira.think1", "ui.neira.think2", "ui.neira.think3"] as const;
+
+/** Делим текст на «токены»: слово вместе с пробелом после него — так печатают настоящие модели. */
+function tokenize(text: string): string[] {
+  return text.match(/\S+\s*/g) ?? [];
+}
 
 const SLOT_HINT: Partial<Record<SlotId, string>> = {
   examples: "Откроется после покупки «Шпаргалки промптов» в магазине",
@@ -29,35 +37,62 @@ export function PromptLab({
   const [shown, setShown] = useState<Shown | null>(null);
   const [selection, setSelection] = useState<Partial<Record<SlotId, string>>>({});
   const [error, setError] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(1);
+  const [phase, setPhase] = useState<Phase>("done");
+  const [thinkStep, setThinkStep] = useState(0);
+  const [shownTokens, setShownTokens] = useState(0);
   const [tab, setTab] = useState<"prompt" | "answer">("prompt");
 
   const viewQuest = quest ?? (shown ? (content.quests.find((q) => q.id === shown.questId) as PromptQuest) : undefined);
   const stageIndex = shown && shown.questId === viewQuest?.id ? shown.stage : (viewQuest ? state.quests[viewQuest.id]?.stage ?? 0 : 0);
   const stage = viewQuest?.stages[stageIndex];
-  const answerText = useMemo(() => (shown ? shown.result.segments.map((s) => t(s.textKey)).join(" ") : ""), [shown, t]);
+  const tokenized = useMemo(
+    () => (shown ? shown.result.segments.map((seg) => ({ tokens: tokenize(t(seg.textKey)), invented: seg.hallucination })) : []),
+    [shown, t],
+  );
+  const totalTokens = tokenized.reduce((n, s) => n + s.tokens.length, 0);
 
+  // Ответ «живой»: Нейра сначала думает, потом печатает слово за словом с паузами на знаках препинания.
+  // Только setTimeout (не requestAnimationFrame): Safari и фоновые вкладки не должны «застревать» на середине.
   useEffect(() => {
     if (!shown) return;
-    if (!motion) return setRevealed(1);
-    setRevealed(0);
-    const started = performance.now();
-    const duration = Math.min(1600, 300 + answerText.length * 6);
-    let raf = 0;
-    const tick = () => {
-      const p = Math.min(1, (performance.now() - started) / duration);
-      setRevealed(p);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    // Safari и фоновые вкладки могут притормаживать requestAnimationFrame:
-    // таймер гарантирует, что ответ допечатается и интерфейс не зависнет.
-    const fallback = window.setTimeout(() => setRevealed(1), duration + 300);
+    if (!motion) {
+      setPhase("done");
+      setShownTokens(Number.MAX_SAFE_INTEGER);
+      return;
+    }
+    const all = tokenized.flatMap((s) => s.tokens);
+    const timers: number[] = [];
+    let cancelled = false;
+    setPhase("thinking");
+    setThinkStep(0);
+    setShownTokens(0);
+    const later = (ms: number, fn: () => void) => timers.push(window.setTimeout(() => !cancelled && fn(), ms));
+    later(650, () => setThinkStep(1));
+    later(1300, () => setThinkStep(2));
+    later(1950, () => {
+      setPhase("streaming");
+      let i = 0;
+      const step = () => {
+        i += 1;
+        setShownTokens(i);
+        if (i >= all.length) return setPhase("done");
+        const tok = all[i - 1] ?? "";
+        const pause = /[.!?…]\s*$/.test(tok) ? 260 : /[,:;—]\s*$/.test(tok) ? 120 : 0;
+        later(34 + Math.min(tok.length, 10) * 6 + pause, step);
+      };
+      step();
+    });
     return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(fallback);
+      cancelled = true;
+      timers.forEach((id) => window.clearTimeout(id));
     };
-  }, [shown, motion, answerText.length]);
+  }, [shown, motion, tokenized]);
+
+  const skip = () => {
+    if (phase === "done") return;
+    setPhase("done");
+    setShownTokens(totalTokens);
+  };
 
   if (!viewQuest || !stage) {
     return <div className="grid h-full place-items-center p-8 text-center text-muted">{t("ui.neira.noTask")}</div>;
@@ -65,7 +100,7 @@ export function PromptLab({
 
   const slots = stage.slots;
   const missing = stage.required.filter((s) => !selection[s]);
-  const done = revealed >= 1;
+  const done = phase === "done";
   const resultForThisStage = shown && shown.questId === viewQuest.id && shown.stage === stageIndex ? shown : null;
 
   // Пока ответ печатается или принятый результат ещё не закрыт «Дальше», повторная отправка запрещена:
@@ -85,7 +120,7 @@ export function PromptLab({
     const rej = events.find((e) => e.type === "rejected");
     if (rej && rej.type === "rejected") setError(t(rej.reasonKey));
     if (res && res.type === "promptResult") {
-      setShown({ questId: res.questId, stage: res.stage, result: res.result, pay: res.pay, finished: res.finished });
+      setShown({ questId: res.questId, stage: res.stage, result: res.result, pay: res.pay, finished: res.finished, sel: clean });
       setTab("answer");
     }
   };
@@ -226,10 +261,24 @@ export function PromptLab({
 
           {r && (
             <div className="mt-4" aria-live="polite">
-              <div className="whitespace-pre-line rounded-xl border border-line bg-bg/60 p-4 font-mono text-[15px] leading-relaxed">
-                {!done && <span className="sr-only">{t("ui.neira.typing")}</span>}
-                <Typed segments={r.segments.map((s) => ({ text: t(s.textKey), invented: s.hallucination }))} progress={revealed} showMarks={done} inventedLabel={t("ui.neira.invented")} />
-              </div>
+              {phase === "thinking" ? (
+                <Thinking step={thinkStep} t={t} cards={Object.values(resultForThisStage?.sel ?? {}).filter(Boolean).map((id) => {
+                  const card = content.cards.find((c) => c.id === id);
+                  return card ? t(card.textKey) : String(id);
+                })} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={skip}
+                  disabled={done}
+                  aria-label={done ? undefined : t("ui.neira.skip")}
+                  className={`neira-answer relative block w-full whitespace-pre-line rounded-xl border p-4 text-left font-mono text-[15px] leading-relaxed transition-colors ${done ? "cursor-text border-line bg-bg/60" : "cursor-pointer border-ai/40 bg-bg/70"}`}
+                >
+                  {!done && <span className="sr-only">{t("ui.neira.typing")}</span>}
+                  <Typed segments={tokenized} count={shownTokens} streaming={phase === "streaming"} showMarks={done} inventedLabel={t("ui.neira.invented")} />
+                </button>
+              )}
+              {phase === "streaming" && <p className="mt-2 text-xs text-muted">{t("ui.neira.skipHint")}</p>}
               {done && (
                 <div className="anim-rise mt-3 space-y-3">
                   <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -261,39 +310,71 @@ export function PromptLab({
   );
 }
 
+function Thinking({ step, cards, t }: { step: number; cards: string[]; t: GameApi["t"] }) {
+  return (
+    <div className="neira-think rounded-xl border border-ai/40 bg-bg/70 p-4" role="status">
+      <div className="flex items-center gap-3">
+        <span className="neira-orb" aria-hidden />
+        <div className="min-w-0">
+          <p className="font-semibold text-ink">
+            {t(THINK_STEPS[step] ?? THINK_STEPS[0])}
+            <span className="neira-dots" aria-hidden><i>.</i><i>.</i><i>.</i></span>
+          </p>
+          <p className="text-xs text-muted">{t("ui.neira.thinking")}</p>
+        </div>
+      </div>
+      {cards.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t("ui.neira.considering")}>
+          {cards.map((c, i) => (
+            <li key={c} className="neira-chip rounded-md border border-ai/30 bg-ai/10 px-2 py-0.5 text-xs text-ai" style={{ animationDelay: `${i * 160}ms` }}>
+              {c}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="neira-scan mt-3 h-1 overflow-hidden rounded bg-surface-2" aria-hidden><span /></div>
+    </div>
+  );
+}
+
 function Typed({
   segments,
-  progress,
+  count,
+  streaming,
   showMarks,
   inventedLabel,
 }: {
-  segments: { text: string; invented: boolean }[];
-  progress: number;
+  segments: { tokens: string[]; invented: boolean }[];
+  count: number;
+  streaming: boolean;
   showMarks: boolean;
   inventedLabel: string;
 }) {
-  const total = segments.reduce((n, s) => n + s.text.length + 1, 0);
-  let budget = Math.floor(total * progress);
+  let budget = count;
+  const out = segments.map((s, i) => {
+    const take = Math.max(0, Math.min(s.tokens.length, budget));
+    budget -= s.tokens.length;
+    if (take === 0) return null;
+    const visible = s.tokens.slice(0, take).join("").trimEnd();
+    const isLast = take === s.tokens.length && i < segments.length - 1;
+    return (
+      <span key={i}>
+        {s.invented && showMarks ? (
+          <mark className="anim-rise rounded bg-gold/20 px-0.5 text-gold underline decoration-gold decoration-wavy underline-offset-4" title={inventedLabel}>
+            {visible}
+            <span className="ml-1 align-middle font-sans text-[11px] uppercase tracking-wide">({inventedLabel})</span>
+          </mark>
+        ) : (
+          <span className={streaming ? "neira-token" : undefined}>{visible}</span>
+        )}
+        {isLast ? " " : ""}
+      </span>
+    );
+  });
   return (
     <>
-      {segments.map((s, i) => {
-        const visible = s.text.slice(0, Math.max(0, budget));
-        budget -= s.text.length + 1;
-        if (!visible) return null;
-        return (
-          <span key={i}>
-            {s.invented && showMarks ? (
-              <mark className="rounded bg-gold/20 px-0.5 text-gold underline decoration-gold decoration-wavy underline-offset-4" title={inventedLabel}>
-                {visible}
-                <span className="ml-1 align-middle font-sans text-[11px] uppercase tracking-wide">({inventedLabel})</span>
-              </mark>
-            ) : (
-              visible
-            )}
-            {i < segments.length - 1 ? " " : ""}
-          </span>
-        );
-      })}
+      {out}
+      {streaming && <span className="neira-cursor" aria-hidden />}
     </>
   );
 }
