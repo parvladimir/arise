@@ -50,7 +50,13 @@ export function PromptLab({
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // Safari и фоновые вкладки могут притормаживать requestAnimationFrame:
+    // таймер гарантирует, что ответ допечатается и интерфейс не зависнет.
+    const fallback = window.setTimeout(() => setRevealed(1), duration + 300);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(fallback);
+    };
   }, [shown, motion, answerText.length]);
 
   if (!viewQuest || !stage) {
@@ -140,7 +146,6 @@ export function PromptLab({
                           <button
                             key={c.id}
                             aria-pressed={on}
-                            disabled={Boolean(resultForThisStage && !done)}
                             onClick={() => setSelection((s) => ({ ...s, [slot]: on ? undefined : c.id }))}
                             className={`rounded-lg border px-3 py-1.5 text-left text-sm transition ${on ? "border-ai bg-ai/20 text-ink shadow-[0_0_0_1px_var(--color-ai)]" : "border-line bg-surface hover:border-ai/60"}`}
                           >
