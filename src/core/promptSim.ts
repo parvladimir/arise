@@ -28,7 +28,8 @@ export function runPrompt(
     if (!variant || variant.textKey === "") continue;
     segments.push({ id: seg.id, textKey: variant.textKey, hallucination: Boolean(variant.hallucination) });
   }
-  const length = segments.map((s) => t(s.textKey)).join(" ").length;
+  // Считаем символы, а не UTF-16: эмодзи — один знак.
+  const length = [...segments.map((s) => t(s.textKey)).join(" ")].length;
   const hasHallucination = segments.some((s) => s.hallucination);
 
   const criteria: CriterionResult[] = stage.criteria.map((c) => {

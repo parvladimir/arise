@@ -4,6 +4,7 @@ import { hasKey, makeTranslator } from "@/content/i18n";
 import { apply, currentGoal, newGameState, type Ctx } from "./engine";
 import { runPrompt } from "./promptSim";
 import { deserialize, serialize } from "./save";
+import { ru } from "@/content/locales/ru";
 import type { Action, GameState, PromptStage, QuestDef } from "./types";
 
 const ctx: Ctx = { content, t: makeTranslator("ru", "they") };
@@ -206,6 +207,14 @@ describe("сохранение", () => {
     expect(deserialize(JSON.stringify({ schemaVersion: 999 }))).toBeNull();
     expect(deserialize(JSON.stringify({ schemaVersion: 1, money: "много" }))).toBeNull();
   });
+
+  it("неполное сохранение дополняется значениями по умолчанию", () => {
+    const loaded = deserialize(JSON.stringify({ schemaVersion: 1, money: 1, xp: 0, profile: { pronoun: "x" }, messages: [], ledger: [], quests: {} }));
+    expect(loaded).not.toBeNull();
+    expect(loaded!.unread).toEqual([]);
+    expect(loaded!.skills).toEqual({ aiComm: 0, aiLiteracy: 0 });
+    expect(loaded!.profile).toEqual({ name: "Саша", avatar: "a1", pronoun: "they" });
+  });
 });
 
 describe("контент", () => {
@@ -254,5 +263,27 @@ describe("контент", () => {
         expect(best, `${q.id}: ${st.taskKey}`).toBe(1);
       }
     }
+  });
+});
+
+describe("тексты и цели", () => {
+  it("каждая форма {g:…} содержит ровно три варианта", () => {
+    for (const [key, text] of Object.entries(ru)) {
+      for (const m of text.matchAll(/\{g:([^}]*)\}/g)) expect(m[1]!.split("|"), key).toHaveLength(3);
+    }
+  });
+
+  it("взятый заказ Сергея меняет цель с «возьми» на «напиши»", () => {
+    const q5 = content.quests.find((q) => q.id === "q5")!;
+    const state = newGameState(profile, ctx);
+    state.quests.q5 = { status: "available", stage: 0, attempts: 0, bestQuality: 0, selections: {} };
+    expect(currentGoal(state, { ...content, quests: [q5] }).textKey).toBe("q5.goal");
+    state.quests.q5.status = "active";
+    expect(currentGoal(state, { ...content, quests: [q5] }).textKey).toBe("q5.goalActive");
+  });
+
+  it("длина ответа считает эмодзи за один знак", () => {
+    const st: PromptStage = { taskKey: "x", slots: [], cards: [], required: [], pass: 0, criteria: [], segments: [{ id: "e", variants: [{ textKey: "q3.seg.emoji" }] }] };
+    expect(runPrompt(st, {}, ctx.t).length).toBe(8);
   });
 });

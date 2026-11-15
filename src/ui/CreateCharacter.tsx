@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { AvatarId, Pronoun } from "@/core/types";
-import { AVATARS, Avatar } from "./Avatar";
+import { Avatar, avatarsFor } from "./Avatar";
 import type { GameApi } from "./useGame";
 
 export function CreateCharacter({ game }: { game: GameApi }) {
@@ -11,9 +11,16 @@ export function CreateCharacter({ game }: { game: GameApi }) {
   const [avatar, setAvatar] = useState<AvatarId>("a1");
   const [pronoun, setPronoun] = useState<Pronoun>("they");
   const trimmed = name.trim().slice(0, 24);
+  const looks = avatarsFor(pronoun);
+
+  const choosePronoun = (p: Pronoun) => {
+    setPronoun(p);
+    const next = avatarsFor(p);
+    if (!next.includes(avatar)) setAvatar(next[0] ?? "a1");
+  };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
+    <main className="flex min-h-dvh items-start justify-center px-4 py-10 sm:pt-[12vh]">
       <form
         className="anim-rise w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-2xl"
         onSubmit={(e) => {
@@ -35,23 +42,6 @@ export function CreateCharacter({ game }: { game: GameApi }) {
         />
 
         <fieldset className="mt-6">
-          <legend className="text-sm text-muted">{t("ui.create.look")}</legend>
-          <div className="mt-2 grid grid-cols-6 gap-2">
-            {AVATARS.map((id) => (
-              <button
-                type="button"
-                key={id}
-                aria-pressed={avatar === id}
-                onClick={() => setAvatar(id)}
-                className={`rounded-full p-0.5 transition ${avatar === id ? "ring-2 ring-ai" : "opacity-70 hover:opacity-100"}`}
-              >
-                <Avatar id={id} size={44} label={`Вариант ${id.slice(1)}`} />
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="mt-6">
           <legend className="text-sm text-muted">{t("ui.create.pronoun")}</legend>
           <div className="mt-2 flex gap-2">
             {(["he", "she", "they"] as Pronoun[]).map((p) => (
@@ -59,10 +49,27 @@ export function CreateCharacter({ game }: { game: GameApi }) {
                 type="button"
                 key={p}
                 aria-pressed={pronoun === p}
-                onClick={() => setPronoun(p)}
+                onClick={() => choosePronoun(p)}
                 className={`flex-1 rounded-lg border px-3 py-2 transition ${pronoun === p ? "border-ai bg-ai/15 text-ink" : "border-line text-muted hover:text-ink"}`}
               >
                 {t(`ui.pronoun.${p}`)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="mt-6">
+          <legend className="text-sm text-muted">{t("ui.create.look")}</legend>
+          <div className="mt-2 grid grid-cols-6 gap-2">
+            {looks.map((id) => (
+              <button
+                type="button"
+                key={id}
+                aria-pressed={avatar === id}
+                onClick={() => setAvatar(id)}
+                className={`rounded-full p-0.5 transition ${avatar === id ? "ring-2 ring-ai" : "opacity-70 hover:opacity-100"}`}
+              >
+                <Avatar id={id} size={44} label={`Вариант ${looks.indexOf(id) + 1}`} />
               </button>
             ))}
           </div>

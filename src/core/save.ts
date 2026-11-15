@@ -1,8 +1,10 @@
 // Сохранение: версия схемы + миграции. Хранилище подключается адаптером,
 // чтобы позже заменить браузер на Supabase без правок ядра.
 
-import { SCHEMA_VERSION } from "./engine";
-import type { GameState } from "./types";
+import { DAY_START_HOUR, SCHEMA_VERSION } from "./engine";
+import type { AvatarId, GameState, Pronoun } from "./types";
+
+const AVATAR_IDS: AvatarId[] = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12"];
 
 export interface SaveStorage {
   read(): string | null;
@@ -38,7 +40,39 @@ export function deserialize(data: string): GameState | null {
     raw.schemaVersion = version;
   }
   if (!isGameState(raw)) return null;
-  return raw;
+  return withDefaults(raw);
+}
+
+const PRONOUNS: Pronoun[] = ["he", "she", "they"];
+const isStrArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+
+/**
+ * Дополняет сохранение недостающими полями: обрезанный или старый сейв
+ * не должен ронять игру на «Продолжить».
+ */
+function withDefaults(raw: GameState & Record<string, unknown>): GameState {
+  const p = (raw.profile ?? {}) as Partial<GameState["profile"]>;
+  const skills = (typeof raw.skills === "object" && raw.skills !== null ? raw.skills : {}) as Partial<GameState["skills"]>;
+  const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+  return {
+    ...raw,
+    profile: {
+      name: typeof p.name === "string" && p.name.trim() ? p.name.slice(0, 24) : "Саша",
+      avatar: typeof p.avatar === "string" && AVATAR_IDS.includes(p.avatar as AvatarId) ? (p.avatar as AvatarId) : "a1",
+      pronoun: PRONOUNS.includes(p.pronoun as Pronoun) ? (p.pronoun as Pronoun) : "they",
+    },
+    rep: num(raw.rep, 0),
+    day: num(raw.day, 1),
+    hour: num(raw.hour, DAY_START_HOUR),
+    skills: { aiComm: num(skills.aiComm, 0), aiLiteracy: num(skills.aiLiteracy, 0) },
+    inventory: isStrArray(raw.inventory) ? raw.inventory : [],
+    apps: isStrArray(raw.apps) ? (raw.apps as GameState["apps"]) : [],
+    slots: isStrArray(raw.slots) ? (raw.slots as GameState["slots"]) : ["goal", "recipient", "tone"],
+    unread: isStrArray(raw.unread) ? (raw.unread as GameState["unread"]) : [],
+    achievements: isStrArray(raw.achievements) ? raw.achievements : [],
+    toasts: [],
+    nextMessageId: num(raw.nextMessageId, raw.messages.length + 1),
+  };
 }
 
 function isGameState(v: Record<string, unknown>): v is GameState & Record<string, unknown> {

@@ -62,7 +62,12 @@ export function PromptLab({
   const done = revealed >= 1;
   const resultForThisStage = shown && shown.questId === viewQuest.id && shown.stage === stageIndex ? shown : null;
 
+  // Пока ответ печатается или принятый результат ещё не закрыт «Дальше», повторная отправка запрещена:
+  // иначе двойной клик уходит в следующую стадию.
+  const locked = Boolean(shown && (!done || shown.result.passed));
+
   const submit = () => {
+    if (locked) return;
     setError(null);
     if (missing.length) {
       setError(t("ui.neira.required", { slots: missing.map((s) => t(`slot.${s}`)).join(", ") }));
@@ -170,7 +175,7 @@ export function PromptLab({
 
           {error && <p className="mt-3 text-sm text-bad" role="alert">{error}</p>}
           {(!resultForThisStage || !resultForThisStage.result.passed) && (
-            <button onClick={submit} className="mt-5 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/25 hover:brightness-110">
+            <button onClick={submit} disabled={locked} className="mt-5 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/25 enabled:hover:brightness-110 disabled:opacity-50">
               {t("ui.neira.send")}
             </button>
           )}

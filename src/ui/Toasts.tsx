@@ -38,7 +38,7 @@ export function Toasts({ game, state, hold = false }: { game: GameApi; state: Ga
 
   return (
     <>
-      <div className="pointer-events-none fixed right-4 top-20 z-50 flex flex-col items-end gap-2" aria-live="polite">
+      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-8" aria-live="polite">
         {live.map((x) => (
           <div key={x.key} className={`anim-rise rounded-xl border border-line bg-surface/95 px-4 py-2.5 text-sm font-semibold shadow-xl backdrop-blur ${tone(x)}`}>
             {text(x)}

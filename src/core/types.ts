@@ -10,7 +10,7 @@ export type NpcId = "dima" | "anna" | "sergey" | "neira" | "system";
 export type AppId = "neira" | "orders" | "shop" | "skills" | "journal";
 export type SlotId = "role" | "goal" | "recipient" | "audience" | "tone" | "data" | "limits" | "format" | "examples";
 export type SkillId = "aiComm" | "aiLiteracy";
-export type AvatarId = "a1" | "a2" | "a3" | "a4" | "a5" | "a6";
+export type AvatarId = "a1" | "a2" | "a3" | "a4" | "a5" | "a6" | "a7" | "a8" | "a9" | "a10" | "a11" | "a12";
 export type Pronoun = "he" | "she" | "they";
 
 // ---------- Контент ----------
@@ -94,6 +94,8 @@ export interface QuestBase {
     | { type: "message"; from: NpcId; textKey: TextKey }
     | { type: "board"; from: NpcId; textKey: TextKey };
   goalKey: TextKey;
+  /** Цель, пока задание уже взято (если отличается от goalKey). */
+  activeGoalKey?: TextKey;
   reward: Reward;
   /** Сообщения после выполнения: можно зависеть от качества. */
   onComplete?: { from: NpcId; textKey: TextKey; minQuality?: number; maxQuality?: number }[];

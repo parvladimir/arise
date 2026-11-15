@@ -46,10 +46,13 @@ export function Room({ state, highlight, open }: { state: GameState; highlight: 
         </radialGradient>
       </defs>
 
-      <rect width="800" height="500" fill="url(#wall)" />
+      {/* Стена и пол продолжаются за пределы viewBox: в высоком или широком окне
+          сцена вписывается по центру, и поля вокруг заполняются той же комнатой. */}
+      <rect x="-4000" y="-4000" width="8800" height="4001" fill="#151f38" />
+      <rect x="-4000" width="8800" height="500" fill="url(#wall)" />
       {warm && <ellipse cx="230" cy="300" rx="260" ry="200" fill="url(#lampGlow)" />}
-      <rect y="405" width="800" height="95" fill="#0b1120" />
-      <rect y="403" width="800" height="3" fill="#1c2747" />
+      <rect x="-4000" y="405" width="8800" height="4000" fill="#0b1120" />
+      <rect x="-4000" y="403" width="8800" height="3" fill="#1c2747" />
 
       {/* Окно с вечерним городом */}
       <g aria-hidden>
@@ -104,6 +107,8 @@ export function Room({ state, highlight, open }: { state: GameState; highlight: 
       {/* Ноутбук */}
       <g {...hotspot(() => open("laptop"))} aria-label="Ноутбук">
         <title>Ноутбук</title>
+        {/* Невидимая зона нажатия: на телефоне сцена сильно уменьшается. */}
+        <rect x="290" y="190" width="200" height="150" fill="transparent" />
         {highlight === "laptop" && <ellipse className="anim-glow" cx="400" cy="270" rx="120" ry="70" fill="url(#screenGlow)" />}
         <rect className="focus-ring opacity-0 transition" x="318" y="216" width="164" height="112" rx="10" fill="none" stroke="#4f8cff" strokeWidth="3" />
         <path d="M336 228h128a6 6 0 0 1 6 6v76H330v-76a6 6 0 0 1 6-6z" fill="#1b2235" stroke="#39445f" strokeWidth="3" />
@@ -134,8 +139,9 @@ export function Room({ state, highlight, open }: { state: GameState; highlight: 
       )}
 
       {/* Телефон */}
-      <g {...hotspot(() => open("phone"))} aria-label={unread ? `Телефон, новых сообщений: ${unread}` : "Телефон"}>
+      <g {...hotspot(() => open("phone"))} aria-label={unread ? `Телефон, непрочитанных чатов: ${unread}` : "Телефон"}>
         <title>Телефон</title>
+        <rect x="496" y="256" width="104" height="96" fill="transparent" />
         {highlight === "phone" && <circle className="anim-glow" cx="548" cy="308" r="34" fill="url(#screenGlow)" />}
         <rect className="focus-ring opacity-0 transition" x="526" y="290" width="46" height="34" rx="8" fill="none" stroke="#4f8cff" strokeWidth="3" />
         <rect x="534" y="300" width="30" height="16" rx="3" fill="#0d1322" stroke="#39445f" strokeWidth="2" transform="rotate(-8 549 308)" />

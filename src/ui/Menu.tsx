@@ -9,10 +9,16 @@ export function Menu({ game }: { game: GameApi }) {
 
   return (
     <main className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-10">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/3 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-ai/20 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
-      </div>
+      {/* Свечение — радиальными градиентами, без filter: blur: размытый слой под анимированным
+          блоком браузеры обрезают в тёмный прямоугольник вокруг текста. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 33%, rgb(79 140 255 / 0.22), transparent 340px), radial-gradient(circle at 100% 100%, rgb(245 181 68 / 0.10), transparent 260px)",
+        }}
+      />
       <div className="anim-rise relative w-full max-w-md text-center">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-ok">2026 · прототип</p>
         <h1 className="mt-3 text-5xl font-black tracking-tight sm:text-6xl">

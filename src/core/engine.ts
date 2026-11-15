@@ -245,7 +245,7 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
 export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string } {
   const order = content.quests;
   const active = order.find((q) => state.quests[q.id]?.status === "active");
-  if (active) return { textKey: active.goalKey, questId: active.id };
+  if (active) return { textKey: active.activeGoalKey ?? active.goalKey, questId: active.id };
   const available = order.find((q) => state.quests[q.id]?.status === "available");
   if (available) return { textKey: available.goalKey, questId: available.id };
   return { textKey: content.finalGoalKey };

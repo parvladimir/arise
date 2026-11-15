@@ -148,6 +148,7 @@ function Laptop({
                   disabled={!unlocked}
                   onClick={() => setApp(a)}
                   title={unlocked ? undefined : t("ui.laptop.locked")}
+                  aria-label={unlocked ? t(`app.${a}`) : t("ui.laptop.locked")}
                   className="group flex flex-col items-center gap-2 rounded-xl p-3 enabled:hover:bg-surface disabled:cursor-not-allowed"
                 >
                   <span className={`grid h-14 w-14 place-items-center rounded-2xl text-2xl ${unlocked ? (a === "neira" ? "bg-ai text-white shadow-lg shadow-ai/30" : "bg-surface-2 text-ink") : "border border-dashed border-line text-muted/50"}`}>

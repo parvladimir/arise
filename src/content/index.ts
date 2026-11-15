@@ -295,6 +295,7 @@ export const content: Content = {
       requires: ["q4"],
       offer: { type: "board", from: "sergey", textKey: "q5.offer" },
       goalKey: "q5.goal",
+      activeGoalKey: "q5.goalActive",
       client: "sergey",
       stages: [
         {
