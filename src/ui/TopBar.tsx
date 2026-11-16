@@ -76,7 +76,7 @@ export function TopBar({
               <button onClick={() => game.setScreen("menu")} className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2">
                 ← Главное меню
               </button>
-              <p className="px-2 pt-2 text-xs text-muted">{t("ui.prototypeNote")}</p>
+              <p className="px-2 pt-2 text-xs text-muted">{t("ui.prototypeNoteCloud")}</p>
             </div>
           )}
         </div>
