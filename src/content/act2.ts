@@ -23,7 +23,7 @@ export const act2Cards: PromptCard[] = [
 export const act2Items: ItemDef[] = [
   { id: "neiraPlus", nameKey: "item.neiraPlus.name", descKey: "item.neiraPlus.desc", price: 300, flags: ["selfCheck"], requiresQuest: "q12p" },
   { id: "laptopLight", nameKey: "item.laptopLight.name", descKey: "item.laptopLight.desc", price: 1200, flags: ["lightLaptop"], requiresQuest: "q15b" },
-  { id: "laptopGamer", nameKey: "item.laptopGamer.name", descKey: "item.laptopGamer.desc", price: 1200, flags: ["gpuLaptop"], requiresQuest: "q15b" },
+  { id: "laptopGamer", nameKey: "item.laptopGamer.name", descKey: "item.laptopGamer.desc", price: 1800, flags: ["gpuLaptop"], requiresQuest: "q15b" },
 ];
 
 export const act2Lessons: LessonDef[] = [
