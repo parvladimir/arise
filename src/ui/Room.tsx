@@ -213,9 +213,9 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         {stickers.map((st, i) => (
           <g key={st.key} transform={`rotate(${[-4, 3, -2][i]} ${98 + i * 42} 182)`} className="anim-rise">
             <rect x={78 + i * 42} y="166" width="40" height="30" rx="3" fill={st.bg} />
-            <foreignObject x={79 + i * 42} y="167" width="38" height="28">
-              <div className="room-sticker" style={{ color: st.fg }}>{st.text}</div>
-            </foreignObject>
+            {st.text.replace(/[«»]/g, "").split(" ").slice(0, 2).map((w, k, arr) => (
+              <text key={k} x={98 + i * 42} y={183 + (k - (arr.length - 1) / 2) * 8.5} textAnchor="middle" fontSize={w.length > 7 ? 6.2 : 7.2} fontWeight="700" fill={st.fg}>{w}</text>
+            ))}
           </g>
         ))}
       </g>
@@ -364,32 +364,27 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         ))}
       </g>
       {/* Уведомление прямо на телефоне: телефон «встаёт» на столе и показывает, кто и что написал */}
-      {hints.phone && <PhoneNotice notice={hints.phone} t={t} hour={state.hour} onClick={() => open("phone")} />}
+      {hints.phone && <PhoneNotice notice={hints.phone} onClick={() => open("phone")} />}
     </svg>
   );
 }
 
-/** Телефон стоит на столе, экран горит, на нём карточка уведомления: аватар, имя, текст. */
-function PhoneNotice({ notice, t, hour, onClick }: { notice: { npc: NpcId; kicker: string; text: string }; t: T; hour: number; onClick: () => void }) {
-  const name = t(`npc.${notice.npc}`);
+/** Телефон на столе приподнимается и светится: на экране аватар и строки сообщения. Текст — в HTML-карточке рядом. */
+function PhoneNotice({ notice, onClick }: { notice: { npc: NpcId }; onClick: () => void }) {
   return (
-    <g className="room-phone-up" onClick={onClick} style={{ cursor: "pointer" }} role="button" aria-label={`${notice.kicker}: ${name}`}>
-      <rect x="498" y="186" width="96" height="140" rx="18" fill="#8b3dff" opacity="0.35" filter="url(#blur6)" className="fx-breathe" />
-      <rect x="508" y="192" width="76" height="128" rx="11" fill="#0b0a1c" stroke="#6d5bd0" strokeWidth="2.5" />
-      <rect x="512" y="198" width="68" height="116" rx="7" fill="url(#phoneScreen)" />
-      <rect x="536" y="200.5" width="20" height="3" rx="1.5" fill="#05040b" />
-      <text x="546" y="217" textAnchor="middle" fontSize="11" fontWeight="300" fill="#fff" fontFamily="var(--font-mono)">{String(hour % 24).padStart(2, "0")}:00</text>
-      <foreignObject x="515" y="224" width="62" height="74">
-        <div className="room-notice">
-          <div className="room-notice-head">
-            <span className="room-notice-ava" style={{ background: AVATAR_COLOR[notice.npc] }}>{name.slice(0, 1)}</span>
-            <span className="room-notice-kicker">{notice.kicker}</span>
-          </div>
-          <div className="room-notice-name">{name}</div>
-          <div className="room-notice-text">{notice.text}</div>
-        </div>
-      </foreignObject>
-      <image href="/brand/emblem.webp" x="538" y="300" width="16" height="12" opacity="0.8" />
+    <g className="room-phone-up" onClick={onClick} style={{ cursor: "pointer" }} aria-hidden>
+      <rect x="526" y="262" width="44" height="62" rx="10" fill="#8b3dff" opacity="0.4" filter="url(#blur6)" className="fx-breathe" />
+      <g transform="rotate(-6 548 290)">
+        <rect x="533" y="266" width="30" height="50" rx="5" fill="#0b0a1c" stroke="#6d5bd0" strokeWidth="1.8" />
+        <rect x="535.5" y="270" width="25" height="42" rx="3" fill="url(#phoneScreen)" />
+        <rect x="537" y="275" width="22" height="15" rx="2.5" fill="#fff" opacity="0.92" />
+        <circle cx="541.5" cy="282.5" r="3" fill={AVATAR_COLOR[notice.npc]} />
+        <rect x="546" y="279" width="11" height="2" rx="1" fill="#7c3aed" />
+        <rect x="546" y="283" width="9" height="1.6" rx="0.8" fill="#9ca3af" />
+        <rect x="546" y="286" width="7" height="1.6" rx="0.8" fill="#9ca3af" />
+        <image href="/brand/emblem.webp" x="542" y="300" width="12" height="9" opacity="0.8" />
+      </g>
+      <circle cx="566" cy="266" r="7" fill="#f87171" className="fx-pulse" />
     </g>
   );
 }

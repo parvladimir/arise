@@ -12,6 +12,7 @@ import { LessonCard, lessonFor } from "./Learn";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room, type RoomHints } from "./Room";
+import { AVATAR_COLOR } from "./Phone";
 import { Toasts } from "./Toasts";
 import { MascotHead, TaktLogo } from "./Mascot";
 import { PushBanner } from "./Notify";
@@ -130,6 +131,22 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
             <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
               <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
             </div>
+            {roomHints.phone && (
+              <button
+                onClick={openPhone}
+                className="room-notice-card absolute inset-x-3 top-3 z-10 flex items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-2xl shadow-ai/40 backdrop-blur sm:inset-x-auto sm:right-4 sm:w-[300px] lg:bottom-6 lg:right-6 lg:top-auto"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-bg" style={{ background: AVATAR_COLOR[roomHints.phone.npc] }}>{t(`npc.${roomHints.phone.npc}`).slice(0, 1)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-2">
+                    <span className="truncate text-[11px] font-bold uppercase tracking-wide text-[#7c3aed]">📱 {roomHints.phone.kicker}</span>
+                    <span className="ml-auto shrink-0 text-[11px] text-[#6b6390]">{t("ui.push.now")}</span>
+                  </span>
+                  <span className="block truncate text-sm font-bold">{t(`npc.${roomHints.phone.npc}`)}</span>
+                  <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug">{roomHints.phone.text}</span>
+                </span>
+              </button>
+            )}
             {/* На телефоне под комнатой — цель и быстрые кнопки */}
             <div className="glass-card rounded-2xl p-4 lg:hidden">
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-ok">{t("ui.goal")}</p>
