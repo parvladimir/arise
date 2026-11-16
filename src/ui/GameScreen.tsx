@@ -15,7 +15,7 @@ import { Room } from "./Room";
 import { Toasts } from "./Toasts";
 import { MascotHead, TaktLogo } from "./Mascot";
 import { PushBanner } from "./Notify";
-import { DeskTicker, DeskWidgets } from "./Desk";
+import { DeskAlert, DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
 import type { GameApi } from "./useGame";
 
@@ -76,6 +76,11 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const narrow = useNarrow();
   const target = goalTarget(state);
   const highlight = target.view === "room" ? null : target.view;
+  // Что нового — крупно над ноутбуком и телефоном в комнате
+  const roomHints: { laptop?: string; phone?: string } = {};
+  if (state.unread.length > 0) roomHints.phone = t(state.unread.length > 1 ? "ui.hint.messages" : "ui.hint.message", { n: state.unread.length });
+  else if (target.view === "phone") roomHints.phone = t("ui.hint.reply");
+  if (target.view === "laptop") roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : "ui.hint.task");
 
   const go = (v: View, a?: AppId | null, c?: NpcId) => {
     setView(v);
@@ -115,7 +120,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
           <div className={`flex h-full flex-col gap-3 lg:block ${view === "laptop" ? "hidden lg:block" : ""}`}>
             <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
-              <Room t={t} compact={narrow} state={state} highlight={highlight} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
+              <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
             </div>
             {/* На телефоне под комнатой — цель и быстрые кнопки */}
             <div className="glass-card rounded-2xl p-4 lg:hidden">
@@ -218,6 +223,7 @@ function Laptop({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!openApp && (
           <div className="desk-wallpaper relative min-h-full p-5">
+            <DeskAlert game={game} state={state} onGoal={onGoal} openPhone={openPhone} />
             <div className="relative mb-6 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="font-mono text-xs uppercase tracking-[0.25em] text-ok/80">{t("ui.laptop.os")}</p>

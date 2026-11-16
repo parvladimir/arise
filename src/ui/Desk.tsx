@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { content } from "@/content";
 import { levelFromXp } from "@/core/economy";
 import { currentGoal } from "@/core/engine";
 import type { GameState } from "@/core/types";
-import { activeClassifyQuest, activePromptQuest } from "./nav";
+import { activeClassifyQuest, activePromptQuest, goalTarget } from "./nav";
 import type { GameApi } from "./useGame";
 import { TG_URL, useTaktNews } from "./useTaktNews";
 import { MascotHead } from "./Mascot";
@@ -86,10 +86,17 @@ export const NEWS_COUNT = 8;
 /** Бегущая строка: свежие посты канала ТАКТ (по клику открываются в Telegram), а без сети — новости Ривертона. */
 export function DeskTicker({ game }: { game: GameApi }) {
   const posts = useTaktNews();
+  // Постоянная скорость (~90 px/с) вместо фиксированного времени: длинные заголовки не ползут.
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dur, setDur] = useState(30);
   const live = posts.length > 0;
   const items = live
     ? posts.map((p) => ({ key: p.id, text: p.title, url: p.url }))
     : Array.from({ length: NEWS_COUNT }, (_, i) => ({ key: i, text: game.t(`news.${i + 1}`), url: null as string | null }));
+  useEffect(() => {
+    const w = trackRef.current?.scrollWidth ?? 0;
+    if (w > 0) setDur(Math.max(10, w / 2 / 90));
+  }, [items.length, live]);
   const line = items.map((x) => (
     <span key={x.key} className="mx-6 inline-flex items-center gap-2">
       <span className="text-ai" aria-hidden>◆</span>
@@ -106,7 +113,7 @@ export function DeskTicker({ game }: { game: GameApi }) {
         <span className="menu-live h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> {live ? game.t("ui.desk.newsTakt") : game.t("ui.desk.news")}
       </span>
       <div className="relative min-w-0 flex-1 overflow-hidden py-2">
-        <div className="desk-ticker-track whitespace-nowrap" aria-label={items.map((x) => x.text).join(". ")}>
+        <div ref={trackRef} className="desk-ticker-track whitespace-nowrap" style={{ animationDuration: `${dur}s` }} aria-label={items.map((x) => x.text).join(". ")}>
           <span>{line}</span>
           <span aria-hidden>{line}</span>
         </div>
@@ -119,3 +126,31 @@ export function DeskTicker({ game }: { game: GameApi }) {
 }
 
 
+
+/** Крупная плашка «Новое!» вверху рабочего стола: сообщение, заказ или задание — с кнопкой перехода. */
+export function DeskAlert({ game, state, onGoal, openPhone }: { game: GameApi; state: GameState; onGoal: () => void; openPhone: () => void }) {
+  const { t } = game;
+  const target = goalTarget(state);
+  const goal = currentGoal(state, content);
+  let text: string | null = null;
+  let action = onGoal;
+  if (state.unread.length > 0) {
+    const npc = state.unread[0]!;
+    text = state.unread.length > 1 ? t("ui.alert.messages", { n: state.unread.length }) : t("ui.alert.message", { name: t(`npc.${npc}`) });
+    action = openPhone;
+  } else if (goal.questId && target.view !== "room") {
+    text = t(goal.textKey);
+  }
+  if (!text) return null;
+  return (
+    <button onClick={action} className="desk-alert anim-rise relative mb-5 flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-white/20 p-3.5 text-left text-white shadow-xl shadow-ai/30">
+      <span className="desk-alert-shine pointer-events-none absolute inset-0" aria-hidden />
+      <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20 text-lg font-black" aria-hidden>!</span>
+      <span className="relative min-w-0 flex-1">
+        <span className="block font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-white/80">{t("ui.alert.kicker")}</span>
+        <span className="block truncate font-semibold">{text}</span>
+      </span>
+      <span className="relative shrink-0 rounded-lg bg-white px-3 py-1.5 text-sm font-bold text-[#5b21b6]">{t("ui.alert.open")} →</span>
+    </button>
+  );
+}

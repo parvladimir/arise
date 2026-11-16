@@ -301,7 +301,7 @@ body {
 @keyframes bar-fill { from { transform: scaleX(0); } }
 .desk-busy { animation: busy-pulse 1.6s ease-in-out infinite; }
 @keyframes busy-pulse { 50% { box-shadow: 0 0 0 6px rgb(45 212 191 / 0.25); } }
-.desk-ticker-track { display: inline-block; animation: ticker 60s linear infinite; }
+.desk-ticker-track { display: inline-block; animation: ticker 32s linear infinite; }
 .desk-ticker:hover .desk-ticker-track { animation-play-state: paused; }
 @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
@@ -333,3 +333,13 @@ body {
 /* Доска целей в комнате */
 .room-goal { font-size: 11px; line-height: 1.28; font-weight: 600; color: #e8edf7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .room-sticker { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 6.4px; line-height: 1.1; font-weight: 700; word-break: break-word; overflow: hidden; }
+.fx-bounce { animation: callout-bounce 1.4s ease-in-out infinite; transform-box: view-box; }
+@keyframes callout-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.room-callout { animation: chip-in 0.4s ease-out both; }
+[data-motion="off"] .fx-bounce { animation: none; }
+.desk-alert { background: linear-gradient(110deg, #7c3aed, #4f46e5 50%, #0891b2); animation: chip-in 0.4s ease-out both, alert-glow 2s ease-in-out infinite; }
+@keyframes alert-glow { 50% { box-shadow: 0 0 0 4px rgb(139 61 255 / 0.35), 0 10px 40px -8px rgb(0 212 255 / 0.6); } }
+.desk-alert-shine { background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.25) 50%, transparent 70%); transform: translateX(-100%); animation: cta-shine 2.8s ease-in-out infinite; }
+.app-badge { animation: badge-pop 0.4s ease-out both, badge-ping 1.6s ease-out 0.4s infinite; }
+@keyframes badge-ping { 0% { box-shadow: 0 0 0 2px #0d0a22, 0 0 0 2px rgb(248 113 113 / 0.8); } 100% { box-shadow: 0 0 0 2px #0d0a22, 0 0 0 10px rgb(248 113 113 / 0); } }
+[data-motion="off"] .desk-alert, [data-motion="off"] .desk-alert-shine, [data-motion="off"] .app-badge { animation: none; }

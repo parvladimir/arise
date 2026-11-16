@@ -57,7 +57,7 @@ function Ticker({ text }: { text: string }) {
         <rect x="244" y="130" width="252" height="26" />
       </clipPath>
       <g clipPath="url(#tickerClip)">
-        <g className="fx-ticker" style={{ ["--ticker-w" as string]: `${width + gap}px`, ["--ticker-s" as string]: `${Math.max(12, (width + gap) / 38)}s` }}>
+        <g className="fx-ticker" style={{ ["--ticker-w" as string]: `${width + gap}px`, ["--ticker-s" as string]: `${Math.max(8, (width + gap) / 75)}s` }}>
           <text ref={ref} x="270" y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
             {text}
           </text>
@@ -76,7 +76,7 @@ function Ticker({ text }: { text: string }) {
   );
 }
 
-export function Room({ state, highlight, open, t, compact = false }: { state: GameState; highlight: View | null; open: (v: View) => void; t: T; compact?: boolean }) {
+export function Room({ state, highlight, open, t, compact = false, hints = {} }: { state: GameState; highlight: View | null; open: (v: View) => void; t: T; compact?: boolean; hints?: { laptop?: string; phone?: string } }) {
   const has = (id: string) => state.inventory.includes(id);
   const unread = state.unread.length;
   const cafeDone = state.quests.q3?.status === "done";
@@ -110,6 +110,10 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
           <stop offset="0" stopColor="#00d4ff" />
           <stop offset="0.5" stopColor="#8b3dff" />
           <stop offset="1" stopColor="#00d4ff" />
+        </linearGradient>
+        <linearGradient id="calloutFill" x1="0" x2="1">
+          <stop offset="0" stopColor="#8b3dff" />
+          <stop offset="1" stopColor="#00b4e6" />
         </linearGradient>
         <linearGradient id="taktText" x1="0" x2="1">
           <stop offset="0" stopColor="#b18aff" />
@@ -342,6 +346,25 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
           <circle key={x} cx={x} cy={400} r={i % 2 ? 1.2 : 1.8} fill={i % 3 ? "#8b3dff" : "#2dd4bf"} className="fx-mote" style={{ animationDelay: `${i * 1.7}s`, animationDuration: `${9 + (i % 3) * 3}s` }} />
         ))}
       </g>
+      {/* Метки «что нового»: над ноутбуком и телефоном, кликаются как сами предметы */}
+      {hints.laptop && <Callout x={330} y={196} text={hints.laptop} onClick={() => open("laptop")} />}
+      {hints.phone && <Callout x={566} y={240} text={hints.phone} onClick={() => open("phone")} />}
     </svg>
+  );
+}
+
+/** Яркая плашка-подсказка с хвостиком вниз: «Новый заказ», «Новое сообщение». */
+function Callout({ x, y, text, onClick }: { x: number; y: number; text: string; onClick: () => void }) {
+  const w = Math.round(text.length * 6.3 + 26);
+  return (
+    <g className="room-callout" onClick={onClick} style={{ cursor: "pointer" }} aria-hidden>
+      <g className="fx-bounce">
+        <rect x={x - w / 2} y={y - 24} width={w} height="22" rx="11" fill="#8b3dff" opacity="0.45" filter="url(#blur6)" />
+        <rect x={x - w / 2} y={y - 24} width={w} height="22" rx="11" fill="url(#calloutFill)" stroke="#fff" strokeOpacity="0.5" />
+        <path d={`M${x - 6} ${y - 2.5}l6 7 6-7z`} fill="#4f7dff" />
+        <circle cx={x - w / 2 + 11} cy={y - 13} r="3" fill="#fff" className="fx-pulse" />
+        <text x={x + 6} y={y - 9} textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">{text}</text>
+      </g>
+    </g>
   );
 }

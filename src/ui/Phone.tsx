@@ -69,6 +69,9 @@ export function Phone({
           </button>
         )}
         <h2 className="font-semibold">{open ? t(`npc.${open}`) : t("ui.phone.title")}</h2>
+        {!open && state.unread.length > 0 && (
+          <span className="app-badge rounded-full bg-bad px-2 py-0.5 text-xs font-bold text-white">{t("ui.phone.unread", { n: state.unread.length })}</span>
+        )}
         {!open && (
           <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
             <TaktLogo className="h-5" /> ТАКТ
