@@ -70,8 +70,8 @@ function Ticker({ text }: { text: string }) {
       {/* Края строки плавно гаснут, а не обрезаются посреди буквы */}
       <linearGradient id="tickerFadeL" x1="0" x2="1"><stop offset="0" stopColor="#050914" /><stop offset="1" stopColor="#050914" stopOpacity="0" /></linearGradient>
       <linearGradient id="tickerFadeR" x1="1" x2="0"><stop offset="0" stopColor="#050914" /><stop offset="1" stopColor="#050914" stopOpacity="0" /></linearGradient>
-      <rect x="244" y="130" width="22" height="26" fill="url(#tickerFadeL)" />
-      <rect x="474" y="130" width="22" height="26" fill="url(#tickerFadeR)" />
+      <rect x="244" y="130" width="40" height="26" fill="url(#tickerFadeL)" />
+      <rect x="456" y="130" width="40" height="26" fill="url(#tickerFadeR)" />
       <circle cx="244" cy="136" r="2" fill="#f87171" className="fx-blink" />
     </g>
   );
@@ -101,7 +101,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
   ].filter((x) => x.show).slice(-3);
 
   return (
-    <svg viewBox={compact ? "40 16 720 540" : "0 0 800 500"} preserveAspectRatio={compact ? "xMidYMid slice" : "xMidYMid meet"} className="room h-full w-full overflow-visible" role="group" aria-label={t("ui.room")}>
+    <svg viewBox={compact ? "40 16 720 540" : "50 22 700 430"} preserveAspectRatio={compact ? "xMidYMid slice" : "xMidYMid meet"} className="room h-full w-full overflow-visible" role="group" aria-label={t("ui.room")}>
       <defs>
         <linearGradient id="wall" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="0" y2="405">
           <stop offset="0" stopColor="#0d1430" />
@@ -206,7 +206,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <text x="140" y="90" textAnchor="middle" fontSize="10" fill="#5eead4" letterSpacing="2" fontFamily="var(--font-mono)">{t("room.board")}</text>
         <line x1="78" y1="98" x2="202" y2="98" stroke="#2dd4bf" strokeOpacity="0.3" />
         {/* Текущая цель — та же, что в верхней панели */}
-        <foreignObject x="72" y="102" width="136" height="58">
+        <foreignObject x="72" y="101" width="136" height="62">
           <div className="room-goal">{goal}</div>
         </foreignObject>
         <text x="202" y="90" textAnchor="end" fontSize="7.5" fill="#94a3b8" fontFamily="var(--font-mono)">✓ {doneCount}</text>

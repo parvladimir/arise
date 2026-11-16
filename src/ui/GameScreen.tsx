@@ -134,7 +134,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
             {roomHints.phone && (
               <button
                 onClick={openPhone}
-                className="room-notice-card absolute inset-x-3 top-3 z-10 flex items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-2xl shadow-ai/40 backdrop-blur sm:inset-x-auto sm:right-4 sm:w-[300px] lg:bottom-6 lg:right-6 lg:top-auto"
+                className="room-notice-card z-10 flex shrink-0 items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-2xl shadow-ai/40 backdrop-blur lg:absolute lg:bottom-6 lg:right-6 lg:w-[300px]"
               >
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-bg" style={{ background: AVATAR_COLOR[roomHints.phone.npc] }}>{t(`npc.${roomHints.phone.npc}`).slice(0, 1)}</span>
                 <span className="min-w-0 flex-1">

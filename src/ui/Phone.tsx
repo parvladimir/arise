@@ -100,7 +100,7 @@ export function Phone({
             );
           })()}
           {npcs.length === 0 && <li className="p-4 text-sm text-muted">{t("ui.phone.empty")}</li>}
-          {npcs.map((npc) => {
+          {npcs.filter((npc) => npc !== state.unread[0]).map((npc) => {
             const last = [...state.messages].reverse().find((m) => m.npc === npc)!;
             const unread = state.unread.includes(npc);
             return (

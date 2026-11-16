@@ -331,7 +331,7 @@ body {
 [data-motion="off"] .mascot-svg-eye { animation: none; }
 
 /* Доска целей в комнате */
-.room-goal { font-size: 11px; line-height: 1.28; font-weight: 600; color: #e8edf7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.room-goal { font-size: 12.5px; line-height: 1.22; font-weight: 600; color: #e8edf7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .room-sticker { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 6.4px; line-height: 1.1; font-weight: 700; word-break: break-word; overflow: hidden; }
 .fx-bounce { animation: callout-bounce 1.4s ease-in-out infinite; transform-box: view-box; }
 @keyframes callout-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
