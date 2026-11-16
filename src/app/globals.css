@@ -40,12 +40,22 @@ body {
 .anim-rise { animation: rise 0.35s ease-out both; }
 .anim-glow { animation: glow 2.2s ease-in-out infinite; }
 
+/* Карточка награды: выезжает сверху, строки появляются по очереди, полоска показывает, сколько осталось. */
+@keyframes toast-in { from { opacity: 0; transform: translateY(-14px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes toast-row { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+@keyframes toast-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.toast-card { animation: toast-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.toast-row { animation: toast-row 0.35s ease-out both; }
+.toast-timer { transform-origin: left; animation: toast-timer linear both; }
+
 [data-motion="off"] .anim-rise,
+[data-motion="off"] .toast-card,
+[data-motion="off"] .toast-row,
 [data-motion="off"] .anim-glow {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .anim-rise, .anim-glow { animation: none; }
+  .anim-rise, .anim-glow, .toast-card, .toast-row { animation: none; }
 }
 
 /* ───────── ТАКТ ИИ: «думает» и печатает ───────── */

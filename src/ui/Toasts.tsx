@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import { content } from "@/content";
 import type { GameState, Toast } from "@/core/types";
 import type { GameApi } from "./useGame";
-import { Mascot } from "./Mascot";
+import { Mascot, MascotHead } from "./Mascot";
 
-type Live = Toast & { key: number };
+type Batch = { key: number; items: Toast[]; ms: number };
 let counter = 0;
 
 export function Toasts({ game, state, hold = false }: { game: GameApi; state: GameState; hold?: boolean }) {
   const { t, dispatch } = game;
-  const [live, setLive] = useState<Live[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [milestone, setMilestone] = useState<string | null>(null);
+  const close = (key: number) => setBatches((b) => b.filter((x) => x.key !== key));
 
   useEffect(() => {
     if (state.toasts.length === 0) return;
@@ -20,31 +21,17 @@ export function Toasts({ game, state, hold = false }: { game: GameApi; state: Ga
     dispatch({ type: "clearToasts" });
     const m = incoming.find((x) => x.kind === "milestone");
     if (m && m.kind === "milestone") setMilestone(m.textKey);
-    const items = incoming.filter((x) => x.kind !== "milestone").map((x) => ({ ...x, key: ++counter }));
-    setLive((l) => [...l, ...items]);
-    for (const it of items) setTimeout(() => setLive((l) => l.filter((x) => x.key !== it.key)), 3200);
+    const items = incoming.filter((x) => x.kind !== "milestone");
+    if (items.length === 0) return;
+    const batch = { key: ++counter, items, ms: Math.min(7000, 3500 + items.length * 700) };
+    setBatches((b) => [...b.slice(-1), batch]);
+    setTimeout(() => close(batch.key), batch.ms);
   }, [state.toasts, dispatch]);
-
-  const text = (x: Toast) => {
-    switch (x.kind) {
-      case "money": return t("ui.toast.money", { n: x.amount });
-      case "xp": return t("ui.toast.xp", { n: x.amount });
-      case "achievement": return t("ui.toast.achievement", { name: t(`ach.${x.id}`) });
-      case "skill": return t("ui.toast.skill", { name: t(content.skills.find((s) => s.id === x.skill)?.nameKey ?? x.skill), level: x.level });
-      case "unlock": return t("ui.toast.unlock", { name: t(`app.${x.app}`) });
-      default: return "";
-    }
-  };
-  const tone = (x: Toast) => (x.kind === "money" ? "text-gold" : x.kind === "xp" ? "text-ai" : x.kind === "achievement" ? "text-gold" : "text-ok");
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-8" aria-live="polite">
-        {live.map((x) => (
-          <div key={x.key} className={`anim-rise rounded-xl border border-line bg-surface/95 px-4 py-2.5 text-sm font-semibold shadow-xl backdrop-blur ${tone(x)}`}>
-            {text(x)}
-          </div>
-        ))}
+      <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex flex-col items-center gap-3 px-3 sm:inset-x-auto sm:right-4 sm:top-20 sm:items-end" aria-live="polite">
+        {batches.map((b) => <RewardCard key={b.key} batch={b} t={t} onClose={() => close(b.key)} />)}
       </div>
       {milestone === "milestone.actEnd" && !hold && <ActEnd game={game} state={state} onClose={() => setMilestone(null)} />}
       {milestone && milestone !== "milestone.actEnd" && !hold && (
@@ -59,6 +46,64 @@ export function Toasts({ game, state, hold = false }: { game: GameApi; state: Ga
         </div>
       )}
     </>
+  );
+}
+
+type T = GameApi["t"];
+
+/** Карточка награды: кредиты и опыт крупно сверху, достижения и открытия — строками ниже. */
+function RewardCard({ batch, t, onClose }: { batch: Batch; t: T; onClose: () => void }) {
+  const money = batch.items.reduce((n, x) => n + (x.kind === "money" ? x.amount : 0), 0);
+  const xp = batch.items.reduce((n, x) => n + (x.kind === "xp" ? x.amount : 0), 0);
+  const rows = batch.items.flatMap((x) => {
+    switch (x.kind) {
+      case "achievement": return [{ icon: "★", tone: "text-gold border-gold/40 bg-gold/10", label: t("ui.toast.achLabel"), value: t(`ach.${x.id}`) }];
+      case "skill": return [{ icon: "▲", tone: "text-ai border-ai/40 bg-ai/10", label: t("ui.toast.skillLabel"), value: t("ui.toast.skillValue", { name: t(content.skills.find((s) => s.id === x.skill)?.nameKey ?? x.skill), level: x.level }) }];
+      default: return [];
+    }
+  });
+  const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
+  if (apps.length) rows.push({ icon: "▣", tone: "text-ok border-ok/40 bg-ok/10", label: t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel"), value: apps.join(" · ") });
+  return (
+    <div role="status" className="toast-card pointer-events-auto relative w-full max-w-sm sm:w-80 overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
+      <div className="flex items-center gap-2 px-4 pt-3">
+        <MascotHead mood="happy" className="h-7 w-7" />
+        <p className="flex-1 font-mono text-[11px] uppercase tracking-[0.25em] text-muted">{t("ui.toast.title")}</p>
+        <button onClick={onClose} aria-label={t("ui.toast.close")} className="-mr-1 grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-line/60 hover:text-ink">✕</button>
+      </div>
+      {(money > 0 || xp > 0) && (
+        <div className="flex gap-2 px-4 pt-2">
+          {money > 0 && (
+            <div className="toast-row flex-1 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2" style={{ animationDelay: "80ms" }}>
+              <p className="text-[11px] text-muted">{t("ui.toast.moneyLabel")}</p>
+              <p className="font-mono text-xl font-bold text-gold">{t("ui.toast.money", { n: money })}</p>
+            </div>
+          )}
+          {xp > 0 && (
+            <div className="toast-row flex-1 rounded-xl border border-ai/30 bg-ai/10 px-3 py-2" style={{ animationDelay: "160ms" }}>
+              <p className="text-[11px] text-muted">{t("ui.toast.xpLabel")}</p>
+              <p className="font-mono text-xl font-bold text-ai">{t("ui.toast.xp", { n: xp })}</p>
+            </div>
+          )}
+        </div>
+      )}
+      {rows.length > 0 && (
+        <ul className="space-y-1.5 px-4 pt-2">
+          {rows.map((r, i) => (
+            <li key={i} className="toast-row flex items-center gap-3" style={{ animationDelay: `${240 + i * 90}ms` }}>
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-sm ${r.tone}`} aria-hidden>{r.icon}</span>
+              <span className="min-w-0">
+                <span className="block text-[11px] text-muted">{r.label}</span>
+                <span className="block text-sm font-semibold leading-snug">{r.value}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-3 h-1 bg-line/50">
+        <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
+      </div>
+    </div>
   );
 }
 
