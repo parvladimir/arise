@@ -16,7 +16,7 @@ echo "▸ 2/4 Копирую код на $SERVER"
 ssh -o ConnectTimeout=15 "$SERVER" "mkdir -p $REMOTE /opt/caddy-sites"
 rsync -az --delete \
   --exclude node_modules --exclude .next --exclude .git --exclude '*.tsbuildinfo' \
-  --exclude .dev.log --exclude '.env*' --exclude coverage --exclude test-results \
+  --exclude .dev.log --exclude /data --exclude '.env*' --exclude coverage --exclude test-results \
   ./ "$SERVER:$REMOTE/"
 
 echo "▸ 3/4 Собираю и запускаю (сборка идёт с пониженным приоритетом, чтобы не мешать ТАКТ)"

@@ -9,8 +9,39 @@ import type { Action, GameEvent, GameState } from "@/core/types";
 
 export type Screen = "menu" | "create" | "game";
 
-export function useGame() {
-  const storage = useMemo(() => browserStorage(), []);
+export interface Account {
+  id: number;
+  email: string;
+}
+
+/** Прогресс в базе: последнюю версию сохранения отправляем на сервер с небольшой задержкой. */
+function remoteSaver() {
+  let timer: number | undefined;
+  let pending: string | null = null;
+  const flush = (keepalive = false) => {
+    if (pending === null) return;
+    const body = pending;
+    pending = null;
+    void fetch("/api/save", { method: "PUT", headers: { "Content-Type": "application/json" }, body, keepalive }).catch(() => {
+      // нет сети — сохраним при следующем ходе
+      pending ??= body;
+    });
+  };
+  return {
+    push(data: string) {
+      pending = data;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => flush(), 1200);
+    },
+    flush,
+  };
+}
+
+export function useGame(account: Account | null) {
+  // У каждого аккаунта своя копия сохранения в браузере; главная копия — в базе на сервере.
+  const storage = useMemo(() => browserStorage(account ? `ai-rise.save.u${account.id}` : "ai-rise.save"), [account]);
+  const remote = useMemo(() => (account ? remoteSaver() : null), [account]);
+  const [synced, setSynced] = useState(false);
   const [state, setState] = useState<GameState | null>(null);
   const [hasSave, setHasSave] = useState(false);
   const [screen, setScreen] = useState<Screen>("menu");
@@ -22,9 +53,42 @@ export function useGame() {
   const ctx: Ctx = useMemo(() => ({ content, t }), [t]);
 
   useEffect(() => {
-    const raw = storage.read();
-    setHasSave(Boolean(raw && deserialize(raw)));
-  }, [storage]);
+    let cancelled = false;
+    setSynced(false);
+    const finish = () => {
+      if (cancelled) return;
+      const raw = storage.read();
+      setHasSave(Boolean(raw && deserialize(raw)));
+      setSynced(true);
+    };
+    if (!account) {
+      finish();
+      return;
+    }
+    // Вход: берём прогресс из базы. Если в базе пусто, переносим туда прогресс, сыгранный в этом браузере без входа.
+    fetch("/api/save", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ save: { data: string } | null }>) : null))
+      .then((body) => {
+        if (cancelled || !body) return;
+        if (body.save && deserialize(body.save.data)) storage.write(body.save.data);
+        else {
+          const guest = browserStorage("ai-rise.save").read();
+          if (guest && deserialize(guest)) {
+            storage.write(guest);
+            remote?.push(guest);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(finish);
+    const onHide = () => remote?.flush(true);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("pagehide", onHide);
+      remote?.flush(true);
+    };
+  }, [storage, account, remote]);
 
   const dispatch = useCallback(
     (action: Action): GameEvent[] => {
@@ -35,13 +99,15 @@ export function useGame() {
       setState(r.state);
       if (action.type !== "clearToasts" && action.type !== "readChat") setLastEvents(r.events);
       if (r.state !== current) {
-        storage.write(serialize(r.state));
+        const data = serialize(r.state);
+        storage.write(data);
+        remote?.push(data);
         setHasSave(true);
         setSavedAt(Date.now());
       }
       return r.events;
     },
-    [ctx, storage],
+    [ctx, storage, remote],
   );
 
   const continueGame = useCallback(() => {
@@ -54,10 +120,11 @@ export function useGame() {
     // Сохранение могло быть сделано до выхода новых заданий: открываем те, чьи условия уже выполнены.
     refreshQuests(loaded, ctx);
     storage.write(serialize(loaded));
+    remote?.push(serialize(loaded));
     stateRef.current = loaded;
     setState(loaded);
     setScreen("game");
-  }, [storage, ctx]);
+  }, [storage, ctx, remote]);
 
   const startNew = useCallback(
     (profile: GameState["profile"]) => {
@@ -67,15 +134,18 @@ export function useGame() {
     [dispatch],
   );
 
-  const reset = useCallback(() => {
-    storage.clear();
+  /** Сбросить игру; при выходе из аккаунта (keepSave) сохранение не трогаем, только закрываем. */
+  const reset = useCallback((keepSave = false) => {
+    if (!keepSave) storage.clear();
     stateRef.current = null;
     setState(null);
     setHasSave(false);
     setScreen("menu");
   }, [storage]);
 
-  return { state, screen, setScreen, hasSave, dispatch, continueGame, startNew, reset, t, lastEvents, savedAt };
+  const flush = useCallback(() => remote?.flush(true), [remote]);
+
+  return { state, screen, setScreen, hasSave, synced, account, flush, dispatch, continueGame, startNew, reset, t, lastEvents, savedAt };
 }
 
 export type GameApi = ReturnType<typeof useGame>;

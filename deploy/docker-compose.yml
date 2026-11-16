@@ -11,6 +11,11 @@ services:
     pids_limit: 200
     logging: {driver: json-file, options: {max-size: "5m", max-file: "2"}}
     networks: [takt]
+    # База игроков: аккаунты и прогресс (SQLite). Том не удаляется при пересборке.
+    volumes: ["arise-data:/app/data"]
+
+volumes:
+  arise-data:
 
 networks:
   takt:

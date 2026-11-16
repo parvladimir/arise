@@ -16,6 +16,28 @@ export const ruSchool: Record<string, string> = {
   "ui.level.badge": "Уровень: {level}",
   "ui.create.next": "Дальше",
 
+  // ---------- Аккаунт ----------
+  "ui.auth.register": "Регистрация",
+  "ui.auth.login": "Вход",
+  "ui.auth.registerHint": "Создай аккаунт, чтобы прогресс сохранялся и был доступен с любого устройства.",
+  "ui.auth.loginHint": "С возвращением! Войди, и игра продолжится с того же места.",
+  "ui.auth.email": "Почта",
+  "ui.auth.password": "Пароль",
+  "ui.auth.passwordRule": "Не короче 8 символов.",
+  "ui.auth.registerGo": "Создать аккаунт",
+  "ui.auth.loginGo": "Войти",
+  "ui.auth.as": "Вы вошли как {email}",
+  "ui.auth.logout": "Выйти",
+  "ui.auth.err.badEmail": "Проверь адрес почты.",
+  "ui.auth.err.shortPassword": "Пароль должен быть не короче 8 символов.",
+  "ui.auth.err.taken": "Эта почта уже зарегистрирована. Попробуй войти.",
+  "ui.auth.err.wrongLogin": "Неверная почта или пароль.",
+  "ui.auth.err.tooMany": "Слишком много попыток. Подожди 15 минут.",
+  "ui.auth.err.network": "Нет связи с сервером. Попробуй ещё раз.",
+  "ui.auth.err.forbidden": "Запрос отклонён. Обнови страницу.",
+  "ui.auth.err.badRequest": "Что-то пошло не так. Обнови страницу.",
+  "ui.prototypeNoteCloud": "Прогресс сохраняется в твоём аккаунте",
+
   // ---------- Интерфейс школы ----------
   "app.school": "Школа",
   "ui.hint.school": "Школа ТАКТ ИИ",

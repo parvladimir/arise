@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { GameApi } from "./useGame";
+import { AuthForm, type AuthSubmit } from "./Auth";
 import { Mascot, MascotHead, TaktLogo } from "./Mascot";
 import { TG_URL } from "./useTaktNews";
 
@@ -98,7 +99,7 @@ function DemoChat({ motion }: { motion: boolean }) {
   );
 }
 
-export function Menu({ game }: { game: GameApi }) {
+export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit; logout?: () => void }) {
   const { t, hasSave } = game;
   const [confirm, setConfirm] = useState(false);
   const motion = useMenuMotion();
@@ -155,6 +156,7 @@ export function Menu({ game }: { game: GameApi }) {
             ))}
           </ul>
 
+          {auth ? <AuthForm t={t} submit={auth} /> : (
           <div className="mx-auto mt-9 flex w-full max-w-sm flex-col gap-3 lg:mx-0">
             {hasSave && (
               <button onClick={game.continueGame} className="menu-cta rounded-xl px-6 py-4 text-lg font-semibold text-white">
@@ -177,7 +179,14 @@ export function Menu({ game }: { game: GameApi }) {
                 </div>
               </div>
             )}
+            {game.account && (
+              <p className="flex items-center justify-center gap-2 text-sm text-muted lg:justify-start">
+                <span className="truncate">{t("ui.auth.as", { email: game.account.email })}</span>
+                <button onClick={logout} className="shrink-0 underline-offset-2 hover:text-ink hover:underline">{t("ui.auth.logout")}</button>
+              </p>
+            )}
           </div>
+          )}
           <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="mx-auto mt-5 flex w-full max-w-sm items-center gap-3 rounded-xl border border-white/10 bg-surface/60 p-3 text-left backdrop-blur transition hover:border-ai/60 lg:mx-0">
             <span className="takt-gradient grid h-10 w-10 shrink-0 place-items-center rounded-full text-lg text-white" aria-hidden>✈</span>
             <span className="min-w-0">
@@ -186,7 +195,7 @@ export function Menu({ game }: { game: GameApi }) {
             </span>
             <span className="ml-auto text-muted" aria-hidden>↗</span>
           </a>
-          <p className="mt-5 text-xs text-muted">{t("ui.prototypeNote")}</p>
+          <p className="mt-5 text-xs text-muted">{t(game.account ? "ui.prototypeNoteCloud" : "ui.prototypeNote")}</p>
         </div>
 
         <div className="anim-rise mx-auto w-full max-w-md pt-20" style={{ animationDelay: "250ms" }}>
