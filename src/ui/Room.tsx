@@ -59,10 +59,10 @@ function Ticker({ text }: { text: string }) {
       </clipPath>
       <g clipPath="url(#tickerClip)">
         <g className="fx-ticker" style={{ ["--ticker-w" as string]: `${width + gap}px`, ["--ticker-s" as string]: `${Math.max(8, (width + gap) / 75)}s` }}>
-          <text ref={ref} x="270" y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
+          <text ref={ref} x="290" y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
             {text}
           </text>
-          <text x={270 + width + gap} y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
+          <text x={290 + width + gap} y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
             {text}
           </text>
         </g>

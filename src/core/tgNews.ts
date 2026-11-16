@@ -36,9 +36,15 @@ export function htmlToText(html: string): string {
 export function postTitle(text: string, max = 140): string {
   const line = text.split("\n").map((l) => l.trim()).find((l) => l.replace(/[^\p{L}\p{N}]/gu, "").length >= 3) ?? "";
   // Хештеги и подписи в конце строки заголовку не нужны
-  const clean = line.replace(/(\s#[\p{L}\p{N}_]+)+\s*$/u, "").trim();
+  const clean = line
+    .replace(/(\s#[\p{L}\p{N}_]+)+\s*$/u, "")
+    .replace(/^[^\p{L}\p{N}«"(]+/u, "")
+    .trim();
   return clean.length > max ? clean.slice(0, max - 1).trimEnd() + "…" : clean;
 }
+
+/** Служебные и закреплённые посты — не новости. */
+const SKIP = /pinned|закрепил|добро пожаловать/i;
 
 export function parseTgChannel(html: string, channel: string): TgPost[] {
   const posts: TgPost[] = [];
@@ -47,8 +53,9 @@ export function parseTgChannel(html: string, channel: string): TgPost[] {
     const idm = b.match(new RegExp(`data-post="${channel}/(\\d+)"`, "i"));
     const tm = b.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
     if (!idm || !tm) continue;
+    if (/service_message/.test(b)) continue;
     const title = postTitle(htmlToText(tm[1]!));
-    if (!title) continue;
+    if (!title || SKIP.test(title)) continue;
     const id = Number(idm[1]);
     const dm = b.match(/<time[^>]*datetime="([^"]+)"/);
     posts.push({ id, url: `https://t.me/${channel}/${id}`, title, date: dm?.[1] ?? null });

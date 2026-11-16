@@ -15,7 +15,13 @@ describe("лента Telegram-канала", () => {
     const posts = parseTgChannel(html, "takt_news_ai");
     expect(posts.map((p) => p.id)).toEqual([42, 41]);
     expect(posts[0]).toMatchObject({ title: "Claude Code: плагины & скиллы", url: "https://t.me/takt_news_ai/42", date: "2026-11-16T08:00:00+00:00" });
-    expect(posts[1]!.title).toBe("🔥 Gemini 3 вышел — что это значит для вас");
+    expect(posts[1]!.title).toBe("Gemini 3 вышел — что это значит для вас");
+  });
+
+  it("служебные сообщения и приветствие не попадают в новости", () => {
+    const extra = `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message service_message" data-post="takt_news_ai/50"><div class="tgme_widget_message_text js-message_text">ТАКТ все про ИИ pinned a file</div></div></div>
+<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="takt_news_ai/51"><div class="tgme_widget_message_text js-message_text">🚀 Добро пожаловать в ТАКТ ИИ!</div></div></div>`;
+    expect(parseTgChannel(extra, "takt_news_ai")).toEqual([]);
   });
 
   it("длинный заголовок обрезается многоточием", () => {
