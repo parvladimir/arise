@@ -2,7 +2,7 @@
 // чтобы позже заменить браузер на Supabase без правок ядра.
 
 import { DAY_START_HOUR, SCHEMA_VERSION } from "./engine";
-import type { AvatarId, GameState, Level, Pronoun } from "./types";
+import type { AvatarId, GameState, Level, Pronoun, QuestProgress } from "./types";
 
 const AVATAR_IDS: AvatarId[] = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12"];
 
@@ -20,6 +20,16 @@ const migrations: Record<number, Migration> = {
   1: (raw) => ({ ...raw, flags: [], relations: {} }),
   // v3: прочитанные уроки
   2: (raw) => ({ ...raw, lessons: [] }),
+  // v4: сданная подработка уходит с доски до завтра. В старых сейвах сданные подработки
+  // сразу возвращались на доску, поэтому уводим их до следующего игрового дня.
+  3: (raw) => {
+    const day = typeof raw.day === "number" ? raw.day : 1;
+    const quests = { ...((raw.quests ?? {}) as Record<string, QuestProgress>) };
+    for (const [id, p] of Object.entries(quests)) {
+      if (p && p.status === "available" && (p.runs ?? 0) > 0) quests[id] = { ...p, status: "done", readyDay: day + 1 };
+    }
+    return { ...raw, quests };
+  },
 };
 
 export function serialize(state: GameState): string {

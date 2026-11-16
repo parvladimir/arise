@@ -546,4 +546,16 @@ describe("уровни и Школа ТАКТ ИИ", () => {
     expect(passFor(start("pro"), 0.9)).toBe(0.95);
     expect(passFor(start("novice"), 0.7)).toBe(0.7);
   });
+
+  it("старое сохранение: уже сданные подработки уходят с доски до завтра", () => {
+    const s = newGameState(profile, ctx);
+    s.quests.gigSms = { status: "available", stage: 0, attempts: 0, bestQuality: 1, selections: {}, runs: 1 };
+    s.quests.gigReview = { status: "available", stage: 0, attempts: 0, bestQuality: 0, selections: {} };
+    const loaded = deserialize(JSON.stringify({ ...s, schemaVersion: 3 }))!;
+    expect(loaded.quests.gigSms).toMatchObject({ status: "done", readyDay: s.day + 1 });
+    expect(loaded.quests.gigReview?.status).toBe("available");
+    // Новое сохранение повторно не прячет подработку, вернувшуюся утром
+    expect(deserialize(serialize({ ...s }))!.quests.gigSms?.status).toBe("available");
+  });
+
 });

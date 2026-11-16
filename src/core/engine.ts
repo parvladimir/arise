@@ -15,7 +15,7 @@ import type {
   TextKey,
 } from "./types";
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
 export const SCHOOL_PAY = 15;
