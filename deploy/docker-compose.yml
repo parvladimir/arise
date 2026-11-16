@@ -1,0 +1,18 @@
+# AI RISE рядом со станцией ТАКТ. Наружу не открыт: HTTPS и адрес даёт Caddy станции ТАКТ
+# (файл /opt/caddy-sites/arise.caddy), он ходит сюда по общей docker-сети takt_default.
+# Лимиты держат игру лёгкой, чтобы она не мешала ТАКТ рендерить ролики.
+services:
+  arise:
+    build: ..
+    container_name: arise
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 384m
+    pids_limit: 200
+    logging: {driver: json-file, options: {max-size: "5m", max-file: "2"}}
+    networks: [takt]
+
+networks:
+  takt:
+    name: takt_default
+    external: true

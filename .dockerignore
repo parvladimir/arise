@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+*.tsbuildinfo
+.dev.log
+.env*
+coverage
+test-results
