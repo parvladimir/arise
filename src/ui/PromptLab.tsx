@@ -5,6 +5,9 @@ import { content } from "@/content";
 import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/core/types";
 import { matches } from "@/core/promptSim";
 import { PromptPreview, Takeaway } from "./Learn";
+import { FreeformInput } from "./Freeform";
+import { analyzeFreeform } from "@/core/freeform";
+import { ruMatch } from "@/content/locales/ru.match";
 import type { GameApi } from "./useGame";
 
 const NPC_COLOR: Record<string, string> = { anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
@@ -41,7 +44,9 @@ export function PromptLab({
 }) {
   const { t, dispatch } = game;
   const [shown, setShown] = useState<Shown | null>(null);
-  const [selection, setSelection] = useState<Partial<Record<SlotId, string>>>({});
+  const [picked, setSelection] = useState<Partial<Record<SlotId, string>>>({});
+  const [mode, setMode] = useState<"cards" | "free">("cards");
+  const [freeText, setFreeText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("done");
   const [thinkStep, setThinkStep] = useState(0);
@@ -105,6 +110,9 @@ export function PromptLab({
   }
 
   const slots = stage.slots;
+  // В режиме «своими словами» выбор карточек выводится из текста — дальше всё как обычно.
+  const selection =
+    mode === "free" ? analyzeFreeform(freeText, stage, (id) => content.cards.find((c) => c.id === id)?.slot, ruMatch, state.slots) : picked;
   const missing = stage.required.filter((s) => !selection[s]);
   const done = phase === "done";
   const resultForThisStage = shown && shown.questId === viewQuest.id && shown.stage === stageIndex ? shown : null;
@@ -121,7 +129,7 @@ export function PromptLab({
       return;
     }
     const clean = Object.fromEntries(Object.entries(selection).filter(([slot]) => slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
-    const events: GameEvent[] = dispatch({ type: "submitPrompt", questId: viewQuest.id, selection: clean });
+    const events: GameEvent[] = dispatch({ type: "submitPrompt", questId: viewQuest.id, selection: clean, freeform: mode === "free" });
     const res = events.find((e) => e.type === "promptResult");
     const rej = events.find((e) => e.type === "rejected");
     if (rej && rej.type === "rejected") setError(t(rej.reasonKey));
@@ -137,6 +145,7 @@ export function PromptLab({
     setTab("prompt");
     if (finished) {
       setSelection({});
+      setFreeText("");
       onFinished();
     }
   };
@@ -190,7 +199,25 @@ export function PromptLab({
             <p className="mt-1.5 leading-snug">{t(stage.taskKey)}</p>
           </div>
 
-          <h3 className="mt-5 text-sm font-semibold text-muted">{t("ui.neira.prompt")}</h3>
+          <div className="mt-5 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-muted">{t("ui.neira.prompt")}</h3>
+            <div className="ml-auto flex rounded-lg border border-line bg-surface p-0.5 text-xs" role="tablist">
+              {(["cards", "free"] as const).map((m) => (
+                <button
+                  key={m}
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => setMode(m)}
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${mode === m ? "bg-ai text-white" : "text-muted hover:text-ink"}`}
+                >
+                  {m === "cards" ? `▦ ${t("ui.free.cards")}` : `✍ ${t("ui.free.own")}`}
+                </button>
+              ))}
+            </div>
+          </div>
+          {mode === "free" ? (
+            <FreeformInput game={game} state={state} stage={stage} text={freeText} setText={setFreeText} selection={selection} />
+          ) : (
           <div className="mt-2 space-y-3">
             {slots.map((slot) => {
               const unlocked = state.slots.includes(slot);
@@ -224,10 +251,11 @@ export function PromptLab({
               );
             })}
           </div>
+          )}
 
-          <div className="mt-5">
+          {mode === "cards" && <div className="mt-5">
             <PromptPreview game={game} slots={slots.filter((s) => state.slots.includes(s))} selection={resultForThisStage ? resultForThisStage.sel : selection} />
-          </div>
+          </div>}
 
           <h3 className="mt-5 text-sm font-semibold text-muted">{t("ui.neira.criteria")}</h3>
           <ul className="mt-2 space-y-1">

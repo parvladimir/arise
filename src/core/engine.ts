@@ -132,6 +132,12 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
         progress.bestQuality = Math.max(progress.bestQuality, result.quality);
         pay = completeQuest(state, quest, result.quality, ctx, events);
       }
+      // Первый принятый промпт, написанный своими словами, — отдельное достижение и бонус к навыку.
+      if (result.passed && action.freeform && !state.achievements.includes("ownWords")) {
+        state.achievements.push("ownWords");
+        state.toasts.push({ kind: "achievement", id: "ownWords" });
+        state.skills.aiComm += 1;
+      }
       events.unshift({
         type: "promptResult",
         questId: quest.id,

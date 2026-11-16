@@ -269,7 +269,7 @@ export type Action =
   | { type: "newGame"; profile: GameState["profile"] }
   | { type: "choose"; questId: string; choiceId: string }
   | { type: "acceptQuest"; questId: string }
-  | { type: "submitPrompt"; questId: string; selection: Partial<Record<SlotId, string>> }
+  | { type: "submitPrompt"; questId: string; selection: Partial<Record<SlotId, string>>; freeform?: boolean }
   | { type: "buy"; itemId: string }
   | { type: "submitClassify"; questId: string; answers: Record<string, string> }
   | { type: "takeShortcut"; questId: string }
