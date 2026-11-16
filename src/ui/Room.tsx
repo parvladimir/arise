@@ -206,9 +206,9 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <text x="140" y="90" textAnchor="middle" fontSize="10" fill="#5eead4" letterSpacing="2" fontFamily="var(--font-mono)">{t("room.board")}</text>
         <line x1="78" y1="98" x2="202" y2="98" stroke="#2dd4bf" strokeOpacity="0.3" />
         {/* Текущая цель — та же, что в верхней панели */}
-        <foreignObject x="72" y="101" width="136" height="62">
-          <div className="room-goal">{goal}</div>
-        </foreignObject>
+        {wrapLines(shortGoal(goal), 23, 4).map((line, i) => (
+          <text key={i} x="76" y={113 + i * 12.5} fontSize="10" fontWeight="600" fill="#e8edf7">{line}</text>
+        ))}
         <text x="202" y="90" textAnchor="end" fontSize="7.5" fill="#94a3b8" fontFamily="var(--font-mono)">✓ {doneCount}</text>
         {stickers.map((st, i) => (
           <g key={st.key} transform={`rotate(${[-4, 3, -2][i]} ${98 + i * 42} 182)`} className="anim-rise">
@@ -282,16 +282,16 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
             </g>
             <circle cx="431" cy="262" r="17" fill="#8b3dff" opacity="0.35" filter="url(#blur6)" className="fx-pulse" />
             <image href="/brand/emblem.webp" x="412" y="246" width="38" height="28" />
-            <text x="431" y="291" textAnchor="middle" fontSize="7" fontWeight="900" fill="url(#taktText)" letterSpacing="0.5">ТАКТ ИИ</text>
+            {!hints.laptop && <text x="431" y="291" textAnchor="middle" fontSize="7" fontWeight="900" fill="url(#taktText)" letterSpacing="0.5">ТАКТ ИИ</text>}
           </g>
         ) : (
           <image href="/brand/emblem.webp" x="381" y="256" width="38" height="28" opacity="0.5" />
         )}
         {hints.laptop && (
           <g className="fx-breathe">
-            <rect x="341" y="239" width="118" height="20" rx="3" fill="url(#calloutFill)" />
-            <circle cx="350" cy="249" r="3" fill="#fff" className="fx-pulse" />
-            <text x="404" y="252.5" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#fff">{hints.laptop}</text>
+            <rect x="341" y="281" width="118" height="21" rx="3" fill="url(#calloutFill)" />
+            <circle cx="350" cy="291.5" r="3" fill="#fff" className="fx-pulse" />
+            <text x="404" y="295" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#fff">{hints.laptop}</text>
           </g>
         )}
         <path d="M316 310h168l10 10H306z" fill="#3b4778" />
@@ -387,4 +387,30 @@ function PhoneNotice({ notice, onClick }: { notice: { npc: NpcId }; onClick: () 
       <circle cx="566" cy="266" r="7" fill="#f87171" className="fx-pulse" />
     </g>
   );
+}
+
+/** Для доски: первая фраза цели без пояснений в скобках. */
+function shortGoal(text: string): string {
+  return text.replace(/\s*\([^)]*\)/g, "").split(/(?<=[.!?])\s/)[0]!.replace(/[.]$/, "");
+}
+
+/** Перенос по словам для SVG-текста (foreignObject в Safari масштабируется неправильно). */
+function wrapLines(text: string, max: number, maxLines: number): string[] {
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of text.split(/\s+/)) {
+    if (!cur) cur = w;
+    else if ((cur + " " + w).length <= max) cur += " " + w;
+    else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines);
+    kept[maxLines - 1] = kept[maxLines - 1]!.replace(/\s*\S*$/, "") + "…";
+    return kept;
+  }
+  return lines;
 }
