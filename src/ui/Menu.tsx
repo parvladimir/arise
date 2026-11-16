@@ -5,6 +5,7 @@ import type { GameApi } from "./useGame";
 import { AuthForm, type AuthSubmit } from "./Auth";
 import { Mascot, MascotHead, TaktLogo } from "./Mascot";
 import { TG_URL } from "./useTaktNews";
+import { content } from "@/content";
 
 // Маленькое демо на главном экране: запрос → «думает» → ответ печатается. Тексты — из первых заказов игры.
 const DEMO = [
@@ -16,7 +17,7 @@ const DEMO = [
 const FEATURES = [
   { icon: "✦", label: "Промпты", tone: "#a78bfa" },
   { icon: "◆", label: "Основы ИИ", tone: "#8b3dff" },
-  { icon: "●", label: "11 уроков", tone: "#2dd4bf" },
+  { icon: "●", label: `${content.lessons.length} уроков`, tone: "#2dd4bf" },
   { icon: "▲", label: "Сюжет и карьера", tone: "#f5b544" },
 ];
 

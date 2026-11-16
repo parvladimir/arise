@@ -1,6 +1,7 @@
 // Русские тексты. Другие языки добавляются файлами с теми же ключами.
 
 import { ruSchool } from "./ru.school";
+import { ruAct3 } from "./ru.act3";
 
 export const ru: Record<string, string> = {
   // ---------- Интерфейс ----------
@@ -271,7 +272,7 @@ export const ru: Record<string, string> = {
   "err.noMoney": "Не хватает денег.",
   "err.classifyIncomplete": "Отметь каждый пункт, прежде чем сдавать.",
 
-  "goal.end": "Всё, что есть в этой версии, пройдено! Подработки на доске заказов доступны всегда.",
+  "goal.end": "Все заказы этой версии пройдены! Новые главы скоро появятся — следите за каналом ТАКТ ИИ.",
   "milestone.firstOrder": "Первый заказ выполнен. Но это только начало.",
   "milestone.actEnd": "Начинали с письма про кран, а теперь тебе доверяют целые кампании.",
   "milestone.prototypeEnd": "{g:Ты прошёл|Ты прошла|Пройден} прототип первого акта. Спасибо, что играешь!",
@@ -992,4 +993,5 @@ export const ru: Record<string, string> = {
   "ui.orders.runs": "сдано: {n}",
   "ui.shop.forQuest": "для задания",
   ...ruSchool,
+  ...ruAct3,
 };

@@ -3,6 +3,7 @@
 
 import { school } from "./school";
 import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./act2";
+import { act3Cards, act3Glossary, act3Lessons, act3Quests } from "./act3";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
 const card = (id: string, slot: SlotId): PromptCard => ({ id, slot, textKey: `card.${id}` });
@@ -347,9 +348,9 @@ const glossary: GlossaryDef[] = [
 
 export const content: Content = {
   school,
-  lessons: [...lessons, ...act2Lessons],
-  glossary: [...glossary, ...act2Glossary],
-  cards: [...cards, ...act2Cards],
+  lessons: [...lessons, ...act2Lessons, ...act3Lessons],
+  glossary: [...glossary, ...act2Glossary, ...act3Glossary],
+  cards: [...cards, ...act2Cards, ...act3Cards],
   finalGoalKey: "goal.end",
   skills: [
     { id: "aiComm", nameKey: "skill.aiComm", levels: [1, 3, 6] },
@@ -801,5 +802,6 @@ export const content: Content = {
       ],
     },
     ...act2Quests,
+    ...act3Quests,
   ],
 };
