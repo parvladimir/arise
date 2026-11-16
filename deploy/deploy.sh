@@ -39,4 +39,12 @@ CADDY
 docker exec takt-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 REMOTE_SH
 
+# Ждём, пока игра реально ответит (первые секунды после перезапуска Caddy может отдавать 502)
+for i in $(seq 1 20); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' "https://$DOMAIN/" || true)
+  [ "$code" = "200" ] && break
+  sleep 1
+done
+[ "$code" = "200" ] || { echo "⚠ https://$DOMAIN отвечает $code"; exit 1; }
+
 echo "✅ Готово: https://$DOMAIN"
