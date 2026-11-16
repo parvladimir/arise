@@ -260,8 +260,6 @@ export interface QuestProgress {
   choice?: string;
   /** Сколько раз сдана подработка. */
   runs?: number;
-  /** Сданная подработка вернётся на доску в этот игровой день. */
-  readyDay?: number;
 }
 
 export interface ChatMessage {
@@ -331,7 +329,6 @@ export type Action =
   | { type: "readChat"; npc: NpcId }
   | { type: "seeLesson"; lessonId: string }
   | { type: "finishSchool"; moduleId: string; correct: number; total: number }
-  | { type: "sleep" }
   | { type: "clearToasts" };
 
 export interface CriterionResult {

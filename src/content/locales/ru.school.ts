@@ -20,7 +20,8 @@ export const ruSchool: Record<string, string> = {
   "app.school": "Школа",
   "ui.hint.school": "Школа ТАКТ ИИ",
   "goal.school": "Пройди азы в Школе ТАКТ ИИ на ноутбуке: что такое ИИ, какие бывают ИИ и что такое промпт",
-  "goal.rest": "Подработки на сегодня сделаны. Заверши день на доске заказов — утром придут новые",
+  "ui.orders.doneTitle": "Выполнено",
+  "ui.orders.allDone": "Все заказы выполнены. Новые придут по сюжету — следи за телефоном.",
   "ach.graduate": "Выпускник Школы ТАКТ ИИ",
   "ui.school.title": "Школа ТАКТ ИИ",
   "ui.school.sub": "Короткие мини-игры про основы ИИ. За первый проход каждой: +{pay} ₵ и +{xp} XP.",
@@ -44,10 +45,6 @@ export const ruSchool: Record<string, string> = {
   "ui.school.spot.check": "Проверить",
   "ui.school.spot.fake": "выдумка",
   "ui.school.allDone": "Все уроки школы пройдены. Теперь — к настоящим заказам!",
-  "ui.orders.resting": "Сдано сегодня ✓",
-  "ui.orders.tomorrow": "Новый заказ — завтра",
-  "ui.orders.sleep": "Завершить день 🌙",
-  "ui.orders.sleepHint": "Подработки на сегодня закончились. Отдохни — утром на доске появятся новые.",
 
   // ---------- Модуль 1. Что такое ИИ ----------
   "school.ai.title": "Что такое ИИ",

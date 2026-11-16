@@ -20,17 +20,23 @@ const migrations: Record<number, Migration> = {
   1: (raw) => ({ ...raw, flags: [], relations: {} }),
   // v3: прочитанные уроки
   2: (raw) => ({ ...raw, lessons: [] }),
-  // v4: сданная подработка уходит с доски до завтра. В старых сейвах сданные подработки
-  // сразу возвращались на доску, поэтому уводим их до следующего игрового дня.
-  3: (raw) => {
-    const day = typeof raw.day === "number" ? raw.day : 1;
-    const quests = { ...((raw.quests ?? {}) as Record<string, QuestProgress>) };
-    for (const [id, p] of Object.entries(quests)) {
-      if (p && p.status === "available" && (p.runs ?? 0) > 0) quests[id] = { ...p, status: "done", readyDay: day + 1 };
-    }
-    return { ...raw, quests };
-  },
+  // v4: подработка сдаётся один раз. В старых сейвах сданные подработки возвращались
+  // на доску (status available, runs ≥ 1) — переводим их в выполненные.
+  3: (raw) => ({ ...raw, quests: finishGigs(raw.quests) }),
+  // v5: то же для сейвов v4, где сданная подработка ждала следующего дня (readyDay).
+  4: (raw) => ({ ...raw, quests: finishGigs(raw.quests) }),
 };
+
+function finishGigs(raw: unknown): Record<string, QuestProgress> {
+  const quests = { ...((raw ?? {}) as Record<string, QuestProgress & { readyDay?: number }>) };
+  for (const [id, p] of Object.entries(quests)) {
+    if (p && (p.runs ?? 0) > 0) {
+      const { readyDay: _r, ...rest } = p;
+      quests[id] = { ...rest, status: "done" };
+    }
+  }
+  return quests;
+}
 
 export function serialize(state: GameState): string {
   const { toasts: _toasts, ...rest } = state;

@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@/content";
-import { boardQuests, levelOf, restingGigs } from "@/core/engine";
+import { boardQuests, levelOf, doneGigs } from "@/core/engine";
 import { basePay, skillLevel } from "@/core/economy";
 import type { GameState } from "@/core/types";
 import type { GameApi } from "./useGame";
@@ -12,12 +12,12 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
     ...content.quests.filter((q) => (q.kind === "prompt" || q.kind === "classify") && q.offer.type !== "board" && state.quests[q.id]?.status === "active"),
     ...boardQuests(state, content),
   ];
-  const resting = restingGigs(state, content);
+  const finished = doneGigs(state, content);
   const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.orders.title")}</h2>
-      {list.length === 0 && <p className="mt-4 text-sm text-muted">{t(resting.length > 0 ? "ui.orders.sleepHint" : "ui.orders.empty")}</p>}
+      {list.length === 0 && <p className="mt-4 text-sm text-muted">{t(finished.length > 0 ? "ui.orders.allDone" : "ui.orders.empty")}</p>}
       <ul className="mt-4 space-y-3">
         {list.map((q) => {
           const status = state.quests[q.id]!.status;
@@ -36,7 +36,6 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
               {from && (
                 <p className="mt-0.5 text-sm text-muted">
                   {t(`npc.${from}`)}
-                  {q.repeatable && (state.quests[q.id]!.runs ?? 0) > 0 && <span className="ml-2 text-xs">· {t("ui.orders.runs", { n: state.quests[q.id]!.runs ?? 0 })}</span>}
                 </p>
               )}
               {q.offer.type !== "auto" && <p className="mt-2 text-[15px] leading-snug">«{t(q.offer.textKey)}»</p>}
@@ -61,23 +60,18 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
           );
         })}
       </ul>
-      {resting.length > 0 && (
-        <div className="mt-5">
-          <ul className="space-y-2">
-            {resting.map((q) => (
+      {finished.length > 0 && (
+        <div className="mt-6">
+          <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-ok">{t("ui.orders.doneTitle")}</h3>
+          <ul className="mt-2 space-y-2">
+            {finished.map((q) => (
               <li key={q.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-ok/25 bg-ok/5 px-4 py-3 text-sm">
-                <span className="font-semibold text-ok">{t("ui.orders.resting")}</span>
+                <span className="font-semibold text-ok">✓</span>
                 <span className="font-semibold">{t(q.titleKey)}</span>
                 {q.offer.type !== "auto" && <span className="text-muted">{t(`npc.${q.offer.from}`)}</span>}
-                <span className="ml-auto text-xs text-muted">{t("ui.orders.tomorrow")}</span>
               </li>
             ))}
           </ul>
-          {!list.some((q) => state.quests[q.id]?.status === "available") && (
-            <button onClick={() => dispatch({ type: "sleep" })} className="mt-3 rounded-lg border border-ai/60 bg-ai/15 px-4 py-2 font-semibold text-ink hover:bg-ai/25">
-              {t("ui.orders.sleep")}
-            </button>
-          )}
         </div>
       )}
     </div>
