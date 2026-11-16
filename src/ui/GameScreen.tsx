@@ -11,7 +11,7 @@ import { ClassifyLab } from "./ClassifyLab";
 import { LessonCard, lessonFor } from "./Learn";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
-import { Room } from "./Room";
+import { Room, type RoomHints } from "./Room";
 import { Toasts } from "./Toasts";
 import { MascotHead, TaktLogo } from "./Mascot";
 import { PushBanner } from "./Notify";
@@ -77,9 +77,17 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const target = goalTarget(state);
   const highlight = target.view === "room" ? null : target.view;
   // Что нового — крупно над ноутбуком и телефоном в комнате
-  const roomHints: { laptop?: string; phone?: string } = {};
-  if (state.unread.length > 0) roomHints.phone = t(state.unread.length > 1 ? "ui.hint.messages" : "ui.hint.message", { n: state.unread.length });
-  else if (target.view === "phone") roomHints.phone = t("ui.hint.reply");
+  const roomHints: RoomHints = {};
+  const noticeNpc = state.unread[0] ?? (target.view === "phone" ? target.chat : undefined);
+  if (noticeNpc) {
+    const last = [...state.messages].reverse().find((m) => m.npc === noticeNpc && m.from === "npc");
+    const name = t(`npc.${noticeNpc}`).split(",")[0]!;
+    roomHints.phone = {
+      npc: noticeNpc,
+      kicker: state.unread.length > 1 ? t("ui.hint.messages", { n: state.unread.length }) : state.unread.length === 1 ? t("ui.hint.message") : t("ui.hint.waits", { name }),
+      text: last ? t(last.textKey, last.vars) : "",
+    };
+  }
   if (target.view === "laptop") roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : "ui.hint.task");
 
   const go = (v: View, a?: AppId | null, c?: NpcId) => {

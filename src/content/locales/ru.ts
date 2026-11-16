@@ -54,7 +54,7 @@ export const ru: Record<string, string> = {
   "ui.laptop.hello": "Привет, {name}",
   "ui.hint.message": "Новое сообщение",
   "ui.hint.messages": "Новых сообщений: {n}",
-  "ui.hint.reply": "Ответь в чате",
+  "ui.hint.waits": "{name} ждёт ответа",
   "ui.hint.order": "Новый заказ!",
   "ui.hint.task": "Задание ждёт",
   "ui.hint.shop": "Загляни в магазин",

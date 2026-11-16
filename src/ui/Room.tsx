@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import type { GameState } from "@/core/types";
+import type { GameState, NpcId } from "@/core/types";
+import { AVATAR_COLOR } from "./Phone";
 import { content } from "@/content";
 import { currentGoal } from "@/core/engine";
 import type { View } from "./nav";
@@ -76,7 +77,12 @@ function Ticker({ text }: { text: string }) {
   );
 }
 
-export function Room({ state, highlight, open, t, compact = false, hints = {} }: { state: GameState; highlight: View | null; open: (v: View) => void; t: T; compact?: boolean; hints?: { laptop?: string; phone?: string } }) {
+export interface RoomHints {
+  laptop?: string;
+  phone?: { npc: NpcId; kicker: string; text: string };
+}
+
+export function Room({ state, highlight, open, t, compact = false, hints = {} }: { state: GameState; highlight: View | null; open: (v: View) => void; t: T; compact?: boolean; hints?: RoomHints }) {
   const has = (id: string) => state.inventory.includes(id);
   const unread = state.unread.length;
   const cafeDone = state.quests.q3?.status === "done";
@@ -114,6 +120,10 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <linearGradient id="calloutFill" x1="0" x2="1">
           <stop offset="0" stopColor="#8b3dff" />
           <stop offset="1" stopColor="#00b4e6" />
+        </linearGradient>
+        <linearGradient id="phoneScreen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3b1d8a" />
+          <stop offset="1" stopColor="#0b3b5c" />
         </linearGradient>
         <linearGradient id="taktText" x1="0" x2="1">
           <stop offset="0" stopColor="#b18aff" />
@@ -277,6 +287,13 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         ) : (
           <image href="/brand/emblem.webp" x="381" y="256" width="38" height="28" opacity="0.5" />
         )}
+        {hints.laptop && (
+          <g className="fx-breathe">
+            <rect x="341" y="239" width="118" height="20" rx="3" fill="url(#calloutFill)" />
+            <circle cx="350" cy="249" r="3" fill="#fff" className="fx-pulse" />
+            <text x="404" y="252.5" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#fff">{hints.laptop}</text>
+          </g>
+        )}
         <path d="M316 310h168l10 10H306z" fill="#3b4778" />
         <path d="M316 310h168" stroke="#6b7bb8" strokeWidth="1" />
         <text x="400" y="318.5" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#c4b5fd" letterSpacing="1.5" opacity="0.8">ТАКТ</text>
@@ -311,7 +328,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
       )}
 
       {/* Телефон: вибрирует и светится, когда есть непрочитанное */}
-      <g {...hotspot(() => open("phone"))} aria-label={unread ? t("ui.phone.newCount", { n: unread }) : t("ui.nav.phone")}>
+      {!hints.phone && <g {...hotspot(() => open("phone"))} aria-label={unread ? t("ui.phone.newCount", { n: unread }) : t("ui.nav.phone")}>
         <title>{t("ui.nav.phone")}</title>
         <rect x="496" y="256" width="104" height="96" fill="transparent" />
         {(highlight === "phone" || unread > 0) && <circle className="anim-glow" cx="549" cy="308" r="30" fill="url(#screenGlow)" />}
@@ -330,7 +347,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
             <text x="566" y="298" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">{unread}</text>
           </g>
         )}
-      </g>
+      </g>}
 
       {/* Растение */}
       <g aria-hidden>
@@ -346,25 +363,33 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
           <circle key={x} cx={x} cy={400} r={i % 2 ? 1.2 : 1.8} fill={i % 3 ? "#8b3dff" : "#2dd4bf"} className="fx-mote" style={{ animationDelay: `${i * 1.7}s`, animationDuration: `${9 + (i % 3) * 3}s` }} />
         ))}
       </g>
-      {/* Метки «что нового»: над ноутбуком и телефоном, кликаются как сами предметы */}
-      {hints.laptop && <Callout x={330} y={196} text={hints.laptop} onClick={() => open("laptop")} />}
-      {hints.phone && <Callout x={566} y={240} text={hints.phone} onClick={() => open("phone")} />}
+      {/* Уведомление прямо на телефоне: телефон «встаёт» на столе и показывает, кто и что написал */}
+      {hints.phone && <PhoneNotice notice={hints.phone} t={t} hour={state.hour} onClick={() => open("phone")} />}
     </svg>
   );
 }
 
-/** Яркая плашка-подсказка с хвостиком вниз: «Новый заказ», «Новое сообщение». */
-function Callout({ x, y, text, onClick }: { x: number; y: number; text: string; onClick: () => void }) {
-  const w = Math.round(text.length * 6.3 + 26);
+/** Телефон стоит на столе, экран горит, на нём карточка уведомления: аватар, имя, текст. */
+function PhoneNotice({ notice, t, hour, onClick }: { notice: { npc: NpcId; kicker: string; text: string }; t: T; hour: number; onClick: () => void }) {
+  const name = t(`npc.${notice.npc}`);
   return (
-    <g className="room-callout" onClick={onClick} style={{ cursor: "pointer" }} aria-hidden>
-      <g className="fx-bounce">
-        <rect x={x - w / 2} y={y - 24} width={w} height="22" rx="11" fill="#8b3dff" opacity="0.45" filter="url(#blur6)" />
-        <rect x={x - w / 2} y={y - 24} width={w} height="22" rx="11" fill="url(#calloutFill)" stroke="#fff" strokeOpacity="0.5" />
-        <path d={`M${x - 6} ${y - 2.5}l6 7 6-7z`} fill="#4f7dff" />
-        <circle cx={x - w / 2 + 11} cy={y - 13} r="3" fill="#fff" className="fx-pulse" />
-        <text x={x + 6} y={y - 9} textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">{text}</text>
-      </g>
+    <g className="room-phone-up" onClick={onClick} style={{ cursor: "pointer" }} role="button" aria-label={`${notice.kicker}: ${name}`}>
+      <rect x="498" y="186" width="96" height="140" rx="18" fill="#8b3dff" opacity="0.35" filter="url(#blur6)" className="fx-breathe" />
+      <rect x="508" y="192" width="76" height="128" rx="11" fill="#0b0a1c" stroke="#6d5bd0" strokeWidth="2.5" />
+      <rect x="512" y="198" width="68" height="116" rx="7" fill="url(#phoneScreen)" />
+      <rect x="536" y="200.5" width="20" height="3" rx="1.5" fill="#05040b" />
+      <text x="546" y="217" textAnchor="middle" fontSize="11" fontWeight="300" fill="#fff" fontFamily="var(--font-mono)">{String(hour % 24).padStart(2, "0")}:00</text>
+      <foreignObject x="515" y="224" width="62" height="74">
+        <div className="room-notice">
+          <div className="room-notice-head">
+            <span className="room-notice-ava" style={{ background: AVATAR_COLOR[notice.npc] }}>{name.slice(0, 1)}</span>
+            <span className="room-notice-kicker">{notice.kicker}</span>
+          </div>
+          <div className="room-notice-name">{name}</div>
+          <div className="room-notice-text">{notice.text}</div>
+        </div>
+      </foreignObject>
+      <image href="/brand/emblem.webp" x="538" y="300" width="16" height="12" opacity="0.8" />
     </g>
   );
 }

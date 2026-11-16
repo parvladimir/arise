@@ -81,6 +81,24 @@ export function Phone({
 
       {!open && (
         <ul className="flex-1 overflow-y-auto">
+          {state.unread[0] && (() => {
+            const npc = state.unread[0]!;
+            const last = [...state.messages].reverse().find((m) => m.npc === npc && m.from === "npc");
+            return (
+              <li className="px-3 pt-3">
+                <button onClick={() => setChat(npc)} className="phone-notice flex w-full items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-lg shadow-ai/30">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-bg" style={{ background: AVATAR_COLOR[npc] }}>{t(`npc.${npc}`).slice(0, 1)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline gap-2">
+                      <span className="truncate text-sm font-bold">{t(`npc.${npc}`)}</span>
+                      <span className="ml-auto shrink-0 text-[11px] text-[#6b6390]">{t("ui.push.now")}</span>
+                    </span>
+                    <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug">{last ? t(last.textKey, last.vars) : ""}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })()}
           {npcs.length === 0 && <li className="p-4 text-sm text-muted">{t("ui.phone.empty")}</li>}
           {npcs.map((npc) => {
             const last = [...state.messages].reverse().find((m) => m.npc === npc)!;
