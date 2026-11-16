@@ -28,7 +28,7 @@ export function TopBar({
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+      <div className="mx-auto flex max-w-7xl 2xl:max-w-[1720px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <Avatar id={state.profile.avatar} size={36} label={state.profile.name} />
           <div className="leading-tight">

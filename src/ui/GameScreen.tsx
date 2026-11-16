@@ -124,7 +124,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
     <div data-motion={motion ? "on" : "off"} className="flex h-dvh flex-col">
       <TopBar game={game} state={state} onGo={goToGoal} motion={motion} setMotion={setMotion} />
 
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-4 p-3 pb-20 lg:p-4 lg:pb-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl 2xl:max-w-[1720px] flex-1 gap-4 p-3 pb-20 lg:p-4 lg:pb-4">
         {/* Основная сцена: комната или ноутбук */}
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
           <div className={`flex h-full flex-col gap-3 lg:block ${view === "laptop" ? "hidden lg:block" : ""}`}>
@@ -167,7 +167,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         </main>
 
         {/* Телефон: колонка на широком экране, отдельный экран на телефоне */}
-        <aside className={`min-h-0 w-full flex-1 rounded-[28px] transition-shadow duration-300 lg:block lg:w-[340px] lg:flex-none lg:shrink-0 ${view === "phone" ? "block" : "hidden"} ${phonePulse ? "shadow-[0_0_0_3px_var(--color-ai)]" : ""}`}>{phone}</aside>
+        <aside className={`min-h-0 w-full flex-1 rounded-[28px] transition-shadow duration-300 lg:block lg:w-[340px] 2xl:w-[400px] lg:flex-none lg:shrink-0 ${view === "phone" ? "block" : "hidden"} ${phonePulse ? "shadow-[0_0_0_3px_var(--color-ai)]" : ""}`}>{phone}</aside>
       </div>
 
       {/* Нижняя навигация на телефоне */}
