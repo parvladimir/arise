@@ -75,13 +75,34 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const [phonePulse, setPhonePulse] = useState(0);
   const [motion, setMotion] = useMotionPref();
   const narrow = useNarrow();
+  const visibleChat = chat && (!narrow || view === "phone") ? chat : null;
   const target = goalTarget(state);
   const highlight = target.view === "room" ? null : target.view;
   // Что нового — крупно над ноутбуком и телефоном в комнате
   const roomHints: RoomHints = {};
   const noticeNpc = state.unread[0] ?? (target.view === "phone" ? target.chat : undefined);
+  const noticeLast = noticeNpc ? [...state.messages].reverse().find((m) => m.npc === noticeNpc && m.from === "npc") : undefined;
+  const noticeKey = noticeNpc ? `${noticeNpc}:${noticeLast?.id ?? 0}` : "";
+  // Карточка с текстом всплывает один раз на каждое новое сообщение и сама прячется через 7 секунд.
+  const [seenNotice, setSeenNotice] = useState<string | null>(null);
+  useEffect(() => {
+    if (!noticeKey || seenNotice === noticeKey) return;
+    const id = window.setTimeout(() => setSeenNotice(noticeKey), 7000);
+    return () => window.clearTimeout(id);
+  }, [noticeKey, seenNotice]);
+  const showNoticeCard = !!noticeKey && seenNotice !== noticeKey && view === "room" && visibleChat !== noticeNpc;
+  // Кто ждёт ответа: последний в чате вопрос с вариантами или ещё не взятый заказ
+  const waitingNpc = (() => {
+    const seen = new Set<NpcId>();
+    for (const m of [...state.messages].reverse()) {
+      if (seen.has(m.npc)) continue;
+      seen.add(m.npc);
+      if (m.choices || (m.offerQuest && state.quests[m.offerQuest]?.status === "available")) return m.npc;
+    }
+    return undefined;
+  })();
   if (noticeNpc) {
-    const last = [...state.messages].reverse().find((m) => m.npc === noticeNpc && m.from === "npc");
+    const last = noticeLast;
     const name = t(`npc.${noticeNpc}`).split(",")[0]!;
     roomHints.phone = {
       npc: noticeNpc,
@@ -118,11 +139,17 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   );
   const phone = <Phone game={game} state={state} chat={chat} setChat={setChat} onAccepted={() => openNeira()} motion={motion} />;
   // Чат виден, если телефон открыт: на широком экране он всегда сбоку, на узком — только на своём экране.
-  const visibleChat = chat && (!narrow || view === "phone") ? chat : null;
 
   return (
     <div data-motion={motion ? "on" : "off"} className="flex h-dvh flex-col">
-      <TopBar game={game} state={state} onGo={goToGoal} motion={motion} setMotion={setMotion} />
+      <TopBar
+        game={game}
+        state={state}
+        onGo={goToGoal}
+        motion={motion}
+        setMotion={setMotion}
+        waiting={waitingNpc && !(visibleChat === waitingNpc) ? { label: t("ui.hint.waits", { name: t(`npc.${waitingNpc}`).split(",")[0]! }), onClick: () => { go("phone", undefined, waitingNpc); setPhonePulse((n) => n + 1); } } : undefined}
+      />
 
       <div className="mx-auto flex min-h-0 w-full max-w-7xl 2xl:max-w-[1720px] flex-1 gap-4 p-3 pb-20 lg:p-4 lg:pb-4">
         {/* Основная сцена: комната или ноутбук */}
@@ -131,11 +158,17 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
             <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
               <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
             </div>
-            {roomHints.phone && (
+            {roomHints.phone && showNoticeCard && (
               <button
-                onClick={openPhone}
-                className="room-notice-card z-10 flex shrink-0 items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-2xl shadow-ai/40 backdrop-blur lg:absolute lg:bottom-6 lg:right-6 lg:w-[300px]"
+                onClick={() => { setSeenNotice(noticeKey); openPhone(); }}
+                className="room-notice-card relative z-10 flex shrink-0 items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1b1530] shadow-2xl shadow-ai/40 backdrop-blur lg:absolute lg:bottom-6 lg:right-6 lg:w-[300px]"
               >
+                <span
+                  role="button"
+                  aria-label={t("ui.close")}
+                  onClick={(e) => { e.stopPropagation(); setSeenNotice(noticeKey); }}
+                  className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-[#1b1530] text-xs text-white shadow"
+                >✕</span>
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full font-bold text-bg" style={{ background: AVATAR_COLOR[roomHints.phone.npc] }}>{t(`npc.${roomHints.phone.npc}`).slice(0, 1)}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">

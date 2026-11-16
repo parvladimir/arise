@@ -14,12 +14,15 @@ export function TopBar({
   onGo,
   motion,
   setMotion,
+  waiting,
 }: {
   game: GameApi;
   state: GameState;
   onGo: () => void;
   motion: boolean;
   setMotion: (v: boolean) => void;
+  /** Кто ждёт ответа в чате — спокойная плашка рядом с целью. */
+  waiting?: { label: string; onClick: () => void };
 }) {
   const { t } = game;
   const lvl = levelFromXp(state.xp);
@@ -45,7 +48,12 @@ export function TopBar({
         <div className="font-mono text-lg font-semibold text-gold" aria-label="Кредиты">{state.money} ₵</div>
         <div className="hidden text-sm text-muted sm:block">{t("ui.day", { day: state.day, hour: state.hour })}</div>
 
-        <div className="order-last flex w-full min-w-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 md:order-none md:ml-auto md:w-auto md:max-w-xl">
+        {waiting && (
+          <button onClick={waiting.onClick} className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold hover:bg-gold/20 md:ml-auto">
+            <span className="menu-live h-1.5 w-1.5 rounded-full bg-gold" aria-hidden /> 💬 {waiting.label}
+          </button>
+        )}
+        <div className={`order-last flex w-full min-w-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 md:order-none md:w-auto md:max-w-xl ${waiting ? "" : "md:ml-auto"}`}>
           <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-ok">{t("ui.goal")}</span>
           <span className="min-w-0 flex-1 truncate text-sm" title={t(goal.textKey)}>{t(goal.textKey)}</span>
           {goal.questId && (

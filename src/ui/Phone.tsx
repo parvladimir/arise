@@ -103,6 +103,9 @@ export function Phone({
           {npcs.filter((npc) => npc !== state.unread[0]).map((npc) => {
             const last = [...state.messages].reverse().find((m) => m.npc === npc)!;
             const unread = state.unread.includes(npc);
+            const thread = state.messages.filter((m) => m.npc === npc);
+            const tail = thread[thread.length - 1];
+            const waiting = !!tail?.choices || (!!tail?.offerQuest && state.quests[tail.offerQuest]?.status === "available");
             return (
               <li key={npc}>
                 <button onClick={() => setChat(npc)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface">
@@ -113,7 +116,8 @@ export function Phone({
                     <span className="block font-medium">{t(`npc.${npc}`)}</span>
                     <span className="block truncate text-sm text-muted">{t(last.textKey, last.vars)}</span>
                   </span>
-                  {unread && <span className="h-2.5 w-2.5 rounded-full bg-bad" aria-label="непрочитано" />}
+                  {waiting && <span className="shrink-0 rounded-full bg-gold/15 px-2 py-0.5 text-[11px] font-semibold text-gold">{t(tail?.offerQuest ? "ui.phone.offer" : "ui.phone.waiting")}</span>}
+                  {unread && <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-bad" aria-label="непрочитано" />}
                 </button>
               </li>
             );

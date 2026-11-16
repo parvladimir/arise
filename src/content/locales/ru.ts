@@ -67,6 +67,8 @@ export const ru: Record<string, string> = {
   "ui.push.reply": "Ждёт ответа",
   "ui.phone.typing": "печатает",
   "ui.phone.unread": "новых: {n}",
+  "ui.phone.waiting": "ждёт ответа",
+  "ui.phone.offer": "заказ",
   "ui.desk.wallet": "Кошелёк",
   "ui.desk.lastIncome": "последний доход: +{n} ₵",
   "ui.desk.neira": "ТАКТ ИИ",
