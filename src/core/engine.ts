@@ -25,6 +25,8 @@ export const SCHOOL_XP = 10;
 export const levelOf = (state: GameState): Level => state.profile.level ?? "practice";
 /** Профи сдаёт задания по более строгому порогу. */
 export const passFor = (state: GameState, pass: number) => (levelOf(state) === "pro" ? Math.min(0.95, pass + 0.1) : pass);
+export const needsSchool = (state: GameState, content: Content) =>
+  levelOf(state) === "novice" && !content.school.filter((m) => m.core).every((m) => state.flags.includes(`school:${m.id}`));
 export const schoolDone = (state: GameState, content: Content) => content.school.every((m) => state.flags.includes(`school:${m.id}`));
 
 export interface Ctx {
@@ -97,6 +99,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       state.skills.aiLiteracy += 1;
       const after = def ? skillLevel(state.skills.aiLiteracy, def.levels) : 0;
       if (after > before) state.toasts.push({ kind: "skill", skill: "aiLiteracy", level: after });
+      refreshQuests(state, ctx);
       if (schoolDone(state, ctx.content) && !state.achievements.includes("graduate")) {
         state.achievements.push("graduate");
         state.toasts.push({ kind: "achievement", id: "graduate" });
@@ -358,6 +361,8 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
 
 /** Открывает задания, у которых выполнены все предпосылки. */
 export function refreshQuests(state: GameState, ctx: Ctx) {
+  // Новичок сначала проходит азы в школе, а потом приходят первые сообщения и задания.
+  if (needsSchool(state, ctx.content)) return;
   for (const quest of ctx.content.quests) {
     if (state.quests[quest.id]) continue;
     const ready = quest.requires.every((id) => state.quests[id]?.status === "done");
@@ -376,7 +381,7 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
 
 export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string; school?: boolean } {
   // Новичок начинает со Школы ТАКТ ИИ: пока не пройдены азы, цель ведёт туда.
-  if (levelOf(state) === "novice" && !content.school.filter((m) => m.core).every((m) => state.flags.includes(`school:${m.id}`))) {
+  if (needsSchool(state, content)) {
     return { textKey: "goal.school", school: true };
   }
   const story = content.quests.filter((q) => !q.repeatable);

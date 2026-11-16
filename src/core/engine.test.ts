@@ -522,8 +522,11 @@ describe("уровни и Школа ТАКТ ИИ", () => {
   it("новичка цель ведёт в школу, пока не пройдены азы", () => {
     let s = start("novice");
     expect(currentGoal(s, content).school).toBe(true);
+    // Пока азы не пройдены, сюжет не начинается: ни сообщений, ни заданий.
+    expect(s.messages).toHaveLength(0);
     for (const m of content.school.filter((x) => x.core)) s = play([{ type: "finishSchool", moduleId: m.id, correct: 1, total: 2 }], s).state;
     expect(currentGoal(s, content).school).toBeUndefined();
+    expect(s.messages.length).toBeGreaterThan(0);
     expect(currentGoal(start("practice"), content).school).toBeUndefined();
   });
 
