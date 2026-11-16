@@ -36,7 +36,7 @@ export const ruSchool: Record<string, string> = {
   "ui.auth.err.network": "Нет связи с сервером. Попробуй ещё раз.",
   "ui.auth.err.forbidden": "Запрос отклонён. Обнови страницу.",
   "ui.auth.err.badRequest": "Что-то пошло не так. Обнови страницу.",
-  "ui.prototypeNoteCloud": "Прогресс сохраняется в твоём аккаунте",
+  "ui.prototypeNoteCloud": "Прогресс сохраняется в твоём аккаунте и доступен с любого устройства",
 
   // ---------- Интерфейс школы ----------
   "app.school": "Школа",

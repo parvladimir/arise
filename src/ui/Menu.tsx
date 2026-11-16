@@ -195,7 +195,7 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
             </span>
             <span className="ml-auto text-muted" aria-hidden>↗</span>
           </a>
-          <p className="mt-5 text-xs text-muted">{t(game.account ? "ui.prototypeNoteCloud" : "ui.prototypeNote")}</p>
+          <p className="mt-5 text-xs text-muted">{t("ui.prototypeNoteCloud")}</p>
         </div>
 
         <div className="anim-rise mx-auto w-full max-w-md pt-20" style={{ animationDelay: "250ms" }}>
