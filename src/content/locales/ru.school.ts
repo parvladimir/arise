@@ -28,6 +28,7 @@ export const ruSchool: Record<string, string> = {
   "ui.auth.loginGo": "Войти",
   "ui.auth.as": "Вы вошли как {email}",
   "ui.auth.logout": "Выйти",
+  "ui.auth.imported": "Мы перенесли в аккаунт игру, которую ты начал в этом браузере. Продолжай или начни заново.",
   "ui.auth.err.badEmail": "Проверь адрес почты.",
   "ui.auth.err.shortPassword": "Пароль должен быть не короче 8 символов.",
   "ui.auth.err.taken": "Эта почта уже зарегистрирована. Попробуй войти.",

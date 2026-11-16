@@ -134,8 +134,8 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
         <span key={k} aria-hidden className="menu-mote pointer-events-none absolute bottom-0 h-1 w-1 rounded-full" style={{ left: `${(k * 71) % 100}%`, animationDelay: `${k * 0.9}s`, animationDuration: `${9 + (k % 5) * 2}s` }} />
       ))}
 
-      <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.1fr_1fr]">
-        <div className="anim-rise text-center lg:text-left">
+      <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.1fr_1fr]">
+        <div className="anim-rise min-w-0 text-center lg:text-left">
           <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-3" aria-label="ТАКТ ИИ">
             <TaktLogo className="h-16 drop-shadow-[0_0_24px_rgba(139,61,255,0.55)] transition group-hover:scale-105 sm:h-20" />
             <span className="text-left">
@@ -158,6 +158,7 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
 
           {auth ? <AuthForm t={t} submit={auth} /> : (
           <div className="mx-auto mt-9 flex w-full max-w-sm flex-col gap-3 lg:mx-0">
+            {game.imported && hasSave && <p className="rounded-xl border border-ok/40 bg-ok/10 px-4 py-2.5 text-sm text-ok">{t("ui.auth.imported")}</p>}
             {hasSave && (
               <button onClick={game.continueGame} className="menu-cta rounded-xl px-6 py-4 text-lg font-semibold text-white">
                 <span className="relative">{t("ui.continue")} →</span>
@@ -180,8 +181,8 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
               </div>
             )}
             {game.account && (
-              <p className="flex items-center justify-center gap-2 text-sm text-muted lg:justify-start">
-                <span className="truncate">{t("ui.auth.as", { email: game.account.email })}</span>
+              <p className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-2 text-sm text-muted lg:justify-start">
+                <span className="min-w-0 max-w-full truncate">{t("ui.auth.as", { email: game.account.email })}</span>
                 <button onClick={logout} className="shrink-0 underline-offset-2 hover:text-ink hover:underline">{t("ui.auth.logout")}</button>
               </p>
             )}

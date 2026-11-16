@@ -194,9 +194,9 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
                 <button onClick={goToGoal} className="mt-3 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/30">{t("ui.go")}</button>
               )}
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <button onClick={openLaptop} className="rounded-xl border border-line bg-surface-2/60 py-2.5">▭ {t("ui.nav.laptop")}</button>
+                <button onClick={openLaptop} className="flex items-center justify-center gap-2 rounded-xl border border-line bg-surface-2/60 py-2.5"><NavIcon v="laptop" /> {t("ui.nav.laptop")}</button>
                 <button onClick={openPhone} className="relative rounded-xl border border-line bg-surface-2/60 py-2.5">
-                  ▯ {t("ui.nav.phone")}
+                  <span className="inline-flex items-center gap-2"><NavIcon v="phone" /> {t("ui.nav.phone")}</span>
                   {state.unread.length > 0 && <span className="absolute right-3 top-2.5 h-2 w-2 rounded-full bg-bad" aria-hidden />}
                 </button>
               </div>
@@ -210,7 +210,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       </div>
 
       {/* Нижняя навигация на телефоне */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-bg/95 backdrop-blur lg:hidden" aria-label="Навигация">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Навигация">
         {(["room", "laptop", "phone"] as View[]).map((v) => (
           <button
             key={v}
@@ -218,7 +218,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
             aria-current={view === v ? "page" : undefined}
             className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs ${view === v ? "text-ai" : "text-muted"}`}
           >
-            <span className="text-lg" aria-hidden>{v === "room" ? "⌂" : v === "laptop" ? "▭" : "▯"}</span>
+            <NavIcon v={v} />
             {t(`ui.nav.${v}`)}
             {v === "phone" && state.unread.length > 0 && <span className="absolute right-[30%] top-2 h-2.5 w-2.5 rounded-full bg-bad" aria-label="новые сообщения" />}
             {highlight === v && view !== v && <span className="anim-glow absolute left-[30%] top-2 h-2 w-2 rounded-full bg-ok" aria-hidden />}
@@ -387,4 +387,12 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
     );
   }
   return <PromptLab game={game} state={state} quest={prompt} motion={motion} onFinished={onFinished} onLesson={openLesson} />;
+}
+
+/** Значки нижнего меню: рисуем сами, чтобы на всех телефонах выглядели одинаково. */
+function NavIcon({ v }: { v: View }) {
+  const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
+  if (v === "room") return <svg {...common}><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v9.5h13V10" /><path d="M10 19.5v-5h4v5" /></svg>;
+  if (v === "laptop") return <svg {...common}><rect x="4.5" y="5" width="15" height="10" rx="1.5" /><path d="M2.5 18.5h19" /></svg>;
+  return <svg {...common}><rect x="7" y="2.5" width="10" height="19" rx="2.2" /><path d="M11 18.5h2" /></svg>;
 }
