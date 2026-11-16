@@ -437,3 +437,70 @@ describe("Q6–Q13 — вторая половина акта", () => {
     expect(loaded?.lessons).toEqual([]);
   });
 });
+
+describe("Этап 2 — покупки, подработки, таймер", () => {
+  const allStoryDone = (): GameState => {
+    const s = newGameState(profile, ctx);
+    s.messages = [];
+    s.quests = {};
+    for (const q of content.quests) {
+      if (q.repeatable) continue;
+      s.quests[q.id] = { status: "done", stage: 0, attempts: 1, bestQuality: 1, selections: {} };
+      for (const slot of q.reward.unlockSlots ?? []) if (!s.slots.includes(slot)) s.slots.push(slot);
+    }
+    refreshQuests(s, ctx);
+    return s;
+  };
+  const spotRight = { day: "true", len: "fake", cars: "true", years: "fake", mayor: "fake", cost: "true" };
+
+  it("«Нейра Плюс» включает проверку до отправки и закрывает заказ на покупку", () => {
+    const s = at("q12p", ["wantPlus"]);
+    s.money = 1000;
+    const { state } = play([{ type: "buy", itemId: "neiraPlus" }], s);
+    expect(state.flags).toContain("selfCheck");
+    expect(state.quests.q12p?.status).toBe("done");
+    expect(state.money).toBe(700);
+  });
+
+  it("ноутбук нельзя купить, пока Алекс о нём не рассказал", () => {
+    const s = at("q12");
+    s.money = 5000;
+    const { state, events } = play([{ type: "buy", itemId: "laptopLight" }], s);
+    expect(state.inventory).not.toContain("laptopLight");
+    expect(events.some((e) => e.type === "rejected")).toBe(true);
+  });
+
+  it("покупка одного из двух ноутбуков завершает второй этап", () => {
+    const s = at("q15b");
+    s.money = 5000;
+    const { state } = play([{ type: "buy", itemId: "laptopGamer" }], s);
+    expect(state.quests.q15b?.status).toBe("done");
+    expect(state.flags).toContain("gpuLaptop");
+  });
+
+  it("подработка после сдачи снова доступна и платит повторно", () => {
+    let s = allStoryDone();
+    expect(s.quests.gigSpot?.status).toBe("available");
+    expect(currentGoal(s, content).textKey).toBe("goal.gigs");
+    const before = s.money;
+    const run = (): Action[] => [
+      { type: "acceptQuest", questId: "gigSpot" },
+      { type: "submitClassify", questId: "gigSpot", answers: spotRight },
+    ];
+    s = play(run(), s).state;
+    const once = s.money - before;
+    expect(once).toBeGreaterThan(0);
+    expect(s.quests.gigSpot).toMatchObject({ status: "available", runs: 1 });
+    s = play(run(), s).state;
+    expect(s.money - before).toBe(once * 2);
+    expect(s.quests.gigSpot?.runs).toBe(2);
+  });
+
+  it("на время: неотвеченный пункт считается ошибкой, а не блокирует сдачу", () => {
+    const s = allStoryDone();
+    const answers: Record<string, string> = { ...spotRight };
+    delete answers.day;
+    const { state } = play([{ type: "acceptQuest", questId: "gigSpot" }, { type: "submitClassify", questId: "gigSpot", answers }], s);
+    expect(state.quests.gigSpot?.runs).toBe(1);
+  });
+});

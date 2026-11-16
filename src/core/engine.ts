@@ -154,7 +154,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       const progress = state.quests[action.questId];
       if (!quest || quest.kind !== "classify" || !progress || progress.status !== "active") return reject("err.questUnavailable");
       const optionIds = quest.options.map((o) => o.id);
-      for (const item of quest.items) if (!optionIds.includes(action.answers[item.id] ?? "")) return reject("err.classifyIncomplete");
+      if (!quest.timer) for (const item of quest.items) if (!optionIds.includes(action.answers[item.id] ?? "")) return reject("err.classifyIncomplete");
       const total = quest.items.reduce((n, i) => n + i.weight, 0) || 1;
       const wrong = quest.items.filter((i) => action.answers[i.id] !== i.answer).map((i) => i.id);
       const lost = quest.items.filter((i) => wrong.includes(i.id)).reduce((n, i) => n + i.weight, 0);
@@ -187,15 +187,16 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
 
     case "buy": {
       const item = ctx.content.items.find((i) => i.id === action.itemId);
-      if (!item) return reject("err.noItem");
+      if (!item || (item.requiresQuest && !state.quests[item.requiresQuest])) return reject("err.noItem");
       if (state.inventory.includes(item.id)) return reject("err.owned");
       if (state.money < item.price) return reject("err.noMoney");
       if (!addLedger(state, `buy:${item.id}`, -item.price, item.nameKey)) return reject("err.owned");
       state.inventory.push(item.id);
+      for (const f of item.flags ?? []) addFlag(state, f);
       for (const slot of item.unlockSlots ?? []) if (!state.slots.includes(slot)) state.slots.push(slot);
       events.push({ type: "bought", itemId: item.id });
       for (const q of ctx.content.quests) {
-        if (q.kind === "purchase" && state.quests[q.id]?.status === "active") completeQuest(state, q, 1, ctx, events);
+        if (q.kind === "purchase" && state.quests[q.id]?.status === "active" && (!q.items || q.items.includes(item.id))) completeQuest(state, q, 1, ctx, events);
       }
       return { state, events };
     }
@@ -250,7 +251,8 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   if (r.pay) {
     const flagMul = Object.entries(r.payByFlag ?? {}).reduce((m, [f, k]) => (state.flags.includes(f) ? m * k : m), 1);
     pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
-    if (pay > 0 && addLedger(state, `quest:${quest.id}`, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
+    const ledgerKey = quest.repeatable ? `quest:${quest.id}:${(progress.runs ?? 0) + 1}` : `quest:${quest.id}`;
+    if (pay > 0 && addLedger(state, ledgerKey, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;
   }
   if (r.xp) {
@@ -291,6 +293,10 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   }
 
   events.push({ type: "questDone", questId: quest.id });
+  // Подработка возвращается на доску: та же задача, новый клиент, новые деньги.
+  if (quest.repeatable) {
+    state.quests[quest.id] = { status: "available", stage: 0, attempts: 0, bestQuality: Math.max(progress.bestQuality, quality), selections: {}, runs: (progress.runs ?? 0) + 1 };
+  }
   refreshQuests(state, ctx);
   return pay;
 }
@@ -314,11 +320,13 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
 }
 
 export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string } {
-  const order = content.quests;
-  const active = order.find((q) => state.quests[q.id]?.status === "active");
+  const story = content.quests.filter((q) => !q.repeatable);
+  const active = story.find((q) => state.quests[q.id]?.status === "active") ?? content.quests.find((q) => state.quests[q.id]?.status === "active");
   if (active) return { textKey: active.activeGoalKey ?? active.goalKey, questId: active.id };
-  const available = order.find((q) => state.quests[q.id]?.status === "available");
+  const available = story.find((q) => state.quests[q.id]?.status === "available");
   if (available) return { textKey: available.goalKey, questId: available.id };
+  const gig = content.quests.find((q) => q.repeatable && state.quests[q.id]?.status === "available");
+  if (gig) return { textKey: "goal.gigs", questId: gig.id };
   return { textKey: content.finalGoalKey };
 }
 

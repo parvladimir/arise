@@ -13,6 +13,8 @@ import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room } from "./Room";
 import { Toasts } from "./Toasts";
+import { PushBanner } from "./Notify";
+import { DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
 import type { GameApi } from "./useGame";
 
@@ -97,9 +99,11 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const openNeira = () => go("laptop", "neira");
 
   const laptop = (
-    <Laptop game={game} state={state} app={app} setApp={setApp} motion={motion} onClose={() => go("room", null)} openNeira={openNeira} onFinished={() => go("room", null)} />
+    <Laptop game={game} state={state} app={app} setApp={setApp} motion={motion} onClose={() => go("room", null)} openNeira={openNeira} onFinished={() => go("room", null)} onGoal={goToGoal} openPhone={openPhone} />
   );
-  const phone = <Phone game={game} state={state} chat={chat} setChat={setChat} onAccepted={() => openNeira()} />;
+  const phone = <Phone game={game} state={state} chat={chat} setChat={setChat} onAccepted={() => openNeira()} motion={motion} />;
+  // Чат виден, если телефон открыт: на широком экране он всегда сбоку, на узком — только на своём экране.
+  const visibleChat = chat && (!narrow || view === "phone") ? chat : null;
 
   return (
     <div data-motion={motion ? "on" : "off"} className="flex h-dvh flex-col">
@@ -153,6 +157,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       </nav>
 
       <Toasts game={game} state={state} hold={view === "laptop" && app === "neira"} />
+      <PushBanner game={game} state={state} suppress={visibleChat} openChat={(c) => { go("phone", undefined, c); setPhonePulse((n) => n + 1); }} />
     </div>
   );
 }
@@ -166,6 +171,8 @@ function Laptop({
   onClose,
   openNeira,
   onFinished,
+  onGoal,
+  openPhone,
 }: {
   game: GameApi;
   state: GameState;
@@ -175,13 +182,15 @@ function Laptop({
   onClose: () => void;
   openNeira: () => void;
   onFinished: () => void;
+  onGoal: () => void;
+  openPhone: () => void;
 }) {
   const { t } = game;
   const openApp = app && state.apps.includes(app) ? app : null;
   // Значки на иконках: сколько новых заказов, есть ли задача для Нейры, куда ведёт текущая цель
   const goalApp = goalTarget(state).app;
   const badges: Partial<Record<AppId, string>> = {};
-  const newOrders = boardQuests(state, content).filter((q) => state.quests[q.id]?.status === "available").length;
+  const newOrders = boardQuests(state, content).filter((q) => !q.repeatable && state.quests[q.id]?.status === "available").length;
   if (newOrders > 0) badges.orders = String(newOrders);
   if (activePromptQuest(state) || activeClassifyQuest(state)) badges.neira = "!";
   if (goalApp && !badges[goalApp]) badges[goalApp] = "!";
@@ -250,6 +259,8 @@ function Laptop({
                 </div>
               ))}
             </div>
+            <DeskTicker game={game} />
+            <DeskWidgets game={game} state={state} onGoal={onGoal} openNeira={openNeira} openPhone={openPhone} />
           </div>
         )}
         {openApp === "neira" && <NeiraApp game={game} state={state} motion={motion} onFinished={onFinished} />}

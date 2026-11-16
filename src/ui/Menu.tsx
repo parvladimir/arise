@@ -13,7 +13,7 @@ const DEMO = [
 const FEATURES = [
   { icon: "✦", label: "Промпты", tone: "#a78bfa" },
   { icon: "◆", label: "Основы ИИ", tone: "#4f8cff" },
-  { icon: "●", label: "9 уроков", tone: "#2dd4bf" },
+  { icon: "●", label: "11 уроков", tone: "#2dd4bf" },
   { icon: "▲", label: "Сюжет и карьера", tone: "#f5b544" },
 ];
 

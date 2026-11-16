@@ -1,4 +1,5 @@
 import { content } from "@/content";
+import { currentGoal } from "@/core/engine";
 import type { AppId, GameState, NpcId, QuestDef } from "@/core/types";
 
 export type View = "room" | "laptop" | "phone";
@@ -10,19 +11,19 @@ export interface Target {
 
 /** Куда вести игрока по кнопке «Перейти» у текущей цели. */
 export function goalTarget(state: GameState): Target {
-  const quests = content.quests;
-  const status = (q: QuestDef) => state.quests[q.id]?.status;
-  const active = quests.find((q) => status(q) === "active");
-  if (active) {
-    if (active.kind === "dialog") return { view: "phone", chat: active.npc };
-    if (active.kind === "purchase") return { view: "laptop", app: "shop" };
+  const id = currentGoal(state, content).questId;
+  const q = id ? content.quests.find((x) => x.id === id) : undefined;
+  if (!q) return { view: "room" };
+  const status = state.quests[q.id]?.status;
+  if (status === "active") {
+    if (q.kind === "dialog") return { view: "phone", chat: q.npc };
+    if (q.kind === "purchase") return { view: "laptop", app: "shop" };
     return { view: "laptop", app: "neira" };
   }
-  const available = quests.find((q) => status(q) === "available");
-  if (available) {
-    if (available.offer.type === "board") return { view: "laptop", app: "orders" };
-    if (available.offer.type === "message") return { view: "phone", chat: available.offer.from };
-  }
+  if (q.kind === "dialog") return { view: "phone", chat: q.npc };
+  if (q.offer.type === "board") return { view: "laptop", app: "orders" };
+  if (q.offer.type === "message") return { view: "phone", chat: q.offer.from };
+  if (q.kind === "purchase") return { view: "laptop", app: "shop" };
   return { view: "room" };
 }
 

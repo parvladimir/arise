@@ -26,6 +26,7 @@ export interface SimResult {
   attempts: Record<string, number>;
   bought: string[];
   minutes: number;
+  gigs: number;
   finished: boolean;
 }
 
@@ -95,12 +96,23 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     return r.events;
   };
 
-  for (let guard = 0; guard < 200; guard++) {
-    const quest = content.quests.find((q) => {
+  let gigs = 0;
+  let needMoney = false;
+  for (let guard = 0; guard < 400; guard++) {
+    const open = (q: QuestDef) => {
       const st = state.quests[q.id]?.status;
       return st === "active" || st === "available";
-    }) as QuestDef | undefined;
+    };
+    // Сюжет идёт первым; подработку берём, только если не хватает денег на покупку (или она уже начата).
+    const activeGig = content.quests.find((q) => q.repeatable && state.quests[q.id]?.status === "active");
+    const story = content.quests.find((q) => !q.repeatable && open(q));
+    const gig = content.quests.filter((q) => q.repeatable && open(q))[gigs % 3];
+    const quest = (activeGig ?? (needMoney ? gig : story)) as QuestDef | undefined;
     if (!quest) break;
+    if (quest.repeatable && state.quests[quest.id]?.status === "available") {
+      gigs += 1;
+      needMoney = false;
+    }
     const progress = state.quests[quest.id]!;
     if (progress.status === "available") {
       act({ type: "acceptQuest", questId: quest.id });
@@ -109,6 +121,16 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     if (quest.kind === "dialog") {
       act({ type: "choose", questId: quest.id, choiceId: quest.choices[Math.floor(rand() * quest.choices.length)]!.id });
       seconds += SECONDS[profile].dialog;
+    } else if (quest.kind === "purchase" && quest.items) {
+      const wanted = profile === "hasty" ? [...quest.items].reverse() : quest.items;
+      const id = wanted.find((i) => state.money >= content.items.find((x) => x.id === i)!.price);
+      if (id) {
+        act({ type: "buy", itemId: id });
+        seconds += SECONDS[profile].shop;
+      } else {
+        needMoney = true;
+        if (gigs > 40) break;
+      }
     } else if (quest.kind === "purchase") {
       for (const id of SHOP_PLAN[profile]) {
         const item = content.items.find((i) => i.id === id)!;
@@ -142,6 +164,7 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     }
   }
 
+  void gigs;
   const earned = state.ledger.filter((e) => e.delta > 0).reduce((s, e) => s + e.delta, 0);
   return {
     profile,
@@ -151,7 +174,8 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     attempts,
     bought: [...state.inventory],
     minutes: Math.round((seconds / 60) * 10) / 10,
-    finished: state.quests[content.quests.at(-1)!.id]?.status === "done" && Object.values(state.quests).every((q) => q.status === "done"),
+    gigs,
+    finished: content.quests.filter((q) => !q.repeatable && state.quests[q.id]).every((q) => state.quests[q.id]!.status === "done") && state.quests.q15b?.status === "done",
   };
 }
 

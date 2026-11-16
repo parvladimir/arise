@@ -25,12 +25,18 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
             <li key={q.id} className="anim-rise rounded-xl border border-line bg-surface-2/60 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 font-semibold">
-                  {status === "available" && <span className="rounded-full bg-bad px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("ui.orders.new")}</span>}
+                  {status === "available" && !q.repeatable && <span className="rounded-full bg-bad px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("ui.orders.new")}</span>}
+                  {q.repeatable && <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">{t("ui.orders.gig")}</span>}
                   {t(q.titleKey)}
                 </h3>
                 {pay > 0 && <span className="font-mono text-sm text-gold">{t("ui.orders.pay", { pay })}</span>}
               </div>
-              {from && <p className="mt-0.5 text-sm text-muted">{t(`npc.${from}`)}</p>}
+              {from && (
+                <p className="mt-0.5 text-sm text-muted">
+                  {t(`npc.${from}`)}
+                  {q.repeatable && (state.quests[q.id]!.runs ?? 0) > 0 && <span className="ml-2 text-xs">· {t("ui.orders.runs", { n: state.quests[q.id]!.runs ?? 0 })}</span>}
+                </p>
+              )}
               {q.offer.type !== "auto" && <p className="mt-2 text-[15px] leading-snug">«{t(q.offer.textKey)}»</p>}
               <div className="mt-3">
                 {status === "available" ? (
@@ -63,12 +69,16 @@ export function Shop({ game, state }: { game: GameApi; state: GameState }) {
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.shop.title")}</h2>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {content.items.map((item) => {
+        {content.items.filter((item) => !item.requiresQuest || state.quests[item.requiresQuest]).map((item) => {
           const owned = state.inventory.includes(item.id);
+          const forQuest = item.requiresQuest && state.quests[item.requiresQuest]?.status === "active";
           const afford = state.money >= item.price;
           return (
-            <li key={item.id} className="flex flex-col rounded-xl border border-line bg-surface-2/60 p-4">
-              <h3 className="font-semibold">{t(item.nameKey)}</h3>
+            <li key={item.id} className={`anim-rise flex flex-col rounded-xl border p-4 ${forQuest && !owned ? "border-ok/60 bg-ok/5 shadow-[0_0_24px_-10px_var(--color-ok)]" : "border-line bg-surface-2/60"}`}>
+              <h3 className="flex flex-wrap items-center gap-2 font-semibold">
+                {t(item.nameKey)}
+                {forQuest && !owned && <span className="rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ok">{t("ui.shop.forQuest")}</span>}
+              </h3>
               <p className="mt-1 flex-1 text-sm leading-snug text-muted">{t(item.descKey)}</p>
               <div className="mt-3 flex items-center justify-between">
                 <span className="font-mono font-semibold text-gold">{t("ui.shop.price", { price: item.price })}</span>

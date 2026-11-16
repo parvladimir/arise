@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { content } from "@/content";
 import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/core/types";
-import { matches } from "@/core/promptSim";
+import { matches, runPrompt } from "@/core/promptSim";
 import { PromptPreview, Takeaway } from "./Learn";
 import { FreeformInput } from "./Freeform";
 import { analyzeFreeform } from "@/core/freeform";
 import { ruMatch } from "@/content/locales/ru.match";
 import type { GameApi } from "./useGame";
 
-const NPC_COLOR: Record<string, string> = { anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
+const NPC_COLOR: Record<string, string> = { boris: "#fb923c", vera: "#f472b6", editor: "#38bdf8", anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
 
 type PromptQuest = Extract<QuestDef, { kind: "prompt" }>;
 type Shown = { questId: string; stage: number; result: PromptResult; pay: number; finished: boolean; sel: Partial<Record<SlotId, string>> };
@@ -47,6 +47,8 @@ export function PromptLab({
   const [picked, setSelection] = useState<Partial<Record<SlotId, string>>>({});
   const [mode, setMode] = useState<"cards" | "free">("cards");
   const [freeText, setFreeText] = useState("");
+  // «Нейра Плюс»: предварительная оценка запроса без траты попытки.
+  const [pre, setPre] = useState<{ key: string; result: PromptResult } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("done");
   const [thinkStep, setThinkStep] = useState(0);
@@ -155,6 +157,12 @@ export function PromptLab({
   const reactions = resultForThisStage ? (stage.reactions ?? []).filter((re) => matches(re.when, resultForThisStage.sel)) : [];
   const totalWeight = stage.criteria.reduce((n, c) => n + c.weight, 0) || 1;
   const r = resultForThisStage?.result;
+  const selKey = JSON.stringify(selection) + stageIndex;
+  const preResult = pre && pre.key === selKey && !(resultForThisStage?.result.passed) ? pre.result : null;
+  const precheck = () => {
+    const clean = Object.fromEntries(Object.entries(selection).filter(([slot]) => slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
+    setPre({ key: selKey, result: runPrompt(stage, clean, t, state.quests[viewQuest.id]?.selections ?? {}) });
+  };
   // Для проваленной «правдивости» объясняем: что именно выдумано и из-за какой карточки
   const usedSelection = resultForThisStage ? (state.quests[viewQuest.id]?.selections?.[stageIndex] ?? selection) : selection;
   const inventions = (r?.segments ?? [])
@@ -260,10 +268,10 @@ export function PromptLab({
           <h3 className="mt-5 text-sm font-semibold text-muted">{t("ui.neira.criteria")}</h3>
           <ul className="mt-2 space-y-1">
             {stage.criteria.map((c) => {
-              const res = r?.criteria.find((x) => x.id === c.id);
+              const res = (preResult ?? r)?.criteria.find((x) => x.id === c.id);
               // Критерий, который зависит только от ещё закрытых слотов, честно показываем закрытым, а не проваленным
               const needsLocked = c.kind === "cards" && Object.keys(c.when).every((s) => !state.slots.includes(s as SlotId));
-              const mark = needsLocked ? "lock" : !res || !done ? "idle" : res.passed ? "ok" : "bad";
+              const mark = needsLocked ? "lock" : !res || (!preResult && !done) ? "idle" : res.passed ? "ok" : "bad";
               const share = Math.round((c.weight / totalWeight) * 100);
               return (
                 <li key={c.id} className="flex items-start gap-2 text-sm leading-5">
@@ -288,6 +296,18 @@ export function PromptLab({
           </ul>
 
           {error && <p className="mt-3 text-sm text-bad" role="alert">{error}</p>}
+          {state.flags.includes("selfCheck") && (!resultForThisStage || !resultForThisStage.result.passed) && (
+            <div className="mt-5">
+              <button onClick={precheck} disabled={locked} className="w-full rounded-xl border border-ok/50 bg-ok/5 py-2.5 text-sm font-semibold text-ok hover:bg-ok/10 disabled:opacity-50">
+                {t("ui.neira.precheck")}
+              </button>
+              {preResult && (
+                <p className="mt-1.5 text-center text-xs text-muted">
+                  {t("ui.neira.quality", { q: Math.round(preResult.quality * 100) })} · {t(preResult.passed ? "ui.neira.passed" : "ui.neira.failed")} · {t("ui.neira.precheckNote")}
+                </p>
+              )}
+            </div>
+          )}
           {(!resultForThisStage || !resultForThisStage.result.passed) && (
             <button onClick={submit} disabled={locked} className="mt-5 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/25 enabled:hover:brightness-110 disabled:opacity-50">
               {t("ui.neira.send")}

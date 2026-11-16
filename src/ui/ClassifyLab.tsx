@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { QuestDef } from "@/core/types";
 import { Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
@@ -35,6 +35,15 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fails, setFails] = useState(0);
+  // Режим на время: таймер стартует по кнопке, по нулю ответы сдаются сами.
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const timed = Boolean(quest.timer);
+  const running = timed && startedAt !== null && !result?.passed;
+  const remaining = timed && startedAt !== null ? Math.max(0, Math.ceil(quest.timer! - (now - startedAt) / 1000)) : quest.timer ?? 0;
 
   const privacy = quest.game === "privacy";
   const left = quest.items.filter((i) => !answers[i.id]).length;
@@ -44,14 +53,38 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
 
   const submit = () => {
     setError(null);
-    const events = dispatch({ type: "submitClassify", questId: quest.id, answers });
+    const events = dispatch({ type: "submitClassify", questId: quest.id, answers: answersRef.current });
     const rej = events.find((e) => e.type === "rejected");
     if (rej && rej.type === "rejected") return setError(t(rej.reasonKey));
     const res = events.find((e) => e.type === "classifyResult");
     if (res && res.type === "classifyResult") {
       setResult(res);
       if (!res.passed) setFails((n) => n + 1);
+      if (timed) setStartedAt(null);
     }
+  };
+  const submitRef = useRef(submit);
+  submitRef.current = submit;
+
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, [running]);
+  useEffect(() => {
+    if (running && remaining === 0) {
+      setTimedOut(true);
+      submitRef.current();
+    }
+  }, [running, remaining]);
+
+  const start = () => {
+    setResult(null);
+    setTimedOut(false);
+    setAnswers({});
+    const t0 = Date.now();
+    setNow(t0);
+    setStartedAt(t0);
   };
 
   const shortcut = () => {
@@ -68,7 +101,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
         {/* Задача */}
         <div className="rounded-xl border border-line bg-surface-2/60 p-3.5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-semibold uppercase tracking-wider text-ok">{t(privacy ? "ui.check.privacy" : "ui.check.factcheck")}</span>
+            <span className="font-semibold uppercase tracking-wider text-ok">{t(privacy ? "ui.check.privacy" : quest.game === "spot" ? "ui.check.spot" : "ui.check.factcheck")}</span>
             <span className="flex items-center gap-2">
               {quest.client && <span className="text-muted">{t("ui.neira.client")}: {t(`npc.${quest.client}`)}</span>}
               {onLesson && <button onClick={onLesson} className="rounded-md border border-ok/40 px-2 py-0.5 font-semibold text-ok hover:bg-ok/10">📘 {t("ui.lesson.open")}</button>}
@@ -102,7 +135,29 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
             <h3 className="font-semibold">{t(privacy ? "ui.check.fields" : "ui.check.summary")}</h3>
             {!finished && <span className="ml-auto text-xs text-muted">{left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
           </div>
-          <ul className="mt-3 space-y-2.5">
+          {timed && (
+            <div className="mt-3 rounded-xl border border-gold/40 bg-gold/5 p-3">
+              {running ? (
+                <div>
+                  <div className="flex items-center justify-between text-sm font-semibold">
+                    <span className="text-gold">⏱ {t("ui.check.timeLeft", { n: remaining })}</span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                    <div className="h-full rounded-full bg-gold transition-[width] duration-300" style={{ width: `${(remaining / quest.timer!) * 100}%` }} />
+                  </div>
+                </div>
+              ) : !result?.passed ? (
+                <div className="text-sm">
+                  {timedOut && <p className="mb-2 font-semibold text-bad">{t("ui.check.timeUp")}</p>}
+                  <p className="text-muted">{t("ui.check.timerHint", { n: quest.timer! })}</p>
+                  <button onClick={start} className="menu-cta mt-3 w-full rounded-xl py-2.5 font-semibold text-white">
+                    <span className="relative">⏱ {t("ui.check.start")}</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+          {(!timed || running || result) && <ul className="mt-3 space-y-2.5">
             {quest.items.map((item, i) => {
               const picked = answers[item.id];
               const wrong = result && result.wrong.includes(item.id);
@@ -143,7 +198,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
                 </li>
               );
             })}
-          </ul>
+          </ul>}
 
           {error && <p className="mt-3 text-sm text-bad" role="alert">{error}</p>}
 
@@ -163,7 +218,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
           )}
 
           {!finished ? (
-            <div className="mt-4 space-y-2">
+            (!timed || running) && <div className="mt-4 space-y-2">
               <button onClick={submit} className="w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/25 hover:brightness-110">
                 {t(privacy ? "ui.check.submitPrivacy" : "ui.check.submit")}
               </button>

@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { GameState, NpcId } from "@/core/types";
 import type { GameApi } from "./useGame";
 
-const AVATAR_COLOR: Record<NpcId, string> = {
+export const AVATAR_COLOR: Record<NpcId, string> = {
   dima: "#4f8cff",
+  boris: "#fb923c",
+  vera: "#f472b6",
+  editor: "#38bdf8",
   anna: "#e9a35b",
   sergey: "#94a3b8",
   olga: "#a78bfa",
@@ -21,19 +24,32 @@ export function Phone({
   chat,
   setChat,
   onAccepted,
+  motion = true,
 }: {
   game: GameApi;
   state: GameState;
   chat: NpcId | null;
   setChat: (n: NpcId | null) => void;
   onAccepted: (questId: string) => void;
+  motion?: boolean;
 }) {
   const { t, dispatch } = game;
   const npcs: NpcId[] = [];
   for (const m of [...state.messages].reverse()) if (!npcs.includes(m.npc)) npcs.push(m.npc);
   const open = chat && npcs.includes(chat) ? chat : null;
   const endRef = useRef<HTMLDivElement>(null);
-  const thread = open ? state.messages.filter((m) => m.npc === open) : [];
+  // Новые реплики в открытом чате появляются по одной, после «печатает…» — как в мессенджере.
+  const [shownUpTo, setShownUpTo] = useState(() => state.messages.reduce((n, m) => Math.max(n, m.id), 0));
+  const next = state.messages.find((m) => m.id > shownUpTo);
+  const typing = !!(motion && next && next.from === "npc" && next.npc === open);
+  useEffect(() => {
+    if (!next) return;
+    const delay = typing ? 700 + Math.min(t(next.textKey, next.vars).length * 10, 1100) : 0;
+    const id = window.setTimeout(() => setShownUpTo(next.id), delay);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [next?.id, typing]);
+  const thread = open ? state.messages.filter((m) => m.npc === open && m.id <= shownUpTo) : [];
 
   useEffect(() => {
     if (open && state.unread.includes(open)) dispatch({ type: "readChat", npc: open });
@@ -41,7 +57,7 @@ export function Phone({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
-  }, [thread.length, open]);
+  }, [thread.length, open, typing]);
 
   return (
     <section aria-label={t("ui.phone.title")} className="flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] border-4 border-[#1f2940] bg-[#0c1324] shadow-2xl">
@@ -111,6 +127,14 @@ export function Phone({
               )}
             </div>
           ))}
+          {typing && (
+            <div className="anim-rise flex items-start" aria-label={t("ui.phone.typing")}>
+              <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm bg-surface-2 px-3.5 py-2.5 text-sm text-muted">
+                {t("ui.phone.typing")}
+                <span className="neira-dots" aria-hidden><i>.</i><i>.</i><i>.</i></span>
+              </div>
+            </div>
+          )}
           <div ref={endRef} />
         </div>
       )}

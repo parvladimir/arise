@@ -283,3 +283,29 @@ body {
     radial-gradient(60% 50% at 0% 0%, rgb(79 140 255 / 0.22), transparent 70%),
     radial-gradient(50% 40% at 100% 100%, rgb(245 181 68 / 0.16), transparent 70%);
 }
+
+/* Пуш-уведомления о сообщениях */
+.push-banner { animation: push-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.push-banner.push-out { animation: push-leave 0.35s ease-in both; }
+.push-avatar::after { content: ""; position: absolute; inset: -3px; border-radius: 9999px; border: 2px solid currentColor; color: rgb(79 140 255 / 0.7); animation: push-ring 1.4s ease-out 0.3s 2; opacity: 0; }
+.push-timer { transform-origin: left; animation: push-timer linear both; }
+@keyframes push-in { from { transform: translateY(-140%) scale(0.92); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes push-leave { to { transform: translateY(-140%); opacity: 0; } }
+@keyframes push-ring { from { transform: scale(0.9); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+@keyframes push-timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* Виджеты рабочего стола */
+.desk-widget { animation: chip-in 0.5s ease-out both; transition: transform 0.2s, border-color 0.2s; }
+.desk-widget:hover { transform: translateY(-2px); border-color: rgb(255 255 255 / 0.2); }
+.desk-bar { animation: bar-fill 1.1s ease-out both; transform-origin: left; }
+@keyframes bar-fill { from { transform: scaleX(0); } }
+.desk-busy { animation: busy-pulse 1.6s ease-in-out infinite; }
+@keyframes busy-pulse { 50% { box-shadow: 0 0 0 6px rgb(45 212 191 / 0.25); } }
+.desk-ticker-track { display: inline-block; animation: ticker 60s linear infinite; }
+.desk-ticker:hover .desk-ticker-track { animation-play-state: paused; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+[data-motion="off"] .push-banner, [data-motion="off"] .push-avatar::after, [data-motion="off"] .push-timer,
+[data-motion="off"] .desk-widget, [data-motion="off"] .desk-bar, [data-motion="off"] .desk-busy { animation: none; }
+[data-motion="off"] .desk-ticker-track { animation: none; white-space: normal; padding-left: 6rem; }
+[data-motion="off"] .desk-ticker-track > span + span { display: none; }

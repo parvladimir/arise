@@ -6,7 +6,7 @@ export type Locale = "ru" | "en" | "de" | "uk";
 /** Ключ строки в словаре локализации. */
 export type TextKey = string;
 
-export type NpcId = "dima" | "anna" | "sergey" | "olga" | "alex" | "nick" | "neira" | "system";
+export type NpcId = "dima" | "anna" | "sergey" | "olga" | "alex" | "nick" | "boris" | "vera" | "editor" | "neira" | "system";
 export type AppId = "neira" | "orders" | "shop" | "skills" | "journal";
 export type SlotId = "role" | "goal" | "recipient" | "audience" | "tone" | "data" | "limits" | "format" | "examples";
 export type SkillId = "aiComm" | "aiLiteracy";
@@ -109,11 +109,11 @@ export interface ClassifyItem {
 export type QuestDef =
   | (QuestBase & { kind: "dialog"; npc: NpcId; promptKey: TextKey; choices: Choice[] })
   | (QuestBase & { kind: "prompt"; stages: PromptStage[]; client?: NpcId })
-  | (QuestBase & { kind: "purchase" })
+  | (QuestBase & { kind: "purchase"; /** Какие товары закрывают задание (по умолчанию — любой). */ items?: string[] })
   | (QuestBase & {
       kind: "classify";
       client?: NpcId;
-      game: "factcheck" | "privacy";
+      game: "factcheck" | "privacy" | "spot";
       introKey: TextKey;
       /** Текст-источник (абзацы статьи или строки выгрузки). */
       sourceKeys: TextKey[];
@@ -125,6 +125,8 @@ export type QuestDef =
       shortcut?: { labelKey: TextKey; flags: string[]; rep: number; replyKey: TextKey };
       /** Сообщение, если игрок ошибся в конкретном пункте. */
       onMissed?: { itemId: string; from: NpcId; textKey: TextKey }[];
+      /** Режим на время: секунды на всю проверку; неотмеченные пункты считаются ошибкой. */
+      timer?: number;
     });
 
 export interface QuestBase {
@@ -146,6 +148,8 @@ export interface QuestBase {
   activeGoalKey?: TextKey;
   reward: Reward;
   /** Сообщения после выполнения: можно зависеть от качества. */
+  /** Подработка: после сдачи снова появляется на доске. Не считается сюжетной целью. */
+  repeatable?: boolean;
   onComplete?: { from: NpcId; textKey: TextKey; minQuality?: number; maxQuality?: number; whenSel?: When; flag?: string; noFlag?: string }[];
   hours?: number;
 }
@@ -157,6 +161,10 @@ export interface ItemDef {
   price: number;
   unlockSlots?: SlotId[];
   workHours?: number;
+  /** Флаги, которые даёт покупка (например, «Нейра Плюс» включает самопроверку). */
+  flags?: string[];
+  /** Товар появляется в магазине, только когда это задание открыто. */
+  requiresQuest?: string;
 }
 
 export interface SkillDef {
@@ -207,6 +215,8 @@ export interface QuestProgress {
   /** Выбор игрока на каждой стадии (для критерия differsFromStage). */
   selections: Record<number, Partial<Record<SlotId, string>>>;
   choice?: string;
+  /** Сколько раз сдана подработка. */
+  runs?: number;
 }
 
 export interface ChatMessage {

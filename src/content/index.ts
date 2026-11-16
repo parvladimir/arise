@@ -1,6 +1,7 @@
 // Контент первого акта: задания Q1–Q5, карточки Prompt Lab, предметы, навыки.
 // Только структура и ключи текстов — сами тексты лежат в locales/.
 
+import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./act2";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
 const card = (id: string, slot: SlotId): PromptCard => ({ id, slot, textKey: `card.${id}` });
@@ -344,9 +345,9 @@ const glossary: GlossaryDef[] = [
 ];
 
 export const content: Content = {
-  lessons,
-  glossary,
-  cards,
+  lessons: [...lessons, ...act2Lessons],
+  glossary: [...glossary, ...act2Glossary],
+  cards: [...cards, ...act2Cards],
   finalGoalKey: "goal.end",
   skills: [
     { id: "aiComm", nameKey: "skill.aiComm", levels: [1, 3, 6] },
@@ -356,6 +357,7 @@ export const content: Content = {
     { id: "lamp", nameKey: "item.lamp.name", descKey: "item.lamp.desc", price: 60 },
     { id: "cheatsheet", nameKey: "item.cheatsheet.name", descKey: "item.cheatsheet.desc", price: 80, unlockSlots: ["examples"] },
     { id: "coffee", nameKey: "item.coffee.name", descKey: "item.coffee.desc", price: 150 },
+    ...act2Items,
   ],
   quests: [
     {
@@ -796,5 +798,6 @@ export const content: Content = {
         { from: "anna", textKey: "q13.anna.doneLate", flag: "annaLate" },
       ],
     },
+    ...act2Quests,
   ],
 };
