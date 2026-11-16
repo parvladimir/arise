@@ -70,8 +70,8 @@ function Ticker({ text }: { text: string }) {
       {/* Края строки плавно гаснут, а не обрезаются посреди буквы */}
       <linearGradient id="tickerFadeL" x1="0" x2="1"><stop offset="0" stopColor="#050914" /><stop offset="1" stopColor="#050914" stopOpacity="0" /></linearGradient>
       <linearGradient id="tickerFadeR" x1="1" x2="0"><stop offset="0" stopColor="#050914" /><stop offset="1" stopColor="#050914" stopOpacity="0" /></linearGradient>
-      <rect x="244" y="130" width="40" height="26" fill="url(#tickerFadeL)" />
-      <rect x="456" y="130" width="40" height="26" fill="url(#tickerFadeR)" />
+      <rect x="244" y="130" width="14" height="26" fill="url(#tickerFadeL)" />
+      <rect x="482" y="130" width="14" height="26" fill="url(#tickerFadeR)" />
       <circle cx="244" cy="136" r="2" fill="#f87171" className="fx-blink" />
     </g>
   );
@@ -391,7 +391,7 @@ function PhoneNotice({ notice, onClick }: { notice: { npc: NpcId }; onClick: () 
 
 /** Для доски: первая фраза цели без пояснений в скобках. */
 function shortGoal(text: string): string {
-  return text.replace(/\s*\([^)]*\)/g, "").split(/(?<=[.!?])\s/)[0]!.replace(/[.]$/, "");
+  return text.replace(/\s*\([^)]*\)/g, "").split(/(?<=[.!?])\s|\s*[:;—]\s/)[0]!.replace(/[.]$/, "");
 }
 
 /** Перенос по словам для SVG-текста (foreignObject в Safari масштабируется неправильно). */

@@ -117,6 +117,8 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
     if (a !== undefined) setApp(a);
     if (c) setChat(c);
   };
+  // Ноутбук открываем на том приложении, куда зовёт подсказка («Новый заказ!» → «Заказы»), иначе на рабочем столе.
+  const openLaptop = () => go("laptop", target.view === "laptop" ? (target.app ?? null) : null);
   const goToGoal = () => go(target.view, target.app ?? null, target.chat);
 
   // Телефон в комнате: открываем чат, куда ведёт цель, иначе непрочитанный, иначе последний.
@@ -156,7 +158,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
           <div className={`flex h-full flex-col gap-3 lg:block ${view === "laptop" ? "hidden lg:block" : ""}`}>
             <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
-              <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : go(v, app))} />
+              <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : v === "laptop" ? openLaptop() : go(v, app))} />
             </div>
             {roomHints.phone && showNoticeCard && (
               <button
@@ -188,7 +190,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
                 <button onClick={goToGoal} className="mt-3 w-full rounded-xl bg-ai py-3 font-semibold text-white shadow-lg shadow-ai/30">{t("ui.go")}</button>
               )}
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <button onClick={() => go("laptop", app)} className="rounded-xl border border-line bg-surface-2/60 py-2.5">▭ {t("ui.nav.laptop")}</button>
+                <button onClick={openLaptop} className="rounded-xl border border-line bg-surface-2/60 py-2.5">▭ {t("ui.nav.laptop")}</button>
                 <button onClick={openPhone} className="relative rounded-xl border border-line bg-surface-2/60 py-2.5">
                   ▯ {t("ui.nav.phone")}
                   {state.unread.length > 0 && <span className="absolute right-3 top-2.5 h-2 w-2 rounded-full bg-bad" aria-hidden />}
