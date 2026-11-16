@@ -2,7 +2,7 @@
 // чтобы позже заменить браузер на Supabase без правок ядра.
 
 import { DAY_START_HOUR, SCHEMA_VERSION } from "./engine";
-import type { AvatarId, GameState, Pronoun } from "./types";
+import type { AvatarId, GameState, Level, Pronoun } from "./types";
 
 const AVATAR_IDS: AvatarId[] = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12"];
 
@@ -49,6 +49,7 @@ export function deserialize(data: string): GameState | null {
 }
 
 const PRONOUNS: Pronoun[] = ["he", "she", "they"];
+const LEVELS: Level[] = ["novice", "practice", "pro"];
 const isStrArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
 
 /**
@@ -65,13 +66,15 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
       name: typeof p.name === "string" && p.name.trim() ? p.name.slice(0, 24) : "Саша",
       avatar: typeof p.avatar === "string" && AVATAR_IDS.includes(p.avatar as AvatarId) ? (p.avatar as AvatarId) : "a1",
       pronoun: PRONOUNS.includes(p.pronoun as Pronoun) ? (p.pronoun as Pronoun) : "they",
+      level: LEVELS.includes(p.level as Level) ? (p.level as Level) : "practice",
     },
     rep: num(raw.rep, 0),
     day: num(raw.day, 1),
     hour: num(raw.hour, DAY_START_HOUR),
     skills: { aiComm: num(skills.aiComm, 0), aiLiteracy: num(skills.aiLiteracy, 0) },
     inventory: isStrArray(raw.inventory) ? raw.inventory : [],
-    apps: isStrArray(raw.apps) ? (raw.apps as GameState["apps"]) : [],
+    // Школа открыта всем с начала игры, в том числе в старых сохранениях.
+    apps: [...new Set<GameState["apps"][number]>(["school", ...(isStrArray(raw.apps) ? (raw.apps as GameState["apps"]) : [])])],
     slots: isStrArray(raw.slots) ? (raw.slots as GameState["slots"]) : ["goal", "recipient", "tone"],
     unread: isStrArray(raw.unread) ? (raw.unread as GameState["unread"]) : [],
     achievements: isStrArray(raw.achievements) ? raw.achievements : [],

@@ -356,3 +356,14 @@ body {
 [data-motion="off"] .room-phone-up, [data-motion="off"] .room-notice { animation: none; }
 .phone-notice { animation: push-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
 [data-motion="off"] .phone-notice { animation: none; }
+
+/* Школа ТАКТ ИИ: неверный ответ слегка встряхивается */
+@keyframes school-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.school-shake { animation: school-shake 0.4s ease; }
+[data-motion="off"] .school-shake { animation: none; }

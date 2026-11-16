@@ -1,5 +1,7 @@
 // Русские тексты. Другие языки добавляются файлами с теми же ключами.
 
+import { ruSchool } from "./ru.school";
+
 export const ru: Record<string, string> = {
   // ---------- Интерфейс ----------
   "ui.title": "AI RISE",
@@ -989,4 +991,5 @@ export const ru: Record<string, string> = {
   "ui.orders.gig": "подработка",
   "ui.orders.runs": "сдано: {n}",
   "ui.shop.forQuest": "для задания",
+  ...ruSchool,
 };

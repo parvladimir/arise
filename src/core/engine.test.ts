@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { content } from "@/content";
 import { hasKey, makeTranslator } from "@/content/i18n";
-import { apply, currentGoal, newGameState, refreshQuests, type Ctx } from "./engine";
+import { apply, currentGoal, newGameState, passFor, refreshQuests, type Ctx } from "./engine";
 import { runPrompt } from "./promptSim";
 import { deserialize, serialize } from "./save";
 import { ru } from "@/content/locales/ru";
 import type { Action, GameState, PromptStage, QuestDef } from "./types";
 
 const ctx: Ctx = { content, t: makeTranslator("ru", "they") };
-const profile = { name: "Саша", avatar: "a1" as const, pronoun: "they" as const };
+const profile = { name: "Саша", avatar: "a1" as const, pronoun: "they" as const, level: "practice" as const };
 
 function play(actions: Action[], start?: GameState) {
   let state = start ?? newGameState(profile, ctx);
@@ -213,13 +213,20 @@ describe("сохранение", () => {
     expect(loaded).not.toBeNull();
     expect(loaded!.unread).toEqual([]);
     expect(loaded!.skills).toEqual({ aiComm: 0, aiLiteracy: 0 });
-    expect(loaded!.profile).toEqual({ name: "Саша", avatar: "a1", pronoun: "they" });
+    expect(loaded!.profile).toEqual({ name: "Саша", avatar: "a1", pronoun: "they", level: "practice" });
+    expect(loaded!.apps).toContain("school");
   });
 });
 
 describe("контент", () => {
   it("каждый ключ текста есть в русском словаре", () => {
-    const keys = new Set<string>([content.finalGoalKey]);
+    const keys = new Set<string>([content.finalGoalKey, "goal.school", "goal.rest", "ach.graduate"]);
+    for (const m of content.school) {
+      keys.add(m.titleKey).add(m.introKey).add(m.takeawayKey);
+      if (m.kind === "quiz") for (const i of m.items) [i.qKey, i.explainKey, ...(i.optionKeys ?? m.optionKeys ?? [])].forEach((k) => keys.add(k));
+      if (m.kind === "build") for (const r of m.rounds) [r.taskKey, r.resultKey, ...r.decoyKeys, ...r.parts.flatMap((p) => [p.labelKey, p.pieceKey, p.hintKey])].forEach((k) => keys.add(k));
+      if (m.kind === "spot") for (const r of m.rounds) [r.factsKey, ...r.sentences.map((x) => x.key)].forEach((k) => keys.add(k));
+    }
     for (const c of content.cards) keys.add(c.textKey);
     for (const i of content.items) keys.add(i.nameKey).add(i.descKey);
     for (const s of content.skills) keys.add(s.nameKey);
@@ -490,7 +497,11 @@ describe("Этап 2 — покупки, подработки, таймер", ()
     s = play(run(), s).state;
     const once = s.money - before;
     expect(once).toBeGreaterThan(0);
-    expect(s.quests.gigSpot).toMatchObject({ status: "available", runs: 1 });
+    // Сданная подработка уходит с доски до завтра
+    expect(s.quests.gigSpot).toMatchObject({ status: "done", runs: 1 });
+    expect(play(run(), s).events[0]).toMatchObject({ type: "rejected" });
+    s = play([{ type: "sleep" }], s).state;
+    expect(s.quests.gigSpot?.status).toBe("available");
     s = play(run(), s).state;
     expect(s.money - before).toBe(once * 2);
     expect(s.quests.gigSpot?.runs).toBe(2);
@@ -502,5 +513,34 @@ describe("Этап 2 — покупки, подработки, таймер", ()
     delete answers.day;
     const { state } = play([{ type: "acceptQuest", questId: "gigSpot" }, { type: "submitClassify", questId: "gigSpot", answers }], s);
     expect(state.quests.gigSpot?.runs).toBe(1);
+  });
+});
+
+describe("уровни и Школа ТАКТ ИИ", () => {
+  const start = (level: "novice" | "practice" | "pro") => play([{ type: "newGame", profile: { ...profile, level } }]).state;
+
+  it("новичка цель ведёт в школу, пока не пройдены азы", () => {
+    let s = start("novice");
+    expect(currentGoal(s, content).school).toBe(true);
+    for (const m of content.school.filter((x) => x.core)) s = play([{ type: "finishSchool", moduleId: m.id, correct: 1, total: 2 }], s).state;
+    expect(currentGoal(s, content).school).toBeUndefined();
+    expect(currentGoal(start("practice"), content).school).toBeUndefined();
+  });
+
+  it("урок школы платит один раз, а вся школа даёт достижение", () => {
+    let s = start("practice");
+    const money = s.money;
+    s = play([{ type: "finishSchool", moduleId: "ai", correct: 8, total: 8 }], s).state;
+    s = play([{ type: "finishSchool", moduleId: "ai", correct: 8, total: 8 }], s).state;
+    expect(s.money - money).toBe(15);
+    for (const m of content.school) s = play([{ type: "finishSchool", moduleId: m.id, correct: 1, total: 1 }], s).state;
+    expect(s.achievements).toContain("graduate");
+    expect(play([{ type: "finishSchool", moduleId: "nope", correct: 1, total: 1 }], s).events[0]).toMatchObject({ type: "rejected" });
+  });
+
+  it("профи сдаёт задания по более строгому порогу", () => {
+    expect(passFor(start("pro"), 0.7)).toBeCloseTo(0.8);
+    expect(passFor(start("pro"), 0.9)).toBe(0.95);
+    expect(passFor(start("novice"), 0.7)).toBe(0.7);
   });
 });

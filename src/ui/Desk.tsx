@@ -49,7 +49,7 @@ export function DeskWidgets({ game, state, onGoal, openNeira, openPhone }: { gam
 
       <Widget title={t("ui.goal")} tone="#34d399" delay={230}>
         <p className="line-clamp-4 text-sm leading-snug">{t(goal.textKey)}</p>
-        {goal.questId && (
+        {(goal.questId || goal.school) && (
           <button onClick={onGoal} className="mt-3 rounded-lg bg-ok/90 px-3 py-1.5 text-xs font-semibold text-bg hover:brightness-110">{t("ui.go")} →</button>
         )}
       </Widget>
@@ -138,7 +138,7 @@ export function DeskAlert({ game, state, onGoal, openPhone }: { game: GameApi; s
     const npc = state.unread[0]!;
     text = state.unread.length > 1 ? t("ui.alert.messages", { n: state.unread.length }) : t("ui.alert.message", { name: t(`npc.${npc}`) });
     action = openPhone;
-  } else if (goal.questId && target.view !== "room") {
+  } else if ((goal.questId || goal.school) && target.view !== "room") {
     text = t(goal.textKey);
   }
   if (!text) return null;

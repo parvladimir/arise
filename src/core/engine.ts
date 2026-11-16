@@ -8,6 +8,7 @@ import type {
   Content,
   GameEvent,
   GameState,
+  Level,
   NpcId,
   QuestDef,
   SkillId,
@@ -17,6 +18,14 @@ import type {
 export const SCHEMA_VERSION = 3;
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
+export const SCHOOL_PAY = 15;
+export const SCHOOL_XP = 10;
+
+/** Уровень игрока; старые сохранения без уровня считаются «практиком». */
+export const levelOf = (state: GameState): Level => state.profile.level ?? "practice";
+/** Профи сдаёт задания по более строгому порогу. */
+export const passFor = (state: GameState, pass: number) => (levelOf(state) === "pro" ? Math.min(0.95, pass + 0.1) : pass);
+export const schoolDone = (state: GameState, content: Content) => content.school.every((m) => state.flags.includes(`school:${m.id}`));
 
 export interface Ctx {
   content: Content;
@@ -39,7 +48,7 @@ export function newGameState(profile: GameState["profile"], ctx: Ctx): GameState
     hour: DAY_START_HOUR,
     skills: { aiComm: 0, aiLiteracy: 0 },
     inventory: [],
-    apps: [],
+    apps: ["school"],
     slots: ["goal", "recipient", "tone"],
     quests: {},
     messages: [],
@@ -71,6 +80,35 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
     case "seeLesson":
       if (!ctx.content.lessons.some((l) => l.id === action.lessonId)) return reject("err.questUnavailable");
       if (!state.lessons.includes(action.lessonId)) state.lessons.push(action.lessonId);
+      return { state, events };
+
+    case "finishSchool": {
+      const mod = ctx.content.school.find((m) => m.id === action.moduleId);
+      if (!mod || action.total <= 0 || action.correct < 0 || action.correct > action.total) return reject("err.questUnavailable");
+      const flag = `school:${mod.id}`;
+      if (state.flags.includes(flag)) return { state, events };
+      addFlag(state, flag);
+      // Награда за первый проход: немного денег, опыт и грамотность в ИИ.
+      if (addLedger(state, flag, SCHOOL_PAY, mod.titleKey)) state.toasts.push({ kind: "money", amount: SCHOOL_PAY });
+      state.xp += SCHOOL_XP;
+      state.toasts.push({ kind: "xp", amount: SCHOOL_XP });
+      const def = ctx.content.skills.find((x) => x.id === "aiLiteracy");
+      const before = def ? skillLevel(state.skills.aiLiteracy, def.levels) : 0;
+      state.skills.aiLiteracy += 1;
+      const after = def ? skillLevel(state.skills.aiLiteracy, def.levels) : 0;
+      if (after > before) state.toasts.push({ kind: "skill", skill: "aiLiteracy", level: after });
+      if (schoolDone(state, ctx.content) && !state.achievements.includes("graduate")) {
+        state.achievements.push("graduate");
+        state.toasts.push({ kind: "achievement", id: "graduate" });
+      }
+      return { state, events };
+    }
+
+    case "sleep":
+      // Конец дня: утро следующего дня, подработки снова на доске.
+      state.day += 1;
+      state.hour = 9;
+      reviveGigs(state);
       return { state, events };
 
     case "readChat":
@@ -118,7 +156,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       for (const slot of stage.required) if (!action.selection[slot]) return reject("err.missingSlot");
 
       const stageIndex = progress.stage;
-      const result = runPrompt(stage, action.selection, ctx.t, progress.selections);
+      const result = runPrompt({ ...stage, pass: passFor(state, stage.pass) }, action.selection, ctx.t, progress.selections);
       progress.attempts += 1;
       progress.selections[progress.stage] = { ...action.selection };
       advanceClock(state, 1);
@@ -159,7 +197,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       const wrong = quest.items.filter((i) => action.answers[i.id] !== i.answer).map((i) => i.id);
       const lost = quest.items.filter((i) => wrong.includes(i.id)).reduce((n, i) => n + i.weight, 0);
       const quality = Math.round((1 - lost / total) * 100) / 100;
-      const passed = quality >= quest.pass;
+      const passed = quality >= passFor(state, quest.pass);
       progress.attempts += 1;
       progress.bestQuality = Math.max(progress.bestQuality, quality);
       advanceClock(state, 1);
@@ -236,6 +274,22 @@ function advanceClock(state: GameState, hours: number) {
     state.hour -= 24 - 9; // ночь пропускается, утро в 9:00
     state.day += 1;
   }
+  reviveGigs(state);
+}
+
+/** Подработки, сданные вчера и раньше, снова появляются на доске. */
+function reviveGigs(state: GameState) {
+  for (const p of Object.values(state.quests)) {
+    if (p.status === "done" && p.readyDay !== undefined && state.day >= p.readyDay) {
+      p.status = "available";
+      delete p.readyDay;
+    }
+  }
+}
+
+/** Подработки, которые уже сданы сегодня и вернутся завтра. */
+export function restingGigs(state: GameState, content: Content): QuestDef[] {
+  return content.quests.filter((q) => q.repeatable && state.quests[q.id]?.status === "done" && state.quests[q.id]?.readyDay !== undefined);
 }
 
 /** shortcut: задание закрыто коротким путём — без бонусов за аккуратность (флаги, репутация, навыки, достижения). */
@@ -250,7 +304,8 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   for (const [npc, d] of Object.entries(r.rel ?? {}) as [NpcId, number][]) changeRel(state, npc, d);
   if (r.pay) {
     const flagMul = Object.entries(r.payByFlag ?? {}).reduce((m, [f, k]) => (state.flags.includes(f) ? m * k : m), 1);
-    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
+    const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
+    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul * levelMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
     const ledgerKey = quest.repeatable ? `quest:${quest.id}:${(progress.runs ?? 0) + 1}` : `quest:${quest.id}`;
     if (pay > 0 && addLedger(state, ledgerKey, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;
@@ -293,9 +348,9 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   }
 
   events.push({ type: "questDone", questId: quest.id });
-  // Подработка возвращается на доску: та же задача, новый клиент, новые деньги.
+  // Подработка уходит с доски до завтра, а утром возвращается: новый клиент, новые деньги.
   if (quest.repeatable) {
-    state.quests[quest.id] = { status: "available", stage: 0, attempts: 0, bestQuality: Math.max(progress.bestQuality, quality), selections: {}, runs: (progress.runs ?? 0) + 1 };
+    state.quests[quest.id] = { status: "done", stage: 0, attempts: 0, bestQuality: Math.max(progress.bestQuality, quality), selections: {}, runs: (progress.runs ?? 0) + 1, readyDay: state.day + 1 };
   }
   refreshQuests(state, ctx);
   return pay;
@@ -319,7 +374,11 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
   }
 }
 
-export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string } {
+export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string; school?: boolean } {
+  // Новичок начинает со Школы ТАКТ ИИ: пока не пройдены азы, цель ведёт туда.
+  if (levelOf(state) === "novice" && !content.school.filter((m) => m.core).every((m) => state.flags.includes(`school:${m.id}`))) {
+    return { textKey: "goal.school", school: true };
+  }
   const story = content.quests.filter((q) => !q.repeatable);
   const active = story.find((q) => state.quests[q.id]?.status === "active") ?? content.quests.find((q) => state.quests[q.id]?.status === "active");
   if (active) return { textKey: active.activeGoalKey ?? active.goalKey, questId: active.id };
@@ -327,6 +386,8 @@ export function currentGoal(state: GameState, content: Content): { textKey: Text
   if (available) return { textKey: available.goalKey, questId: available.id };
   const gig = content.quests.find((q) => q.repeatable && state.quests[q.id]?.status === "available");
   if (gig) return { textKey: "goal.gigs", questId: gig.id };
+  const resting = restingGigs(state, content)[0];
+  if (resting) return { textKey: "goal.rest", questId: resting.id };
   return { textKey: content.finalGoalKey };
 }
 

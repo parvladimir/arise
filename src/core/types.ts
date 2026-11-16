@@ -7,11 +7,13 @@ export type Locale = "ru" | "en" | "de" | "uk";
 export type TextKey = string;
 
 export type NpcId = "dima" | "anna" | "sergey" | "olga" | "alex" | "nick" | "boris" | "vera" | "editor" | "neira" | "system";
-export type AppId = "neira" | "orders" | "shop" | "skills" | "journal";
+export type AppId = "neira" | "orders" | "shop" | "skills" | "journal" | "school";
 export type SlotId = "role" | "goal" | "recipient" | "audience" | "tone" | "data" | "limits" | "format" | "examples";
 export type SkillId = "aiComm" | "aiLiteracy";
 export type AvatarId = "a1" | "a2" | "a3" | "a4" | "a5" | "a6" | "a7" | "a8" | "a9" | "a10" | "a11" | "a12";
 export type Pronoun = "he" | "she" | "they";
+/** Уровень игрока: новичок проходит школу и азы, профи получает задания строже и оплату выше. */
+export type Level = "novice" | "practice" | "pro";
 
 // ---------- Контент ----------
 
@@ -193,7 +195,48 @@ export interface GlossaryDef {
   questId: string;
 }
 
+// ---------- Школа ТАКТ ИИ: обучающие мини-игры ----------
+
+/** Вопрос с вариантами: «правда или миф», «какой ИИ подходит», «какой промпт сильнее». */
+export interface SchoolQuizItem {
+  qKey: TextKey;
+  /** Варианты ответа; если не заданы — берутся общие варианты модуля. */
+  optionKeys?: TextKey[];
+  /** Индекс верного варианта. */
+  answer: number;
+  explainKey: TextKey;
+}
+
+/** Сборка промпта по частям: на каждом шаге нужно выбрать кусок нужного типа. */
+export interface SchoolBuildRound {
+  taskKey: TextKey;
+  parts: { labelKey: TextKey; pieceKey: TextKey; hintKey: TextKey }[];
+  decoyKeys: TextKey[];
+  resultKey: TextKey;
+}
+
+/** Найди выдумку: факты пользователя и ответ ИИ, где часть фраз придумана. */
+export interface SchoolSpotRound {
+  factsKey: TextKey;
+  sentences: { key: TextKey; fake: boolean }[];
+}
+
+export type SchoolModule = {
+  id: string;
+  icon: string;
+  titleKey: TextKey;
+  introKey: TextKey;
+  takeawayKey: TextKey;
+  /** Для каких уровней модуль входит в обязательный старт. */
+  core?: boolean;
+} & (
+  | { kind: "quiz"; optionKeys?: TextKey[]; items: SchoolQuizItem[] }
+  | { kind: "build"; rounds: SchoolBuildRound[] }
+  | { kind: "spot"; rounds: SchoolSpotRound[] }
+);
+
 export interface Content {
+  school: SchoolModule[];
   lessons: LessonDef[];
   glossary: GlossaryDef[];
   quests: QuestDef[];
@@ -217,6 +260,8 @@ export interface QuestProgress {
   choice?: string;
   /** Сколько раз сдана подработка. */
   runs?: number;
+  /** Сданная подработка вернётся на доску в этот игровой день. */
+  readyDay?: number;
 }
 
 export interface ChatMessage {
@@ -241,7 +286,7 @@ export interface LedgerEntry {
 
 export interface GameState {
   schemaVersion: number;
-  profile: { name: string; avatar: AvatarId; pronoun: Pronoun };
+  profile: { name: string; avatar: AvatarId; pronoun: Pronoun; level?: Level };
   money: number;
   xp: number;
   rep: number;
@@ -285,6 +330,8 @@ export type Action =
   | { type: "takeShortcut"; questId: string }
   | { type: "readChat"; npc: NpcId }
   | { type: "seeLesson"; lessonId: string }
+  | { type: "finishSchool"; moduleId: string; correct: number; total: number }
+  | { type: "sleep" }
   | { type: "clearToasts" };
 
 export interface CriterionResult {

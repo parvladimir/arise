@@ -1,6 +1,7 @@
 // Контент первого акта: задания Q1–Q5, карточки Prompt Lab, предметы, навыки.
 // Только структура и ключи текстов — сами тексты лежат в locales/.
 
+import { school } from "./school";
 import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./act2";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
@@ -345,6 +346,7 @@ const glossary: GlossaryDef[] = [
 ];
 
 export const content: Content = {
+  school,
   lessons: [...lessons, ...act2Lessons],
   glossary: [...glossary, ...act2Glossary],
   cards: [...cards, ...act2Cards],

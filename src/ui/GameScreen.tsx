@@ -5,10 +5,11 @@ import { content } from "@/content";
 import { currentGoal } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
-import { boardQuests } from "@/core/engine";
+import { boardQuests, levelOf } from "@/core/engine";
 import { activeClassifyQuest, activePromptQuest, goalTarget, type View } from "./nav";
 import { ClassifyLab } from "./ClassifyLab";
 import { LessonCard, lessonFor } from "./Learn";
+import { School } from "./School";
 import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room, type RoomHints } from "./Room";
@@ -20,17 +21,18 @@ import { DeskAlert, DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
 import type { GameApi } from "./useGame";
 
-const ALL_APPS: AppId[] = ["neira", "orders", "shop", "skills", "journal"];
+const ALL_APPS: AppId[] = ["neira", "school", "orders", "shop", "skills", "journal"];
 const FUTURE_APPS = ["pixela", "flow", "code"] as const;
-const APP_ICON: Record<AppId, string> = { neira: "◉", orders: "▤", shop: "◈", skills: "✦", journal: "☰" };
+const APP_ICON: Record<AppId, string> = { neira: "◉", orders: "▤", shop: "◈", skills: "✦", journal: "☰", school: "🎓" };
 const APP_GRADIENT: Record<AppId, string> = {
   neira: "linear-gradient(135deg, #8b3dff, #00d4ff)",
   orders: "linear-gradient(135deg, #f5b544, #f97316)",
   shop: "linear-gradient(135deg, #f472b6, #a78bfa)",
   skills: "linear-gradient(135deg, #34d399, #0ea5e9)",
   journal: "linear-gradient(135deg, #64748b, #334155)",
+  school: "linear-gradient(135deg, #22d3ee, #6366f1)",
 };
-const APP_GLOW: Record<AppId, string> = { neira: "#8b3dff", orders: "#f59e0b", shop: "#ec4899", skills: "#10b981", journal: "#475569" };
+const APP_GLOW: Record<AppId, string> = { neira: "#8b3dff", orders: "#f59e0b", shop: "#ec4899", skills: "#10b981", journal: "#475569", school: "#22d3ee" };
 
 function useMotionPref(): [boolean, (v: boolean) => void] {
   const [motion, setMotionState] = useState(true);
@@ -69,8 +71,10 @@ function useNarrow(): boolean {
 
 export function GameScreen({ game, state }: { game: GameApi; state: GameState }) {
   const { t } = game;
-  const [view, setView] = useState<View>("room");
-  const [app, setApp] = useState<AppId | null>(null);
+  // Новичок, который ещё не начинал школу, сразу попадает в неё.
+  const [startInSchool] = useState(() => goalTarget(state).app === "school" && !state.flags.some((f) => f.startsWith("school:")));
+  const [view, setView] = useState<View>(startInSchool ? "laptop" : "room");
+  const [app, setApp] = useState<AppId | null>(startInSchool ? "school" : null);
   const [chat, setChat] = useState<NpcId | null>(null);
   const [phonePulse, setPhonePulse] = useState(0);
   const [motion, setMotion] = useMotionPref();
@@ -110,7 +114,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       text: last ? t(last.textKey, last.vars) : "",
     };
   }
-  if (target.view === "laptop") roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : "ui.hint.task");
+  if (target.view === "laptop") roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : target.app === "school" ? "ui.hint.school" : "ui.hint.task");
 
   const go = (v: View, a?: AppId | null, c?: NpcId) => {
     setView(v);
@@ -335,6 +339,7 @@ function Laptop({
         {openApp === "shop" && <Shop game={game} state={state} />}
         {openApp === "skills" && <Skills game={game} state={state} />}
         {openApp === "journal" && <Journal game={game} state={state} />}
+        {openApp === "school" && <School game={game} state={state} />}
       </div>
     </section>
   );
@@ -351,7 +356,8 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
   // Урок перед заданием: показывается сам при первом открытии, потом — по кнопке «Урок».
   const lesson = lessonFor(classify?.id ?? prompt?.id);
   const [reading, setReading] = useState<string | null>(null);
-  const unseen = lesson && !state.lessons.includes(lesson.id);
+  // Профи урок сам не открывается: он доступен по кнопке «Урок».
+  const unseen = lesson && !state.lessons.includes(lesson.id) && levelOf(state) !== "pro";
   if (lesson && (unseen || reading === lesson.id)) {
     return (
       <LessonCard

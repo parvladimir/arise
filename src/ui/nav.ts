@@ -11,7 +11,9 @@ export interface Target {
 
 /** Куда вести игрока по кнопке «Перейти» у текущей цели. */
 export function goalTarget(state: GameState): Target {
-  const id = currentGoal(state, content).questId;
+  const goal = currentGoal(state, content);
+  if (goal.school) return { view: "laptop", app: "school" };
+  const id = goal.questId;
   const q = id ? content.quests.find((x) => x.id === id) : undefined;
   if (!q) return { view: "room" };
   const status = state.quests[q.id]?.status;
