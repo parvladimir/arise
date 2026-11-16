@@ -13,7 +13,7 @@ import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room } from "./Room";
 import { Toasts } from "./Toasts";
-import { MascotHead } from "./Mascot";
+import { MascotHead, TaktLogo } from "./Mascot";
 import { PushBanner } from "./Notify";
 import { DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
@@ -207,7 +207,7 @@ function Laptop({
         {openApp ? (
           <button onClick={() => setApp(null)} className="whitespace-nowrap rounded px-1 py-0.5 text-sm text-muted hover:text-ink sm:ml-2 sm:px-2">‹ {t("ui.laptop.title")}</button>
         ) : (
-          <span className="ml-2 text-sm text-muted">{t("ui.laptop.title")}</span>
+          <span className="ml-2 flex items-center gap-1.5 text-sm text-muted"><TaktLogo className="h-5" /> {t("ui.laptop.title")}</span>
         )}
         <span className="ml-1 truncate text-sm font-semibold">{openApp ? t(`app.${openApp}`) : ""}</span>
         <button onClick={onClose} aria-label={t("ui.laptop.toRoom")} className="ml-auto flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-surface-2/70 px-3 py-1 text-sm text-ink hover:border-ai/60 hover:bg-surface-2">

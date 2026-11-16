@@ -33,11 +33,12 @@ const CITY_LIGHTS: [number, number, number][] = [
 /** Бегущая строка над столом: новости Ривертона, часть из них зависит от прогресса игрока. */
 /** Новости на стене: события сюжета, затем свежие посты канала ТАКТ (без сети — новости Ривертона). */
 function tickerItems(state: GameState, t: T, tg: string[]): string[] {
+  // Есть связь с каналом — строка целиком из постов ТАКТ, иначе события Ривертона.
+  if (tg.length > 0) return tg.slice(0, 6).map((x) => `ТАКТ: ${x}`);
   const story: string[] = [];
   if (state.quests.q5?.status === "done") story.push("room.news.koleso");
   if (state.quests.q3?.status === "done") story.push("room.news.cafe");
-  const world = tg.length > 0 ? tg.slice(0, 5).map((x) => `ТАКТ: ${x}`) : ["room.news.1", "room.news.2", "room.news.3", "room.news.4"].map((k) => t(k));
-  return [...story.map((k) => t(k)), ...world];
+  return [...story, "room.news.1", "room.news.2", "room.news.3", "room.news.4"].map((k) => t(k));
 }
 
 function Ticker({ text }: { text: string }) {
@@ -57,10 +58,10 @@ function Ticker({ text }: { text: string }) {
       </clipPath>
       <g clipPath="url(#tickerClip)">
         <g className="fx-ticker" style={{ ["--ticker-w" as string]: `${width + gap}px`, ["--ticker-s" as string]: `${Math.max(12, (width + gap) / 38)}s` }}>
-          <text ref={ref} x="248" y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
+          <text ref={ref} x="270" y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
             {text}
           </text>
-          <text x={248 + width + gap} y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
+          <text x={270 + width + gap} y="148" fontSize="12" fontFamily="var(--font-mono)" fill="#67e8f9" letterSpacing="0.5">
             {text}
           </text>
         </g>
@@ -265,14 +266,16 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
                 ))}
               </g>
             </g>
-            <circle cx="430" cy="262" r="10" fill="none" stroke="#5eead4" strokeWidth="2" className="fx-pulse" />
-            <circle cx="430" cy="262" r="4" fill="#5eead4" />
+            <circle cx="431" cy="262" r="17" fill="#8b3dff" opacity="0.35" filter="url(#blur6)" className="fx-pulse" />
+            <image href="/brand/emblem.webp" x="412" y="246" width="38" height="28" />
+            <text x="431" y="291" textAnchor="middle" fontSize="7" fontWeight="900" fill="url(#taktText)" letterSpacing="0.5">ТАКТ ИИ</text>
           </g>
         ) : (
-          <rect x="396" y="268" width="8" height="3" fill="#3b4778" className="fx-blink" />
+          <image href="/brand/emblem.webp" x="381" y="256" width="38" height="28" opacity="0.5" />
         )}
         <path d="M316 310h168l10 10H306z" fill="#3b4778" />
         <path d="M316 310h168" stroke="#6b7bb8" strokeWidth="1" />
+        <text x="400" y="318.5" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#c4b5fd" letterSpacing="1.5" opacity="0.8">ТАКТ</text>
       </g>
 
       {/* ТАКТ ИИ: голографический шар над ноутбуком */}
@@ -310,8 +313,12 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         {(highlight === "phone" || unread > 0) && <circle className="anim-glow" cx="549" cy="308" r="30" fill="url(#screenGlow)" />}
         <rect className="focus-ring" x="526" y="290" width="46" height="34" rx="8" fill="none" stroke="#8b3dff" strokeWidth="3" />
         <g className={unread > 0 ? "fx-buzz" : undefined}>
-          <rect x="534" y="300" width="30" height="16" rx="3" fill={unread > 0 ? "#1d3a7a" : "#070b18"} stroke="#3b4778" strokeWidth="2" transform="rotate(-8 549 308)" />
-          {unread > 0 && <rect x="540" y="305" width="14" height="2.5" rx="1" fill="#5eead4" transform="rotate(-8 549 308)" />}
+          <g transform="rotate(-8 549 308)">
+            <rect x="531" y="298" width="36" height="20" rx="3.5" fill={unread > 0 ? "#24124d" : "#0b0a1c"} stroke="#4c3d8f" strokeWidth="2" />
+            <image href="/brand/emblem.webp" x="535" y="301" width="18" height="14" opacity={unread > 0 ? 1 : 0.75} />
+            {unread > 0 && <rect x="555" y="304" width="9" height="2.5" rx="1" fill="#00d4ff" />}
+            {unread > 0 && <rect x="555" y="309" width="6" height="2" rx="1" fill="#a78bfa" />}
+          </g>
         </g>
         {unread > 0 && (
           <g>

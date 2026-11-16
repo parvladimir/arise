@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { GameState, NpcId } from "@/core/types";
 import type { GameApi } from "./useGame";
+import { TaktLogo } from "./Mascot";
 
 export const AVATAR_COLOR: Record<NpcId, string> = {
   dima: "#4f8cff",
@@ -68,6 +69,11 @@ export function Phone({
           </button>
         )}
         <h2 className="font-semibold">{open ? t(`npc.${open}`) : t("ui.phone.title")}</h2>
+        {!open && (
+          <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-muted">
+            <TaktLogo className="h-5" /> ТАКТ
+          </span>
+        )}
       </div>
 
       {!open && (

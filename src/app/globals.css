@@ -332,4 +332,4 @@ body {
 
 /* Доска целей в комнате */
 .room-goal { font-size: 11px; line-height: 1.28; font-weight: 600; color: #e8edf7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.room-sticker { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 7.5px; line-height: 1.1; font-weight: 700; overflow: hidden; }
+.room-sticker { height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 6.4px; line-height: 1.1; font-weight: 700; word-break: break-word; overflow: hidden; }
