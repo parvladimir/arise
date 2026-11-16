@@ -77,6 +77,8 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
   const [app, setApp] = useState<AppId | null>(startInSchool ? "school" : null);
   const [chat, setChat] = useState<NpcId | null>(null);
   const [phonePulse, setPhonePulse] = useState(0);
+  // Пока на экране карточка награды, сообщения ждут своей очереди — по одному уведомлению за раз.
+  const [rewardOpen, setRewardOpen] = useState(false);
   const [motion, setMotion] = useMotionPref();
   const narrow = useNarrow();
   const visibleChat = chat && (!narrow || view === "phone") ? chat : null;
@@ -226,8 +228,8 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         ))}
       </nav>
 
-      <Toasts game={game} state={state} hold={view === "laptop" && app === "neira"} />
-      <PushBanner game={game} state={state} suppress={visibleChat} openChat={(c) => { go("phone", undefined, c); setPhonePulse((n) => n + 1); }} />
+      <Toasts game={game} state={state} hold={view === "laptop" && app === "neira"} onBusy={setRewardOpen} />
+      <PushBanner game={game} state={state} blocked={rewardOpen} suppress={visibleChat} openChat={(c) => { go("phone", undefined, c); setPhonePulse((n) => n + 1); }} />
     </div>
   );
 }

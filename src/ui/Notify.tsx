@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, GameState, NpcId } from "@/core/types";
 import { AVATAR_COLOR } from "./Phone";
 import type { GameApi } from "./useGame";
+import { usePausableTimer } from "./Toasts";
 
-const SHOW_MS = 5200;
+const SHOW_MS = 10000;
 const ARRIVE_MS = 2600;
 
 /**
@@ -17,17 +18,19 @@ export function PushBanner({
   state,
   openChat,
   suppress,
+  blocked = false,
 }: {
   game: GameApi;
   state: GameState;
   openChat: (npc: NpcId) => void;
   /** Чат с этим персонажем уже открыт и виден — уведомление не нужно. */
   suppress: NpcId | null;
+  /** На экране другое уведомление (карточка награды) — подождать, пока оно закроется. */
+  blocked?: boolean;
 }) {
   const { t } = game;
   const seen = useRef<number | null>(null);
   const [queue, setQueue] = useState<ChatMessage[]>([]);
-  const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
     const maxId = state.messages.reduce((n, m) => Math.max(n, m.id), 0);
@@ -54,17 +57,15 @@ export function PushBanner({
   // Пауза перед показом: сообщение «приходит» после ответа ТАКТ ИИ, а не одновременно с действием игрока.
   const [ready, setReady] = useState<number | null>(null);
   useEffect(() => {
-    if (!current) return;
-    setLeaving(false);
+    if (!current || blocked) {
+      setReady(null);
+      return;
+    }
     const z = window.setTimeout(() => setReady(current.id), ARRIVE_MS);
-    const a = window.setTimeout(() => setLeaving(true), ARRIVE_MS + SHOW_MS - 350);
-    const b = window.setTimeout(() => setQueue((q) => q.slice(1)), ARRIVE_MS + SHOW_MS);
-    return () => {
-      window.clearTimeout(z);
-      window.clearTimeout(a);
-      window.clearTimeout(b);
-    };
-  }, [current]);
+    return () => window.clearTimeout(z);
+  }, [current, blocked]);
+  const shown = current && ready === current.id ? current.id : null;
+  const timer = usePausableTimer(shown, SHOW_MS, () => setQueue((q) => q.slice(1)));
 
   if (!current || ready !== current.id) return null;
   const more = queue.length - 1;
@@ -77,7 +78,9 @@ export function PushBanner({
           openChat(current.npc);
           setQueue([]);
         }}
-        className={`push-banner pointer-events-auto relative flex w-full max-w-md items-center gap-3 rounded-2xl border border-white/10 bg-surface/95 p-3 text-left shadow-2xl shadow-black/50 backdrop-blur-md ${leaving ? "push-out" : ""}`}
+        className={`push-banner pointer-events-auto relative flex w-full max-w-md items-center gap-3 rounded-2xl border border-white/10 bg-surface/95 p-3 text-left shadow-2xl shadow-black/50 backdrop-blur-md`}
+        onMouseEnter={timer.pause}
+        onMouseLeave={timer.resume}
       >
         <span className="push-avatar relative grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg font-bold text-bg" style={{ background: AVATAR_COLOR[current.npc] }}>
           {name.slice(0, 1)}

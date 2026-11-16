@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { content } from "@/content";
 import type { GameState, Toast } from "@/core/types";
 import type { GameApi } from "./useGame";
@@ -9,7 +9,7 @@ import { Mascot, MascotHead } from "./Mascot";
 type Batch = { key: number; items: Toast[]; ms: number };
 let counter = 0;
 
-export function Toasts({ game, state, hold = false }: { game: GameApi; state: GameState; hold?: boolean }) {
+export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; state: GameState; hold?: boolean; onBusy?: (busy: boolean) => void }) {
   const { t, dispatch } = game;
   const [batches, setBatches] = useState<Batch[]>([]);
   const [milestone, setMilestone] = useState<string | null>(null);
@@ -23,15 +23,19 @@ export function Toasts({ game, state, hold = false }: { game: GameApi; state: Ga
     if (m && m.kind === "milestone") setMilestone(m.textKey);
     const items = incoming.filter((x) => x.kind !== "milestone");
     if (items.length === 0) return;
-    const batch = { key: ++counter, items, ms: Math.min(7000, 3500 + items.length * 700) };
-    setBatches((b) => [...b.slice(-1), batch]);
-    setTimeout(() => close(batch.key), batch.ms);
+    // Большая награда висит 10 секунд, одиночная мелочь — 6. Карточки показываются по очереди, не стопкой.
+    const batch = { key: ++counter, items, ms: items.length > 2 ? 10000 : 6000 };
+    setBatches((b) => [...b, batch]);
   }, [state.toasts, dispatch]);
+
+  const current = batches[0];
+  useEffect(() => onBusy?.(Boolean(current)), [current, onBusy]);
+  const timer = usePausableTimer(current?.key ?? null, current?.ms ?? 0, () => current && close(current.key));
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex flex-col items-center gap-3 px-3 sm:inset-x-auto sm:right-4 sm:top-20 sm:items-end" aria-live="polite">
-        {batches.map((b) => <RewardCard key={b.key} batch={b} t={t} onClose={() => close(b.key)} />)}
+      <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex flex-col items-center px-3 sm:top-20" aria-live="polite">
+        {current && <RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
       </div>
       {milestone === "milestone.actEnd" && !hold && <ActEnd game={game} state={state} onClose={() => setMilestone(null)} />}
       {milestone && milestone !== "milestone.actEnd" && !hold && (
@@ -51,8 +55,35 @@ export function Toasts({ game, state, hold = false }: { game: GameApi; state: Ga
 
 type T = GameApi["t"];
 
+/** Таймер, который можно приостановить: пока мышь над уведомлением, оно не исчезает. */
+export function usePausableTimer(key: number | null, ms: number, onDone: () => void) {
+  const done = useRef(onDone);
+  useEffect(() => {
+    done.current = onDone;
+  });
+  const left = useRef(ms);
+  const started = useRef(0);
+  const id = useRef<number | undefined>(undefined);
+  const resume = useCallback(() => {
+    window.clearTimeout(id.current);
+    started.current = Date.now();
+    id.current = window.setTimeout(() => done.current(), left.current);
+  }, []);
+  const pause = useCallback(() => {
+    window.clearTimeout(id.current);
+    left.current = Math.max(1500, left.current - (Date.now() - started.current));
+  }, []);
+  useEffect(() => {
+    if (key === null) return;
+    left.current = ms;
+    resume();
+    return () => window.clearTimeout(id.current);
+  }, [key, ms, resume]);
+  return { pause, resume };
+}
+
 /** Карточка награды: кредиты и опыт крупно сверху, достижения и открытия — строками ниже. */
-function RewardCard({ batch, t, onClose }: { batch: Batch; t: T; onClose: () => void }) {
+function RewardCard({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; onClose: () => void; pause: () => void; resume: () => void }) {
   const money = batch.items.reduce((n, x) => n + (x.kind === "money" ? x.amount : 0), 0);
   const xp = batch.items.reduce((n, x) => n + (x.kind === "xp" ? x.amount : 0), 0);
   const rows = batch.items.flatMap((x) => {
@@ -65,7 +96,7 @@ function RewardCard({ batch, t, onClose }: { batch: Batch; t: T; onClose: () => 
   const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
   if (apps.length) rows.push({ icon: "▣", tone: "text-ok border-ok/40 bg-ok/10", label: t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel"), value: apps.join(" · ") });
   return (
-    <div role="status" className="toast-card pointer-events-auto relative w-full max-w-sm sm:w-80 overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
+    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className="toast-card pointer-events-auto relative w-full max-w-sm sm:w-80 overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
       <div className="flex items-center gap-2 px-4 pt-3">
         <MascotHead mood="happy" className="h-7 w-7" />
         <p className="flex-1 font-mono text-[11px] uppercase tracking-[0.25em] text-muted">{t("ui.toast.title")}</p>

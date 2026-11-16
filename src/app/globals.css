@@ -47,6 +47,7 @@ body {
 .toast-card { animation: toast-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 .toast-row { animation: toast-row 0.35s ease-out both; }
 .toast-timer { transform-origin: left; animation: toast-timer linear both; }
+.toast-card:hover .toast-timer, .push-banner:hover .push-timer { animation-play-state: paused; }
 
 [data-motion="off"] .anim-rise,
 [data-motion="off"] .toast-card,
