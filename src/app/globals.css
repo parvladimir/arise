@@ -307,7 +307,7 @@ body {
 
 [data-motion="off"] .push-banner, [data-motion="off"] .push-avatar::after, [data-motion="off"] .push-timer,
 [data-motion="off"] .desk-widget, [data-motion="off"] .desk-bar, [data-motion="off"] .desk-busy { animation: none; }
-[data-motion="off"] .desk-ticker-track { animation: none; white-space: normal; padding-left: 6rem; }
+[data-motion="off"] .desk-ticker-track { animation: none; white-space: normal; padding-left: 0.75rem; }
 [data-motion="off"] .desk-ticker-track > span + span { display: none; }
 
 /* ───────── Маскот ТАКТ ИИ ───────── */

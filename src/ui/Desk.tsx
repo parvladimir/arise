@@ -7,6 +7,7 @@ import { currentGoal } from "@/core/engine";
 import type { GameState } from "@/core/types";
 import { activeClassifyQuest, activePromptQuest } from "./nav";
 import type { GameApi } from "./useGame";
+import { TG_URL, useTaktNews } from "./useTaktNews";
 import { MascotHead } from "./Mascot";
 
 /** Сколько карточек «ИИ за минуту» в словаре локали. */
@@ -82,23 +83,39 @@ export function DeskWidgets({ game, state, onGoal, openNeira, openPhone }: { gam
 
 export const NEWS_COUNT = 8;
 
-/** Бегущая строка новостей Ривертона про ИИ. */
+/** Бегущая строка: свежие посты канала ТАКТ (по клику открываются в Telegram), а без сети — новости Ривертона. */
 export function DeskTicker({ game }: { game: GameApi }) {
-  const items = Array.from({ length: NEWS_COUNT }, (_, i) => game.t(`news.${i + 1}`));
-  const line = items.map((x, i) => (
-    <span key={i} className="mx-6 inline-flex items-center gap-2">
-      <span className="text-ai" aria-hidden>◆</span> {x}
+  const posts = useTaktNews();
+  const live = posts.length > 0;
+  const items = live
+    ? posts.map((p) => ({ key: p.id, text: p.title, url: p.url }))
+    : Array.from({ length: NEWS_COUNT }, (_, i) => ({ key: i, text: game.t(`news.${i + 1}`), url: null as string | null }));
+  const line = items.map((x) => (
+    <span key={x.key} className="mx-6 inline-flex items-center gap-2">
+      <span className="text-ai" aria-hidden>◆</span>
+      {x.url ? (
+        <a href={x.url} target="_blank" rel="noopener noreferrer" className="hover:text-white hover:underline">{x.text}</a>
+      ) : (
+        x.text
+      )}
     </span>
   ));
   return (
-    <div className="desk-ticker relative mt-5 overflow-hidden rounded-xl border border-white/10 bg-black/30 py-2 text-xs text-ink/80">
-      <span className="absolute inset-y-0 left-0 z-10 flex items-center gap-1.5 bg-bad/90 px-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white">
-        <span className="menu-live h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> {game.t("ui.desk.news")}
+    <div className="desk-ticker relative mt-5 flex items-stretch overflow-hidden rounded-xl border border-white/10 bg-black/30 text-xs text-ink/80">
+      <span className={`z-10 flex shrink-0 items-center gap-1.5 px-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white ${live ? "takt-gradient" : "bg-bad/90"}`}>
+        <span className="menu-live h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> {live ? game.t("ui.desk.newsTakt") : game.t("ui.desk.news")}
       </span>
-      <div className="desk-ticker-track whitespace-nowrap pl-24" aria-label={items.join(". ")}>
-        <span aria-hidden>{line}</span>
-        <span aria-hidden>{line}</span>
+      <div className="relative min-w-0 flex-1 overflow-hidden py-2">
+        <div className="desk-ticker-track whitespace-nowrap" aria-label={items.map((x) => x.text).join(". ")}>
+          <span>{line}</span>
+          <span aria-hidden>{line}</span>
+        </div>
       </div>
+      <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="z-10 flex shrink-0 items-center gap-1 border-l border-white/10 bg-black/40 px-3 font-semibold text-[#67e8f9] hover:bg-black/60">
+        {game.t("ui.desk.allNews")} <span aria-hidden>↗</span>
+      </a>
     </div>
   );
 }
+
+

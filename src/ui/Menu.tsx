@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import type { GameApi } from "./useGame";
 import { Mascot, MascotHead, TaktLogo } from "./Mascot";
-
-export const TG_URL = "https://t.me/takt_news_ai";
+import { TG_URL } from "./useTaktNews";
 
 // Маленькое демо на главном экране: запрос → «думает» → ответ печатается. Тексты — из первых заказов игры.
 const DEMO = [

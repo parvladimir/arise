@@ -5,6 +5,7 @@ import type { GameState } from "@/core/types";
 import { content } from "@/content";
 import { currentGoal } from "@/core/engine";
 import type { View } from "./nav";
+import { useTaktNews } from "./useTaktNews";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
@@ -30,11 +31,13 @@ const CITY_LIGHTS: [number, number, number][] = [
 ];
 
 /** Бегущая строка над столом: новости Ривертона, часть из них зависит от прогресса игрока. */
-function tickerItems(state: GameState, t: T): string[] {
-  const items = ["room.news.1", "room.news.2", "room.news.3", "room.news.4"];
-  if (state.quests.q3?.status === "done") items.unshift("room.news.cafe");
-  if (state.quests.q5?.status === "done") items.unshift("room.news.koleso");
-  return items.map((k) => t(k));
+/** Новости на стене: события сюжета, затем свежие посты канала ТАКТ (без сети — новости Ривертона). */
+function tickerItems(state: GameState, t: T, tg: string[]): string[] {
+  const story: string[] = [];
+  if (state.quests.q5?.status === "done") story.push("room.news.koleso");
+  if (state.quests.q3?.status === "done") story.push("room.news.cafe");
+  const world = tg.length > 0 ? tg.slice(0, 5).map((x) => `ТАКТ: ${x}`) : ["room.news.1", "room.news.2", "room.news.3", "room.news.4"].map((k) => t(k));
+  return [...story.map((k) => t(k)), ...world];
 }
 
 function Ticker({ text }: { text: string }) {
@@ -78,7 +81,8 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
   const cafeDone = state.quests.q3?.status === "done";
   const warm = has("lamp");
   const neira = state.apps.includes("neira");
-  const ticker = tickerItems(state, t).join("   ◆   ");
+  const tg = useTaktNews();
+  const ticker = tickerItems(state, t, tg.map((p) => p.title)).join("   ◆   ");
   const goal = t(currentGoal(state, content).textKey);
   const doneCount = Object.values(state.quests).filter((q) => q.status === "done").length;
   const stickers = [
