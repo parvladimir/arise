@@ -136,9 +136,13 @@ export function Menu({ game }: { game: GameApi }) {
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.1fr_1fr]">
         <div className="anim-rise text-center lg:text-left">
-          <p className="inline-flex items-center gap-2.5 rounded-full border border-ai/40 bg-ai/10 py-1 pl-1.5 pr-3.5 font-mono text-[11px] uppercase tracking-[0.25em] text-ink/90">
-            <TaktLogo className="h-6" /> <span className="takt-text font-bold">{t("ui.menu.presents")}</span>
-          </p>
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-3" aria-label="ТАКТ ИИ">
+            <TaktLogo className="h-16 drop-shadow-[0_0_24px_rgba(139,61,255,0.55)] transition group-hover:scale-105 sm:h-20" />
+            <span className="text-left">
+              <span className="takt-text block text-2xl font-black leading-none tracking-wide sm:text-3xl">ТАКТ ИИ</span>
+              <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.3em] text-muted">{t("ui.menu.presents2")}</span>
+            </span>
+          </a>
           <h1 className="menu-title mt-5 text-6xl font-black leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl">
             <span className="block">AI</span>
             <span className="menu-title-rise block">RISE</span>
