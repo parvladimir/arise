@@ -13,6 +13,7 @@ import { Phone } from "./Phone";
 import { PromptLab } from "./PromptLab";
 import { Room } from "./Room";
 import { Toasts } from "./Toasts";
+import { MascotHead } from "./Mascot";
 import { PushBanner } from "./Notify";
 import { DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
@@ -22,13 +23,13 @@ const ALL_APPS: AppId[] = ["neira", "orders", "shop", "skills", "journal"];
 const FUTURE_APPS = ["pixela", "flow", "code"] as const;
 const APP_ICON: Record<AppId, string> = { neira: "◉", orders: "▤", shop: "◈", skills: "✦", journal: "☰" };
 const APP_GRADIENT: Record<AppId, string> = {
-  neira: "linear-gradient(135deg, #2dd4bf, #4f8cff 55%, #a78bfa)",
+  neira: "linear-gradient(135deg, #8b3dff, #00d4ff)",
   orders: "linear-gradient(135deg, #f5b544, #f97316)",
   shop: "linear-gradient(135deg, #f472b6, #a78bfa)",
   skills: "linear-gradient(135deg, #34d399, #0ea5e9)",
   journal: "linear-gradient(135deg, #64748b, #334155)",
 };
-const APP_GLOW: Record<AppId, string> = { neira: "#4f8cff", orders: "#f59e0b", shop: "#ec4899", skills: "#10b981", journal: "#475569" };
+const APP_GLOW: Record<AppId, string> = { neira: "#8b3dff", orders: "#f59e0b", shop: "#ec4899", skills: "#10b981", journal: "#475569" };
 
 function useMotionPref(): [boolean, (v: boolean) => void] {
   const [motion, setMotionState] = useState(true);
@@ -187,7 +188,7 @@ function Laptop({
 }) {
   const { t } = game;
   const openApp = app && state.apps.includes(app) ? app : null;
-  // Значки на иконках: сколько новых заказов, есть ли задача для Нейры, куда ведёт текущая цель
+  // Значки на иконках: сколько новых заказов, есть ли задача для ТАКТ ИИ, куда ведёт текущая цель
   const goalApp = goalTarget(state).app;
   const badges: Partial<Record<AppId, string>> = {};
   const newOrders = boardQuests(state, content).filter((q) => !q.repeatable && state.quests[q.id]?.status === "available").length;
@@ -196,7 +197,7 @@ function Laptop({
   if (goalApp && !badges[goalApp]) badges[goalApp] = "!";
 
   return (
-    <section aria-label={t("ui.laptop.title")} className="anim-rise flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#2a3658] bg-[#0d1426] shadow-2xl shadow-black/50">
+    <section aria-label={t("ui.laptop.title")} className="anim-rise flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#342d66] bg-[#0f0d22] shadow-2xl shadow-black/50">
       <div className="flex items-center gap-2 border-b border-line bg-surface px-3 py-2">
         <span className="hidden gap-1.5 sm:flex" aria-hidden>
           <span className="h-3 w-3 rounded-full bg-bad/80" />
@@ -241,7 +242,7 @@ function Laptop({
                       className={`app-icon relative grid h-14 w-14 place-items-center rounded-2xl text-2xl text-white ${unlocked ? "" : "app-icon-locked text-muted/50"} ${unlocked && goalApp === a ? "app-goal" : ""}`}
                       style={unlocked ? { background: APP_GRADIENT[a], boxShadow: `0 8px 24px -6px ${APP_GLOW[a]}` } : undefined}
                     >
-                      {unlocked ? APP_ICON[a] : "?"}
+                      {unlocked ? (a === "neira" ? <MascotHead className="h-11 w-11" /> : APP_ICON[a]) : "?"}
                       {unlocked && badges[a] && (
                         <span className="app-badge absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-bad px-1 text-[11px] font-bold text-white">{badges[a]}</span>
                       )}
@@ -273,7 +274,7 @@ function Laptop({
   );
 }
 
-/** Нейра показывает либо конструктор запроса, либо мини-игру проверки — смотря какое задание в работе. */
+/** ТАКТ ИИ показывает либо конструктор запроса, либо мини-игру проверки — смотря какое задание в работе. */
 function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: GameState; motion: boolean; onFinished: () => void }) {
   const prompt = activePromptQuest(state);
   const classify = activeClassifyQuest(state);

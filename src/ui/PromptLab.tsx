@@ -9,8 +9,9 @@ import { FreeformInput } from "./Freeform";
 import { analyzeFreeform } from "@/core/freeform";
 import { ruMatch } from "@/content/locales/ru.match";
 import type { GameApi } from "./useGame";
+import { MascotHead } from "./Mascot";
 
-const NPC_COLOR: Record<string, string> = { boris: "#fb923c", vera: "#f472b6", editor: "#38bdf8", anna: "#f5b544", dima: "#4f8cff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
+const NPC_COLOR: Record<string, string> = { boris: "#fb923c", vera: "#f472b6", editor: "#38bdf8", anna: "#f5b544", dima: "#8b3dff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
 
 type PromptQuest = Extract<QuestDef, { kind: "prompt" }>;
 type Shown = { questId: string; stage: number; result: PromptResult; pay: number; finished: boolean; sel: Partial<Record<SlotId, string>> };
@@ -47,7 +48,7 @@ export function PromptLab({
   const [picked, setSelection] = useState<Partial<Record<SlotId, string>>>({});
   const [mode, setMode] = useState<"cards" | "free">("cards");
   const [freeText, setFreeText] = useState("");
-  // «Нейра Плюс»: предварительная оценка запроса без траты попытки.
+  // «ТАКТ Плюс»: предварительная оценка запроса без траты попытки.
   const [pre, setPre] = useState<{ key: string; result: PromptResult } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("done");
@@ -64,7 +65,7 @@ export function PromptLab({
   );
   const totalTokens = tokenized.reduce((n, s) => n + s.tokens.length, 0);
 
-  // Ответ «живой»: Нейра сначала думает, потом печатает слово за словом с паузами на знаках препинания.
+  // Ответ «живой»: ТАКТ ИИ сначала думает, потом печатает слово за словом с паузами на знаках препинания.
   // Только setTimeout (не requestAnimationFrame): Safari и фоновые вкладки не должны «застревать» на середине.
   useEffect(() => {
     if (!shown) return;
@@ -318,7 +319,7 @@ export function PromptLab({
         {/* Ответ */}
         <div className={`min-h-0 overflow-y-auto p-4 lg:block ${tab === "answer" ? "block" : "hidden"}`}>
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-ok/15 text-ok" aria-hidden>◉</span>
+            <MascotHead mood={phase === "thinking" ? "think" : "idle"} className="h-9 w-9" />
             <h3 className="font-semibold">{t("ui.neira.answer")}</h3>
           </div>
 
@@ -347,6 +348,7 @@ export function PromptLab({
               {done && (
                 <div className="anim-rise mt-3 space-y-3">
                   <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <MascotHead mood={r.passed ? "happy" : "sad"} className="h-9 w-9" />
                     <span className="text-muted">{t("ui.neira.chars", { n: r.length })}</span>
                     <span className={`rounded-full px-2.5 py-0.5 font-semibold ${r.passed ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad"}`}>
                       {t("ui.neira.quality", { q: Math.round(r.quality * 100) })} · {t(r.passed ? "ui.neira.passed" : "ui.neira.failed")}
@@ -400,7 +402,7 @@ function Thinking({ step, cards, t }: { step: number; cards: string[]; t: GameAp
   return (
     <div className="neira-think rounded-xl border border-ai/40 bg-bg/70 p-4" role="status">
       <div className="flex items-center gap-3">
-        <span className="neira-orb" aria-hidden />
+        <MascotHead mood="think" className="h-11 w-11" />
         <div className="min-w-0">
           <p className="font-semibold text-ink">
             {t(THINK_STEPS[step] ?? THINK_STEPS[0])}

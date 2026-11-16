@@ -32,7 +32,7 @@ export interface SegmentVariant {
   hallucination?: boolean;
 }
 
-/** Сегмент ответа «Нейры»: берётся первый подходящий вариант. */
+/** Сегмент ответа «ТАКТ ИИ»: берётся первый подходящий вариант. */
 export interface ResponseSegment {
   id: string;
   variants: SegmentVariant[];
@@ -46,7 +46,7 @@ export type Criterion =
   /** Карточка в слоте совпадает с выбранной на одной из прошлых стадий (согласованность кампании). */
   | { id: string; labelKey: TextKey; weight: number; kind: "sameAsStage"; stage: number; slot: SlotId; hard?: boolean };
 
-/** Реплика заказчика под ответом Нейры: показывается первая подходящая. */
+/** Реплика заказчика под ответом ТАКТ ИИ: показывается первая подходящая. */
 export interface Reaction {
   when?: When;
   from: NpcId;
@@ -161,7 +161,7 @@ export interface ItemDef {
   price: number;
   unlockSlots?: SlotId[];
   workHours?: number;
-  /** Флаги, которые даёт покупка (например, «Нейра Плюс» включает самопроверку). */
+  /** Флаги, которые даёт покупка (например, «ТАКТ Плюс» включает самопроверку). */
   flags?: string[];
   /** Товар появляется в магазине, только когда это задание открыто. */
   requiresQuest?: string;

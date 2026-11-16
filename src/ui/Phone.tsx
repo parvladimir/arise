@@ -60,7 +60,7 @@ export function Phone({
   }, [thread.length, open, typing]);
 
   return (
-    <section aria-label={t("ui.phone.title")} className="flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] border-4 border-[#1f2940] bg-[#0c1324] shadow-2xl">
+    <section aria-label={t("ui.phone.title")} className="flex h-full min-h-0 flex-col overflow-hidden rounded-[28px] border-4 border-[#28224a] bg-[#0e0c20] shadow-2xl">
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         {open && (
           <button onClick={() => setChat(null)} className="rounded-md px-1.5 text-lg text-muted hover:text-ink" aria-label={t("ui.back")}>

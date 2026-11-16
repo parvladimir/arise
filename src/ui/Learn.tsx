@@ -4,13 +4,14 @@ import { useState } from "react";
 import { content } from "@/content";
 import type { LessonDef, SlotId } from "@/core/types";
 import type { GameApi } from "./useGame";
+import { Mascot, TaktLogo } from "./Mascot";
 
 export const lessonFor = (questId: string | undefined): LessonDef | undefined =>
   questId ? content.lessons.find((l) => l.questId === questId) : undefined;
 
 const SLOT_COLOR: Partial<Record<SlotId, string>> = {
   role: "#f472b6",
-  goal: "#4f8cff",
+  goal: "#8b3dff",
   recipient: "#2dd4bf",
   audience: "#2dd4bf",
   tone: "#a78bfa",
@@ -29,10 +30,15 @@ export function LessonCard({ game, lesson, onDone }: { game: GameApi; lesson: Le
       <article className="lesson-card anim-rise relative mx-auto max-w-2xl overflow-hidden rounded-2xl border border-ai/40 bg-surface p-5 shadow-2xl shadow-ai/15 sm:p-7">
         <div className="act-glow pointer-events-none absolute inset-0" aria-hidden />
         <div className="relative">
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-ok">
-            <span aria-hidden>📘</span> {t("ui.lesson.kicker", { n, total: content.lessons.length })}
-          </p>
-          <h2 className="mt-2 text-2xl font-black leading-tight sm:text-3xl">{t(lesson.titleKey)}</h2>
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] text-ok">
+                <TaktLogo className="h-5" /> {t("ui.lesson.kicker", { n, total: content.lessons.length })}
+              </p>
+              <h2 className="mt-2 text-2xl font-black leading-tight sm:text-3xl">{t(lesson.titleKey)}</h2>
+            </div>
+            <Mascot pose="point" className="-mr-2 -mt-2 h-24 shrink-0 sm:h-28" />
+          </div>
           <div className="mt-4 space-y-3 text-[15.5px] leading-relaxed text-ink/90">
             {lesson.bodyKeys.map((k, i) => (
               <p key={k} className="anim-rise" style={{ animationDelay: `${120 + i * 110}ms` }}>{t(k)}</p>
@@ -113,7 +119,7 @@ export function PromptPreview({ game, slots, selection }: { game: GameApi; slots
         <div className="mt-2 space-y-1 font-mono text-[13px] leading-relaxed">
           {lines.map((l) =>
             l.text ? (
-              <p key={l.slot} className="anim-rise border-l-2 pl-2" style={{ borderColor: SLOT_COLOR[l.slot] ?? "#4f8cff" }}>
+              <p key={l.slot} className="anim-rise border-l-2 pl-2" style={{ borderColor: SLOT_COLOR[l.slot] ?? "#8b3dff" }}>
                 {l.text}
               </p>
             ) : (

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { QuestDef } from "@/core/types";
 import { Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
+import { MascotHead } from "./Mascot";
 
 type ClassifyQuest = Extract<QuestDef, { kind: "classify" }>;
 type Result = { questId: string; quality: number; passed: boolean; wrong: string[]; pay: number; shortcut?: boolean };
@@ -131,7 +132,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
         {/* Пункты */}
         <section aria-label={t(privacy ? "ui.check.fields" : "ui.check.summary")}>
           <div className="flex items-center gap-2">
-            <span className="neira-orb neira-orb-sm" aria-hidden />
+            <MascotHead className="h-7 w-7" />
             <h3 className="font-semibold">{t(privacy ? "ui.check.fields" : "ui.check.summary")}</h3>
             {!finished && <span className="ml-auto text-xs text-muted">{left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
           </div>
@@ -243,7 +244,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
   );
 }
 
-/** Таблица клиентов: прямо на ней видно, что получит Нейра — метка, исходное значение или пропуск. */
+/** Таблица клиентов: прямо на ней видно, что получит ТАКТ ИИ — метка, исходное значение или пропуск. */
 function PrivacyTable({
   quest,
   answers,

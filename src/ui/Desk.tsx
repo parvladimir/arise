@@ -7,6 +7,7 @@ import { currentGoal } from "@/core/engine";
 import type { GameState } from "@/core/types";
 import { activeClassifyQuest, activePromptQuest } from "./nav";
 import type { GameApi } from "./useGame";
+import { MascotHead } from "./Mascot";
 
 /** Сколько карточек «ИИ за минуту» в словаре локали. */
 export const FACT_COUNT = 14;
@@ -21,7 +22,7 @@ function Widget({ title, tone, children, delay }: { title: string; tone: string;
   );
 }
 
-/** Виджеты рабочего стола: кошелёк и уровень, цель, статус Нейры, сообщения, карточка «ИИ за минуту». */
+/** Виджеты рабочего стола: кошелёк и уровень, цель, статус ТАКТ ИИ, сообщения, карточка «ИИ за минуту». */
 export function DeskWidgets({ game, state, onGoal, openNeira, openPhone }: { game: GameApi; state: GameState; onGoal: () => void; openNeira: () => void; openPhone: () => void }) {
   const { t } = game;
   const lvl = levelFromXp(state.xp);
@@ -54,7 +55,7 @@ export function DeskWidgets({ game, state, onGoal, openNeira, openPhone }: { gam
 
       <Widget title={t("ui.desk.neira")} tone="#2dd4bf" delay={310}>
         <div className="flex items-center gap-2.5">
-          <span className={`neira-orb neira-orb-sm ${task ? "desk-busy" : ""}`} aria-hidden />
+          <MascotHead mood={task ? "think" : "idle"} className={`h-10 w-10 rounded-full ${task ? "desk-busy" : ""}`} />
           <div className="min-w-0">
             <p className="text-sm font-semibold">{task ? t("ui.desk.neiraTask") : t("ui.desk.neiraIdle")}</p>
             {task && <p className="truncate text-xs text-muted">{t(task.titleKey)}</p>}

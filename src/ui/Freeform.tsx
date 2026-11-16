@@ -4,7 +4,7 @@ import { content } from "@/content";
 import type { GameState, PromptStage, SlotId } from "@/core/types";
 import type { GameApi } from "./useGame";
 
-/** Поле «своими словами»: текст запроса, материалы заказа и живой разбор — что Нейра нашла в промпте. */
+/** Поле «своими словами»: текст запроса, материалы заказа и живой разбор — что ТАКТ ИИ нашёл в промпте. */
 export function FreeformInput({
   game,
   state,

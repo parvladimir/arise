@@ -47,7 +47,7 @@ describe("начало игры", () => {
     expect(currentGoal(s, content).textKey).toBe("q1.goal");
   });
 
-  it("любой ответ Диме открывает Нейру и задание Q2", () => {
+  it("любой ответ Диме открывает ТАКТ ИИ и задание Q2", () => {
     for (const choiceId of ["what", "heard", "show"]) {
       const { state } = play([{ type: "choose", questId: "q1", choiceId }]);
       expect(state.apps).toContain("neira");
@@ -102,7 +102,7 @@ describe("Q3 — первый заказ", () => {
     expect(state.quests.q4?.status).toBe("active");
   });
 
-  it("без данных Нейра выдумывает тыквенный латте — Анна не принимает", () => {
+  it("без данных ТАКТ ИИ выдумывает тыквенный латте — Анна не принимает", () => {
     const { state, events } = play(
       [{ type: "submitPrompt", questId: "q3", selection: { goal: "g.cafe.menu", audience: "a.students", tone: "t.playful" } }],
       before(),
@@ -330,7 +330,7 @@ const factsRight = { year: "contra", founders: "source", hub: "source", staff: "
 const privacyRight = { name: "mask", phone: "remove", plate: "remove", car: "keep", date: "keep", debt: "remove" };
 
 describe("Q6–Q13 — вторая половина акта", () => {
-  it("Q6: без данных Нейра обещает обед на двоих — не принимается", () => {
+  it("Q6: без данных ТАКТ ИИ обещает обед на двоих — не принимается", () => {
     const { state, events } = play([{ type: "submitPrompt", questId: "q6", selection: { goal: "g.rev.reply", tone: "t.warm" } }], at("q6"));
     expect(state.quests.q6?.status).toBe("active");
     expect(events.find((e) => e.type === "promptResult")).toMatchObject({ result: { passed: false } });
@@ -453,7 +453,7 @@ describe("Этап 2 — покупки, подработки, таймер", ()
   };
   const spotRight = { day: "true", len: "fake", cars: "true", years: "fake", mayor: "fake", cost: "true" };
 
-  it("«Нейра Плюс» включает проверку до отправки и закрывает заказ на покупку", () => {
+  it("«ТАКТ Плюс» включает проверку до отправки и закрывает заказ на покупку", () => {
     const s = at("q12p", ["wantPlus"]);
     s.money = 1000;
     const { state } = play([{ type: "buy", itemId: "neiraPlus" }], s);

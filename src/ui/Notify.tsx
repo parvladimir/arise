@@ -51,7 +51,7 @@ export function PushBanner({
   }, [state.messages, suppress]);
 
   const current = queue[0];
-  // Пауза перед показом: сообщение «приходит» после ответа Нейры, а не одновременно с действием игрока.
+  // Пауза перед показом: сообщение «приходит» после ответа ТАКТ ИИ, а не одновременно с действием игрока.
   const [ready, setReady] = useState<number | null>(null);
   useEffect(() => {
     if (!current) return;

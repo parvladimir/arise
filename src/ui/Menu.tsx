@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { GameApi } from "./useGame";
+import { Mascot, MascotHead, TaktLogo } from "./Mascot";
+
+export const TG_URL = "https://t.me/takt_news_ai";
 
 // Маленькое демо на главном экране: запрос → «думает» → ответ печатается. Тексты — из первых заказов игры.
 const DEMO = [
@@ -12,7 +15,7 @@ const DEMO = [
 
 const FEATURES = [
   { icon: "✦", label: "Промпты", tone: "#a78bfa" },
-  { icon: "◆", label: "Основы ИИ", tone: "#4f8cff" },
+  { icon: "◆", label: "Основы ИИ", tone: "#8b3dff" },
   { icon: "●", label: "11 уроков", tone: "#2dd4bf" },
   { icon: "▲", label: "Сюжет и карьера", tone: "#f5b544" },
 ];
@@ -66,8 +69,8 @@ function DemoChat({ motion }: { motion: boolean }) {
   return (
     <div className="menu-chat relative w-full overflow-hidden rounded-2xl border border-ai/30 bg-surface/80 p-4 text-left shadow-2xl shadow-ai/20 backdrop-blur-md">
       <div className="flex items-center gap-2 border-b border-line pb-3">
-        <span className="neira-orb neira-orb-sm" aria-hidden />
-        <span className="text-sm font-semibold">Нейра</span>
+        <MascotHead mood={phase === "thinking" ? "think" : phase === "answer" && n >= words.length ? "happy" : "idle"} className="h-8 w-8" />
+        <span className="text-sm font-semibold">ТАКТ ИИ</span>
         <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-ok">
           <span className="menu-live h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> online
         </span>
@@ -118,7 +121,7 @@ export function Menu({ game }: { game: GameApi }) {
         <path
           d="M0 200V130h60v-30h40v50h50V80h30v-20h30v20h30v90h40v-60h70v40h40V60h20V40h40v20h20v110h50v-70h60v50h40V70h30V50h30v20h30v100h60v-80h50v60h40V90h60v30h50V60h30v-20h30v20h20v110h40v-50h60v-30h40v40h50v50z"
           fill="#070b16"
-          stroke="#4f8cff"
+          stroke="#8b3dff"
           strokeOpacity="0.35"
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
@@ -133,8 +136,8 @@ export function Menu({ game }: { game: GameApi }) {
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.1fr_1fr]">
         <div className="anim-rise text-center lg:text-left">
-          <p className="inline-flex items-center gap-2 rounded-full border border-ok/30 bg-ok/10 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.25em] text-ok">
-            <span className="menu-live h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> Ривертон · 2026
+          <p className="inline-flex items-center gap-2.5 rounded-full border border-ai/40 bg-ai/10 py-1 pl-1.5 pr-3.5 font-mono text-[11px] uppercase tracking-[0.25em] text-ink/90">
+            <TaktLogo className="h-6" /> <span className="takt-text font-bold">{t("ui.menu.presents")}</span>
           </p>
           <h1 className="menu-title mt-5 text-6xl font-black leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl">
             <span className="block">AI</span>
@@ -172,11 +175,22 @@ export function Menu({ game }: { game: GameApi }) {
               </div>
             )}
           </div>
-          <p className="mt-6 text-xs text-muted">{t("ui.prototypeNote")}</p>
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="mx-auto mt-5 flex w-full max-w-sm items-center gap-3 rounded-xl border border-white/10 bg-surface/60 p-3 text-left backdrop-blur transition hover:border-ai/60 lg:mx-0">
+            <span className="takt-gradient grid h-10 w-10 shrink-0 place-items-center rounded-full text-lg text-white" aria-hidden>✈</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold">{t("ui.menu.tg")}</span>
+              <span className="block text-xs text-muted">{t("ui.menu.tgSub")}</span>
+            </span>
+            <span className="ml-auto text-muted" aria-hidden>↗</span>
+          </a>
+          <p className="mt-5 text-xs text-muted">{t("ui.prototypeNote")}</p>
         </div>
 
-        <div className="anim-rise mx-auto w-full max-w-md" style={{ animationDelay: "250ms" }}>
-          <DemoChat motion={motion} />
+        <div className="anim-rise mx-auto w-full max-w-md pt-20" style={{ animationDelay: "250ms" }}>
+          <div className="relative">
+            <Mascot pose="wave" mood="happy" float={motion} className="absolute -top-[6.5rem] right-4 z-20 h-28 drop-shadow-[0_10px_30px_rgba(139,61,255,0.5)]" />
+            <DemoChat motion={motion} />
+          </div>
           <p className="mt-3 text-center text-xs text-muted">{t("ui.menu.demo")}</p>
         </div>
       </div>

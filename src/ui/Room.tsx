@@ -87,7 +87,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         </linearGradient>
         <linearGradient id="neon" x1="0" x2="1">
           <stop offset="0" stopColor="#2dd4bf" />
-          <stop offset="0.5" stopColor="#4f8cff" />
+          <stop offset="0.5" stopColor="#8b3dff" />
           <stop offset="1" stopColor="#a78bfa" />
         </linearGradient>
         <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
@@ -100,12 +100,12 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
           <stop offset="0.5" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
         <radialGradient id="screenGlow" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#4f8cff" stopOpacity="0.55" />
-          <stop offset="1" stopColor="#4f8cff" stopOpacity="0" />
+          <stop offset="0" stopColor="#8b3dff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#8b3dff" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="screenCast" cx="0.5" cy="0" r="1">
-          <stop offset="0" stopColor="#4f8cff" stopOpacity="0.35" />
-          <stop offset="1" stopColor="#4f8cff" stopOpacity="0" />
+          <stop offset="0" stopColor="#8b3dff" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#8b3dff" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="lampGlow" cx="0.5" cy="0.5" r="0.5">
           <stop offset="0" stopColor="#ffd28a" stopOpacity="0.32" />
@@ -118,7 +118,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
           <stop offset="1" stopColor="#1e3a8a" />
         </radialGradient>
         <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
-          <path d="M32 0H0V32" fill="none" stroke="#4f8cff" strokeOpacity="0.06" strokeWidth="1" />
+          <path d="M32 0H0V32" fill="none" stroke="#8b3dff" strokeOpacity="0.06" strokeWidth="1" />
         </pattern>
         <filter id="blur6" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="6" />
@@ -181,7 +181,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         )}
         {has("cheatsheet") && (
           <g transform="rotate(-2 108 182)" className="anim-rise">
-            <rect x="80" y="166" width="62" height="28" rx="3" fill="#4f8cff" />
+            <rect x="80" y="166" width="62" height="28" rx="3" fill="#8b3dff" />
             <text x="111" y="184" textAnchor="middle" fontSize="8.5" fill="#fff">{t("room.cheatsheet")}</text>
           </g>
         )}
@@ -225,7 +225,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         <rect x="290" y="180" width="200" height="160" fill="transparent" />
         <ellipse cx="400" cy="325" rx="110" ry="16" fill="url(#screenCast)" />
         {highlight === "laptop" && <ellipse className="anim-glow" cx="400" cy="268" rx="125" ry="75" fill="url(#screenGlow)" />}
-        <rect className="focus-ring" x="318" y="216" width="164" height="112" rx="10" fill="none" stroke="#4f8cff" strokeWidth="3" />
+        <rect className="focus-ring" x="318" y="216" width="164" height="112" rx="10" fill="none" stroke="#8b3dff" strokeWidth="3" />
         <path d="M336 228h128a6 6 0 0 1 6 6v76H330v-76a6 6 0 0 1 6-6z" fill="#161c33" stroke="#3b4778" strokeWidth="2.5" />
         <rect x="340" y="238" width="120" height="66" rx="2" fill={neira ? "#0b1a44" : "#070b18"} />
         {neira ? (
@@ -236,7 +236,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
             <g clipPath="url(#screenClip)">
               <g className="fx-code">
                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
-                  <rect key={i} x={346 + (i % 3) * 6} y={244 + i * 9} width={20 + ((i * 37) % 60)} height="3" rx="1.5" fill={i % 4 === 0 ? "#a78bfa" : i % 3 === 0 ? "#2dd4bf" : "#4f8cff"} opacity="0.55" />
+                  <rect key={i} x={346 + (i % 3) * 6} y={244 + i * 9} width={20 + ((i * 37) % 60)} height="3" rx="1.5" fill={i % 4 === 0 ? "#a78bfa" : i % 3 === 0 ? "#2dd4bf" : "#8b3dff"} opacity="0.55" />
                 ))}
               </g>
             </g>
@@ -250,13 +250,14 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         <path d="M316 310h168" stroke="#6b7bb8" strokeWidth="1" />
       </g>
 
-      {/* Нейра: голографический шар над ноутбуком */}
+      {/* ТАКТ ИИ: голографический шар над ноутбуком */}
       {neira && (
         <g aria-hidden className="fx-float">
           <ellipse cx="400" cy="206" rx="20" ry="4" fill="none" stroke="#2dd4bf" strokeOpacity="0.5" className="fx-ring" />
-          <circle cx="400" cy="184" r="16" fill="#2dd4bf" opacity="0.25" filter="url(#blur6)" />
-          <circle cx="400" cy="184" r="10" fill="url(#orb)" />
-          <circle cx="396" cy="180" r="3" fill="#ecfeff" opacity="0.85" />
+          <circle cx="400" cy="182" r="20" fill="#8b3dff" opacity="0.3" filter="url(#blur6)" />
+          <image href="/brand/head.webp" x="380" y="158" width="40" height="40" />
+          <ellipse cx="395" cy="181" rx="1.6" ry="2.6" fill="#00d4ff" className="mascot-svg-eye" />
+          <ellipse cx="405" cy="181" rx="1.6" ry="2.6" fill="#00d4ff" className="mascot-svg-eye" />
         </g>
       )}
 
@@ -282,7 +283,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
         <title>{t("ui.nav.phone")}</title>
         <rect x="496" y="256" width="104" height="96" fill="transparent" />
         {(highlight === "phone" || unread > 0) && <circle className="anim-glow" cx="549" cy="308" r="30" fill="url(#screenGlow)" />}
-        <rect className="focus-ring" x="526" y="290" width="46" height="34" rx="8" fill="none" stroke="#4f8cff" strokeWidth="3" />
+        <rect className="focus-ring" x="526" y="290" width="46" height="34" rx="8" fill="none" stroke="#8b3dff" strokeWidth="3" />
         <g className={unread > 0 ? "fx-buzz" : undefined}>
           <rect x="534" y="300" width="30" height="16" rx="3" fill={unread > 0 ? "#1d3a7a" : "#070b18"} stroke="#3b4778" strokeWidth="2" transform="rotate(-8 549 308)" />
           {unread > 0 && <rect x="540" y="305" width="14" height="2.5" rx="1" fill="#5eead4" transform="rotate(-8 549 308)" />}
@@ -306,7 +307,7 @@ export function Room({ state, highlight, open, t, compact = false }: { state: Ga
       {/* Пылинки-данные, медленно поднимаются */}
       <g aria-hidden>
         {[90, 180, 300, 470, 560, 650, 760].map((x, i) => (
-          <circle key={x} cx={x} cy={400} r={i % 2 ? 1.2 : 1.8} fill={i % 3 ? "#4f8cff" : "#2dd4bf"} className="fx-mote" style={{ animationDelay: `${i * 1.7}s`, animationDuration: `${9 + (i % 3) * 3}s` }} />
+          <circle key={x} cx={x} cy={400} r={i % 2 ? 1.2 : 1.8} fill={i % 3 ? "#8b3dff" : "#2dd4bf"} className="fx-mote" style={{ animationDelay: `${i * 1.7}s`, animationDuration: `${9 + (i % 3) * 3}s` }} />
         ))}
       </g>
     </svg>

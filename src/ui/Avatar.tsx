@@ -15,7 +15,7 @@ type Look = {
 
 // Порядок id a1…a6 менять нельзя: они уже лежат в сохранениях.
 const LOOKS: Record<AvatarId, Look> = {
-  a1: { skin: "#f1c7a5", hair: "#3a2a1f", style: "short", shirt: "#4f8cff", kind: "masc" },
+  a1: { skin: "#f1c7a5", hair: "#3a2a1f", style: "short", shirt: "#8b3dff", kind: "masc" },
   a2: { skin: "#d9a27c", hair: "#1d1a19", style: "long", shirt: "#2dd4bf", kind: "fem", earrings: true },
   a3: { skin: "#8d5a3b", hair: "#120d0b", style: "curly", shirt: "#f5b544", kind: "masc" },
   a4: { skin: "#f6d3b8", hair: "#c9893f", style: "bun", shirt: "#a78bfa", kind: "fem", earrings: true },
@@ -26,7 +26,7 @@ const LOOKS: Record<AvatarId, Look> = {
   a9: { skin: "#f3d2b3", hair: "#d9b26a", style: "short", shirt: "#f97316", kind: "masc" },
   a10: { skin: "#f4cfb0", hair: "#e0b45c", style: "long", shirt: "#f472b6", kind: "fem", earrings: true },
   a11: { skin: "#7a4b30", hair: "#140e0b", style: "afro", shirt: "#f5b544", kind: "fem", earrings: true },
-  a12: { skin: "#e2ad88", hair: "#7b2d1e", style: "ponytail", shirt: "#4f8cff", kind: "fem" },
+  a12: { skin: "#e2ad88", hair: "#7b2d1e", style: "ponytail", shirt: "#8b3dff", kind: "fem" },
 };
 
 export const AVATARS = Object.keys(LOOKS) as AvatarId[];

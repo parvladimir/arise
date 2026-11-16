@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { content } from "@/content";
 import type { GameState, Toast } from "@/core/types";
 import type { GameApi } from "./useGame";
+import { Mascot } from "./Mascot";
 
 type Live = Toast & { key: number };
 let counter = 0;
@@ -81,6 +82,7 @@ function ActEnd({ game, state, onClose }: { game: GameApi; state: GameState; onC
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-bg/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="act-end">
       <div className="act-card anim-rise relative w-full max-w-lg overflow-hidden rounded-3xl border border-ai/40 bg-surface p-6 shadow-2xl shadow-ai/25 sm:p-8">
         <div className="act-glow pointer-events-none absolute inset-0" aria-hidden />
+        <Mascot pose="cheer" mood="happy" className="pointer-events-none absolute -right-3 top-2 h-24 opacity-95 sm:h-32" />
         <div className="relative">
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-ok">{t("ui.act.kicker")}</p>
           <h2 id="act-end" className="mt-2 text-3xl font-black leading-tight sm:text-4xl">{t("ui.act.title")}</h2>
