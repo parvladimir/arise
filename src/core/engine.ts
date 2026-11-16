@@ -15,7 +15,7 @@ import type {
   TextKey,
 } from "./types";
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
 export const SCHOOL_PAY = 15;
@@ -106,13 +106,6 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       }
       return { state, events };
     }
-
-    case "sleep":
-      // Конец дня: утро следующего дня, подработки снова на доске.
-      state.day += 1;
-      state.hour = 9;
-      reviveGigs(state);
-      return { state, events };
 
     case "readChat":
       state.unread = state.unread.filter((n) => n !== action.npc);
@@ -277,22 +270,11 @@ function advanceClock(state: GameState, hours: number) {
     state.hour -= 24 - 9; // ночь пропускается, утро в 9:00
     state.day += 1;
   }
-  reviveGigs(state);
 }
 
-/** Подработки, сданные вчера и раньше, снова появляются на доске. */
-function reviveGigs(state: GameState) {
-  for (const p of Object.values(state.quests)) {
-    if (p.status === "done" && p.readyDay !== undefined && state.day >= p.readyDay) {
-      p.status = "available";
-      delete p.readyDay;
-    }
-  }
-}
-
-/** Подработки, которые уже сданы сегодня и вернутся завтра. */
-export function restingGigs(state: GameState, content: Content): QuestDef[] {
-  return content.quests.filter((q) => q.repeatable && state.quests[q.id]?.status === "done" && state.quests[q.id]?.readyDay !== undefined);
+/** Выполненные подработки: каждая сдаётся один раз и остаётся в списке «Выполнено». */
+export function doneGigs(state: GameState, content: Content): QuestDef[] {
+  return content.quests.filter((q) => q.repeatable && state.quests[q.id]?.status === "done");
 }
 
 /** shortcut: задание закрыто коротким путём — без бонусов за аккуратность (флаги, репутация, навыки, достижения). */
@@ -351,10 +333,8 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   }
 
   events.push({ type: "questDone", questId: quest.id });
-  // Подработка уходит с доски до завтра, а утром возвращается: новый клиент, новые деньги.
-  if (quest.repeatable) {
-    state.quests[quest.id] = { status: "done", stage: 0, attempts: 0, bestQuality: Math.max(progress.bestQuality, quality), selections: {}, runs: (progress.runs ?? 0) + 1, readyDay: state.day + 1 };
-  }
+  // Подработка сдаётся один раз и уходит с доски в «Выполнено».
+  if (quest.repeatable) progress.runs = (progress.runs ?? 0) + 1;
   refreshQuests(state, ctx);
   return pay;
 }
@@ -391,8 +371,6 @@ export function currentGoal(state: GameState, content: Content): { textKey: Text
   if (available) return { textKey: available.goalKey, questId: available.id };
   const gig = content.quests.find((q) => q.repeatable && state.quests[q.id]?.status === "available");
   if (gig) return { textKey: "goal.gigs", questId: gig.id };
-  const resting = restingGigs(state, content)[0];
-  if (resting) return { textKey: "goal.rest", questId: resting.id };
   return { textKey: content.finalGoalKey };
 }
 

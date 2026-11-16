@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { content } from "@/content";
 import { hasKey, makeTranslator } from "@/content/i18n";
-import { apply, currentGoal, newGameState, passFor, refreshQuests, type Ctx } from "./engine";
+import { apply, boardQuests, currentGoal, newGameState, passFor, refreshQuests, type Ctx } from "./engine";
 import { runPrompt } from "./promptSim";
 import { deserialize, serialize } from "./save";
 import { ru } from "@/content/locales/ru";
@@ -220,7 +220,7 @@ describe("сохранение", () => {
 
 describe("контент", () => {
   it("каждый ключ текста есть в русском словаре", () => {
-    const keys = new Set<string>([content.finalGoalKey, "goal.school", "goal.rest", "ach.graduate"]);
+    const keys = new Set<string>([content.finalGoalKey, "goal.school", "ach.graduate"]);
     for (const m of content.school) {
       keys.add(m.titleKey).add(m.introKey).add(m.takeawayKey);
       if (m.kind === "quiz") for (const i of m.items) [i.qKey, i.explainKey, ...(i.optionKeys ?? m.optionKeys ?? [])].forEach((k) => keys.add(k));
@@ -485,7 +485,7 @@ describe("Этап 2 — покупки, подработки, таймер", ()
     expect(state.flags).toContain("gpuLaptop");
   });
 
-  it("подработка после сдачи снова доступна и платит повторно", () => {
+  it("подработка сдаётся один раз и уходит в «Выполнено»", () => {
     let s = allStoryDone();
     expect(s.quests.gigSpot?.status).toBe("available");
     expect(currentGoal(s, content).textKey).toBe("goal.gigs");
@@ -497,14 +497,13 @@ describe("Этап 2 — покупки, подработки, таймер", ()
     s = play(run(), s).state;
     const once = s.money - before;
     expect(once).toBeGreaterThan(0);
-    // Сданная подработка уходит с доски до завтра
     expect(s.quests.gigSpot).toMatchObject({ status: "done", runs: 1 });
+    expect(boardQuests(s, content).map((q) => q.id)).not.toContain("gigSpot");
     expect(play(run(), s).events[0]).toMatchObject({ type: "rejected" });
-    s = play([{ type: "sleep" }], s).state;
-    expect(s.quests.gigSpot?.status).toBe("available");
+    // Даже через много часов (новый день) она не возвращается
+    s.hour = 23;
     s = play(run(), s).state;
-    expect(s.money - before).toBe(once * 2);
-    expect(s.quests.gigSpot?.runs).toBe(2);
+    expect(s.quests.gigSpot?.status).toBe("done");
   });
 
   it("на время: неотвеченный пункт считается ошибкой, а не блокирует сдачу", () => {
@@ -547,15 +546,15 @@ describe("уровни и Школа ТАКТ ИИ", () => {
     expect(passFor(start("novice"), 0.7)).toBe(0.7);
   });
 
-  it("старое сохранение: уже сданные подработки уходят с доски до завтра", () => {
+  it("старое сохранение: уже сданные подработки считаются выполненными", () => {
     const s = newGameState(profile, ctx);
     s.quests.gigSms = { status: "available", stage: 0, attempts: 0, bestQuality: 1, selections: {}, runs: 1 };
     s.quests.gigReview = { status: "available", stage: 0, attempts: 0, bestQuality: 0, selections: {} };
     const loaded = deserialize(JSON.stringify({ ...s, schemaVersion: 3 }))!;
-    expect(loaded.quests.gigSms).toMatchObject({ status: "done", readyDay: s.day + 1 });
+    expect(loaded.quests.gigSms).toMatchObject({ status: "done", runs: 1 });
     expect(loaded.quests.gigReview?.status).toBe("available");
-    // Новое сохранение повторно не прячет подработку, вернувшуюся утром
-    expect(deserialize(serialize({ ...s }))!.quests.gigSms?.status).toBe("available");
+    const v4 = deserialize(JSON.stringify({ ...s, schemaVersion: 4, quests: { gigSms: { ...s.quests.gigSms, status: "done", readyDay: 3 } } }))!;
+    expect(v4.quests.gigSms).toEqual({ status: "done", stage: 0, attempts: 0, bestQuality: 1, selections: {}, runs: 1 });
   });
 
 });
