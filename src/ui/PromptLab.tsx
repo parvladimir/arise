@@ -153,6 +153,9 @@ export function PromptLab({
     }
   };
 
+  // Шаг принят, но заказ не закончен: следующий шаг ждёт нажатия «Дальше» (или выбора карточки).
+  const awaitingNext = Boolean(resultForThisStage?.result.passed && !resultForThisStage.finished);
+  const nextStage = awaitingNext ? viewQuest.stages[stageIndex + 1] : undefined;
   const clientNpc = viewQuest.client;
   // Живая реакция заказчика на конкретный ответ: «Профессор всё сказал верно. Мама не поняла ни слова».
   const reactions = resultForThisStage ? (stage.reactions ?? []).filter((re) => matches(re.when, resultForThisStage.sel)) : [];
@@ -198,7 +201,17 @@ export function PromptLab({
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
               <span className="font-semibold uppercase tracking-wider text-ok">{t("ui.neira.task")}</span>
               <span className="flex items-center gap-2">
-                {viewQuest.stages.length > 1 && <span>{t("ui.neira.stage", { n: stageIndex + 1, total: viewQuest.stages.length })}</span>}
+                {viewQuest.stages.length > 1 && (
+                  <span className="flex items-center gap-1.5">
+                    {t("ui.neira.stage", { n: stageIndex + 1, total: viewQuest.stages.length })}
+                    <span className="flex gap-1" aria-hidden>
+                      {viewQuest.stages.map((_, i) => {
+                        const ok = i < stageIndex || (i === stageIndex && resultForThisStage?.result.passed);
+                        return <span key={i} className={`grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold ${ok ? "bg-ok text-bg" : i === stageIndex ? "border border-ai bg-ai/20 text-ai" : "border border-line text-muted"}`}>{ok ? "✓" : i + 1}</span>;
+                      })}
+                    </span>
+                  </span>
+                )}
                 {onLesson && (
                   <button onClick={onLesson} className="rounded-md border border-ok/40 px-2 py-0.5 font-semibold text-ok hover:bg-ok/10">📘 {t("ui.lesson.open")}</button>
                 )}
@@ -247,7 +260,10 @@ export function PromptLab({
                           <button
                             key={c.id}
                             aria-pressed={on}
-                            onClick={() => setSelection((s) => ({ ...s, [slot]: on ? undefined : c.id }))}
+                            onClick={() => {
+                              if (awaitingNext) next();
+                              setSelection((s) => ({ ...s, [slot]: on && !awaitingNext ? undefined : c.id }));
+                            }}
                             className={`rounded-lg border px-3 py-1.5 text-left text-sm transition ${on ? "border-ai bg-ai/20 text-ink shadow-[0_0_0_1px_var(--color-ai)]" : "border-line bg-surface hover:border-ai/60"}`}
                           >
                             {t(c.textKey)}
@@ -378,9 +394,17 @@ export function PromptLab({
                       <p className="text-xs text-muted">💡 {t("ui.prompt.tryReal")}</p>
                     </>
                   )}
+                  {nextStage && (
+                    <div className="anim-rise rounded-xl border border-ok/40 bg-ok/10 p-3.5">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-ok">
+                        ✓ {t("ui.neira.stageDone", { n: stageIndex + 1 })} · {t("ui.neira.nextStage", { n: stageIndex + 2, total: viewQuest.stages.length })}
+                      </p>
+                      <p className="mt-1.5 leading-snug">{t(nextStage.taskKey)}</p>
+                    </div>
+                  )}
                   {r.passed && (
                     <button onClick={next} className="w-full rounded-xl bg-ok py-3 font-semibold text-bg hover:brightness-110">
-                      {t("ui.neira.next")}
+                      {nextStage ? t("ui.neira.toStage", { n: stageIndex + 2, total: viewQuest.stages.length }) : t("ui.neira.next")}
                     </button>
                   )}
                   {!r.passed && (
