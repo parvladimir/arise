@@ -87,6 +87,8 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
   const unread = state.unread.length;
   const cafeDone = state.quests.q3?.status === "done";
   const warm = has("lamp");
+  const monitor = has("monitor");
+  const teamRate = content.items.filter((i) => has(i.id)).reduce((n, i) => n + (i.incomePerHour ?? 0), 0);
   const neira = state.apps.includes("neira");
   const tg = useTaktNews();
   const ticker = tickerItems(state, t, tg.map((p) => p.title)).join("   ◆   ");
@@ -175,6 +177,16 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <rect x="-1200" y="398" width="3200" height="12" fill="url(#neon)" opacity="0.3" filter="url(#blur6)" className="fx-neon" />
       </g>
 
+      {/* Студия: гирлянда под потолком */}
+      {has("studio") && (
+        <g aria-hidden>
+          <path d="M60 30 Q 200 52 330 34 T 600 36 T 760 30" stroke="#3b4778" strokeWidth="1.2" fill="none" />
+          {[90, 140, 190, 240, 290, 350, 410, 470, 530, 590, 650, 710].map((x, i) => (
+            <circle key={x} cx={x} cy={38 + Math.sin(i * 1.3) * 5} r="2.6" fill={["#fbbf24", "#f472b6", "#2dd4bf", "#a78bfa"][i % 4]} className="fx-twinkle" style={{ animationDelay: `${i * 0.35}s` }} />
+          ))}
+        </g>
+      )}
+
       {/* Окно: ночной город, вывеска, дрон */}
       <g aria-hidden>
         <rect x="520" y="56" width="220" height="180" rx="8" fill="url(#sky)" />
@@ -194,10 +206,52 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
           <circle cx="520" cy="100" r="2.2" fill="#f87171" />
           <circle cx="520" cy="100" r="6" fill="#f87171" opacity="0.25" />
         </g>
+        {/* Квартира с видом: больше огней в городе */}
+        {has("flat") && [[540, 196], [556, 206], [598, 176], [616, 214], [662, 170], [676, 200], [704, 190], [722, 214], [588, 222], [646, 224]].map(([x, y], i) => (
+          <rect key={`f${x}`} x={x} y={y} width="4" height="5" fill="#a5f3fc" className="fx-twinkle" style={{ animationDelay: `${i * 0.4}s` }} />
+        ))}
+        {/* Студия у парка: деревья под окном */}
+        {has("studio") && (
+          <g>
+            {[536, 566, 700, 728].map((x) => (
+              <g key={x}>
+                <rect x={x - 1.5} y="222" width="3" height="14" fill="#0b2a22" />
+                <circle cx={x} cy="216" r="11" fill="#0f3d2e" />
+                <circle cx={x + 6} cy="211" r="7" fill="#14533d" />
+              </g>
+            ))}
+          </g>
+        )}
+        {/* Своя машина: стоит внизу, фары светят */}
+        {has("car") && (
+          <g>
+            <path d="M640 232v-8l8-8h28l10 8h8v8z" fill="#8b3dff" />
+            <path d="M650 216h24l7 6h-35z" fill="#0b1a44" />
+            <circle cx="652" cy="233" r="4" fill="#0b0a1c" />
+            <circle cx="684" cy="233" r="4" fill="#0b0a1c" />
+            <circle cx="693" cy="226" r="2" fill="#fde68a" />
+            <path d="M695 226l24-5v10z" fill="#fde68a" opacity="0.25" />
+          </g>
+        )}
         <rect x="520" y="56" width="220" height="180" rx="8" fill="none" stroke="#24305e" strokeWidth="6" />
         <rect x="520" y="56" width="220" height="180" rx="8" fill="none" stroke="url(#neon)" strokeOpacity="0.35" strokeWidth="1.5" />
         <line x1="630" y1="56" x2="630" y2="236" stroke="#24305e" strokeWidth="4" />
       </g>
+
+      {/* Табло команды: помощник, место в «Улье», агентство — и сколько приносят в час */}
+      {teamRate > 0 && (
+        <g aria-hidden>
+          <rect x="636" y="246" width="104" height="44" rx="6" fill="#0b1530" fillOpacity="0.85" stroke="#34d399" strokeOpacity="0.5" />
+          <text x="644" y="258" fontSize="6.5" fill="#6ee7b7" letterSpacing="1.5" fontFamily="var(--font-mono)">{t("room.team")}</text>
+          {(["junior", "desk", "agency"] as const).filter(has).map((id, i) => (
+            <g key={id}>
+              <circle cx={651 + i * 16} cy="272" r="6.5" fill={["#f472b6", "#fbbf24", "#8b3dff"][i]} />
+              <text x={651 + i * 16} y="275" textAnchor="middle" fontSize="7">{["👩‍💻", "🐝", "🚀"][i]}</text>
+            </g>
+          ))}
+          <text x="734" y="285" textAnchor="end" fontSize="8" fontWeight="800" fill="#34d399" fontFamily="var(--font-mono)" className="fx-breathe">+{teamRate} ₵/ч</text>
+        </g>
+      )}
 
       {/* Голографическая доска целей */}
       <g aria-hidden>
@@ -225,7 +279,32 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <ellipse cx="290" cy="94" rx="60" ry="26" fill="#8b3dff" opacity="0.18" filter="url(#blur6)" />
         <image href="/brand/emblem.webp" x="232" y="72" width="54" height="40" />
         <text x="290" y="99" fontSize="15" fontWeight="900" fill="url(#taktText)" letterSpacing="1">ТАКТ ИИ</text>
+        {has("agency") && <text x="291" y="118" fontSize="7.5" fontWeight="800" fill="#2dd4bf" letterSpacing="3.5">{t("room.agency")}</text>}
       </g>
+
+      {/* Сертификат промпт-инженера в рамке */}
+      {has("course") && (
+        <g aria-hidden transform="rotate(-2 120 250)">
+          <rect x="88" y="226" width="64" height="46" rx="2" fill="#2a1f12" stroke="#f5b544" strokeWidth="2" />
+          <rect x="93" y="231" width="54" height="36" fill="#f7efe3" />
+          <text x="120" y="242" textAnchor="middle" fontSize="5.2" fontWeight="800" fill="#7a3e2b">{t("room.cert1")}</text>
+          <text x="120" y="249" textAnchor="middle" fontSize="4.4" fill="#7a3e2b">{t("room.cert2")}</text>
+          <rect x="102" y="254" width="36" height="1.4" fill="#c9b79c" />
+          <circle cx="139" cy="262" r="4.5" fill="#f5b544" />
+          <path d="M136 265l-2 6 3-1.5M142 265l2 6-3-1.5" fill="#f87171" />
+        </g>
+      )}
+
+      {/* Наушники на крючке */}
+      {has("headphones") && (
+        <g aria-hidden>
+          <line x1="234" y1="146" x2="234" y2="156" stroke="#3b4778" strokeWidth="2" />
+          <path d="M223 184C223 158 245 158 245 184" stroke="#8b3dff" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+          <rect x="218" y="178" width="10" height="17" rx="4" fill="#1c2240" stroke="#a78bfa" strokeWidth="1.2" />
+          <rect x="240" y="178" width="10" height="17" rx="4" fill="#1c2240" stroke="#a78bfa" strokeWidth="1.2" />
+          <circle cx="223" cy="186.5" r="1.6" fill="#00d4ff" className="fx-pulse" />
+        </g>
+      )}
 
       {/* Подвесной светильник-кольцо: заполняет верх стены и «дышит» */}
       <g aria-hidden>
@@ -239,6 +318,21 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
       {/* Свет лампы: мягкое пятно без резких краёв, поверх стены и пола */}
       {warm && <ellipse cx="250" cy="300" rx="230" ry="190" fill="url(#lampGlow)" className="fx-breathe" aria-hidden />}
 
+      {/* Квартира: ковёр */}
+      {has("flat") && <ellipse cx="405" cy="436" rx="210" ry="16" fill="#3b1d6e" opacity="0.6" stroke="#8b3dff" strokeOpacity="0.4" strokeDasharray="6 5" aria-hidden />}
+
+      {/* Электросамокат у стены */}
+      {has("scooter") && (
+        <g aria-hidden>
+          <circle cx="76" cy="398" r="8" fill="#0b0a1c" stroke="#3b4778" strokeWidth="2.5" />
+          <circle cx="146" cy="398" r="8" fill="#0b0a1c" stroke="#3b4778" strokeWidth="2.5" />
+          <path d="M80 392h58" stroke="#2dd4bf" strokeWidth="5" strokeLinecap="round" />
+          <path d="M140 392l-8-62" stroke="#94a3b8" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M122 330h18" stroke="#94a3b8" strokeWidth="3.5" strokeLinecap="round" />
+          <circle cx="135" cy="336" r="2" fill="#fde68a" className="fx-pulse" />
+        </g>
+      )}
+
       {/* Стол с подсветкой снизу */}
       <g aria-hidden>
         <ellipse cx="405" cy="410" rx="250" ry="10" fill="url(#neon)" opacity="0.35" filter="url(#blur6)" className="fx-neon" />
@@ -251,11 +345,26 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
 
       {/* Лампа: тонкая LED-дуга */}
       {warm && (
-        <g aria-hidden>
+        <g aria-hidden transform={monitor ? "translate(-34 0)" : undefined}>
           <ellipse cx="230" cy="316" rx="20" ry="4" fill="#0c1022" />
           <path d="M226 314C222 268 240 236 286 228" stroke="#2a3150" strokeWidth="5" fill="none" strokeLinecap="round" />
           <path d="M270 226l40 6" stroke="#ffe2a8" strokeWidth="6" strokeLinecap="round" className="fx-breathe" />
           <path d="M270 226l40 6" stroke="#ffd28a" strokeWidth="16" strokeLinecap="round" opacity="0.35" filter="url(#blur6)" />
+        </g>
+      )}
+
+      {/* Второй монитор: графики и код */}
+      {monitor && (
+        <g aria-hidden>
+          <ellipse cx="290" cy="316" rx="18" ry="3.5" fill="#0c1022" />
+          <rect x="286" y="282" width="8" height="34" fill="#2a3150" />
+          <rect x="246" y="226" width="90" height="58" rx="5" fill="#161c33" stroke="#3b4778" strokeWidth="2.5" />
+          <rect x="251" y="231" width="80" height="48" rx="2" fill="#0b1a44" />
+          <rect x="251" y="231" width="80" height="48" rx="2" fill="url(#screenGlow)" opacity="0.5" />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <rect key={i} x={257 + i * 11} y={270 - [10, 18, 14, 26, 22, 32][i]!} width="7" height={[10, 18, 14, 26, 22, 32][i]} rx="1" fill={i % 2 ? "#2dd4bf" : "#8b3dff"} opacity="0.85" className="fx-breathe" style={{ animationDelay: `${i * 0.3}s` }} />
+          ))}
+          <rect x="257" y="273" width="66" height="1.5" fill="#3b4778" />
         </g>
       )}
 
@@ -348,6 +457,30 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
           </g>
         )}
       </g>}
+
+      {/* Доставка еды: коробки пиццы на полу */}
+      {has("food") && (
+        <g aria-hidden>
+          <rect x="636" y="396" width="50" height="9" rx="1.5" fill="#c2410c" />
+          <rect x="640" y="387" width="46" height="9" rx="1.5" fill="#ea580c" transform="rotate(-3 663 391)" />
+          <text x="662" y="394" textAnchor="middle" fontSize="5.5" fontWeight="900" fill="#fff7ed" transform="rotate(-3 663 391)">PIZZA</text>
+        </g>
+      )}
+
+      {/* Эргономичное кресло: спинка с сеткой, подлокотники, колёса */}
+      {has("chair") && (
+        <g aria-hidden>
+          <path d="M366 452l34-12 34 12M400 440v-22" stroke="#2a3150" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <circle cx="366" cy="452" r="4" fill="#0b0a1c" />
+          <circle cx="434" cy="452" r="4" fill="#0b0a1c" />
+          <rect x="358" y="410" width="84" height="10" rx="5" fill="#1c2240" />
+          <path d="M346 392h12v22M454 392h-12v22" stroke="#2a3150" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <rect x="362" y="338" width="76" height="72" rx="18" fill="#141a33" stroke="#8b3dff" strokeOpacity="0.6" strokeWidth="2" />
+          {[0, 1, 2, 3, 4].map((i) => <line key={i} x1="372" y1={352 + i * 11} x2="428" y2={352 + i * 11} stroke="#3b4778" strokeWidth="1" />)}
+          <rect x="378" y="326" width="44" height="14" rx="7" fill="#1c2240" stroke="#8b3dff" strokeOpacity="0.5" />
+          <rect x="364" y="340" width="72" height="2" rx="1" fill="url(#neon)" opacity="0.7" className="fx-neon" />
+        </g>
+      )}
 
       {/* Растение */}
       <g aria-hidden>
