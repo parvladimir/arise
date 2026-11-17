@@ -54,11 +54,10 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
   }, []);
   const slot = current?.inline ? document.getElementById("reward-slot") : null;
   const anchored = current?.inline ? Boolean(document.querySelector("[data-reward-anchor]")) : false;
-  const sawSlot = useRef<number | null>(null);
-  if (slot && current) sawSlot.current = current.key;
   useEffect(() => {
     if (!current?.inline) return;
-    if (!anchored || (!slot && sawSlot.current === current.key)) close(current.key);
+    // Слот появляется и пропадает, пока ТАКТ ИИ печатает; карточка уходит, только когда ответ закрыт «Дальше».
+    if (!anchored) close(current.key);
   });
   useEffect(() => onBusy?.(Boolean(current && !current.inline)), [current, onBusy]);
   const timer = usePausableTimer(current && !current.inline ? current.key : null, current?.ms ?? 0, () => current && close(current.key));
@@ -69,7 +68,7 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
       <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-3 pt-2" aria-live="polite">
         {current && !current.inline && <RewardStrip key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
       </div>
-      {current && slot && createPortal(<RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={() => {}} resume={() => {}} />, slot)}
+      {current && slot && createPortal(<RewardStrip key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={() => {}} resume={() => {}} />, slot)}
       {milestone === "milestone.actEnd" && !hold && <ActEnd game={game} state={state} onClose={() => setMilestone(null)} />}
       {milestone && milestone !== "milestone.actEnd" && !hold && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-bg/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="milestone">
@@ -115,62 +114,6 @@ export function usePausableTimer(key: number | null, ms: number, onDone: () => v
   return { pause, resume };
 }
 
-/** Карточка награды: кредиты и опыт крупно сверху, достижения и открытия — строками ниже. */
-function RewardCard({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; onClose: () => void; pause: () => void; resume: () => void }) {
-  const money = batch.items.reduce((n, x) => n + (x.kind === "money" ? x.amount : 0), 0);
-  const xp = batch.items.reduce((n, x) => n + (x.kind === "xp" ? x.amount : 0), 0);
-  const rows = batch.items.flatMap((x) => {
-    switch (x.kind) {
-      case "achievement": return [{ icon: "★", tone: "text-gold border-gold/40 bg-gold/10", label: t("ui.toast.achLabel"), value: t(`ach.${x.id}`) }];
-      case "skill": return [{ icon: "▲", tone: "text-ai border-ai/40 bg-ai/10", label: t("ui.toast.skillLabel"), value: t("ui.toast.skillValue", { name: t(content.skills.find((s) => s.id === x.skill)?.nameKey ?? x.skill), level: x.level }) }];
-      default: return [];
-    }
-  });
-  const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
-  if (apps.length) rows.push({ icon: "▣", tone: "text-ok border-ok/40 bg-ok/10", label: t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel"), value: apps.join(" · ") });
-  return (
-    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className={`toast-card pointer-events-auto relative w-full ${batch.inline ? "" : "max-w-sm sm:w-80"} overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur`}>
-      <div className="flex items-center gap-2 px-4 pt-3">
-        <MascotHead mood="happy" className="h-7 w-7" />
-        <p className="flex-1 font-mono text-[11px] uppercase tracking-[0.25em] text-muted">{t("ui.toast.title")}</p>
-        <button onClick={onClose} aria-label={t("ui.toast.close")} className="-mr-1 grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-line/60 hover:text-ink">✕</button>
-      </div>
-      {(money > 0 || xp > 0) && (
-        <div className="flex gap-2 px-4 pt-2">
-          {money > 0 && (
-            <div className="toast-row flex-1 rounded-xl border border-gold/30 bg-gold/10 px-3 py-2" style={{ animationDelay: "80ms" }}>
-              <p className="text-[11px] text-muted">{t("ui.toast.moneyLabel")}</p>
-              <p className="font-mono text-xl font-bold text-gold">{t("ui.toast.money", { n: money })}</p>
-            </div>
-          )}
-          {xp > 0 && (
-            <div className="toast-row flex-1 rounded-xl border border-ai/30 bg-ai/10 px-3 py-2" style={{ animationDelay: "160ms" }}>
-              <p className="text-[11px] text-muted">{t("ui.toast.xpLabel")}</p>
-              <p className="font-mono text-xl font-bold text-ai">{t("ui.toast.xp", { n: xp })}</p>
-            </div>
-          )}
-        </div>
-      )}
-      {rows.length > 0 && (
-        <ul className="space-y-1.5 px-4 pt-2">
-          {rows.map((r, i) => (
-            <li key={i} className="toast-row flex items-center gap-3" style={{ animationDelay: `${240 + i * 90}ms` }}>
-              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-sm ${r.tone}`} aria-hidden>{r.icon}</span>
-              <span className="min-w-0">
-                <span className="block text-[11px] text-muted">{r.label}</span>
-                <span className="block text-sm font-semibold leading-snug">{r.value}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {batch.inline ? <div className="h-3" /> : <div className="mt-3 h-1 bg-line/50">
-        <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
-      </div>}
-    </div>
-  );
-}
-
 /** Компактная награда в одну-две строки: опыт, кредиты, достижение, открытые приложения. */
 function RewardStrip({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; onClose: () => void; pause: () => void; resume: () => void }) {
   const money = batch.items.reduce((n, x) => n + (x.kind === "money" ? x.amount : 0), 0);
@@ -185,7 +128,7 @@ function RewardStrip({ batch, t, onClose, pause, resume }: { batch: Batch; t: T;
   }
   if (apps.length) parts.push({ text: `▣ ${t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel")}: ${apps.join(" · ")}`, tone: "border-ok/40 bg-ok/10 text-ok" });
   return (
-    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className="toast-card pointer-events-auto relative w-full max-w-2xl overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
+    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className={`toast-card pointer-events-auto relative w-full overflow-hidden ${batch.inline ? "" : "max-w-2xl"} rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur`}>
       <div className="flex items-center gap-3 px-3 py-2">
         <MascotHead mood="happy" className="h-7 w-7" />
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -196,9 +139,11 @@ function RewardStrip({ batch, t, onClose, pause, resume }: { batch: Batch; t: T;
         </div>
         <button onClick={onClose} aria-label={t("ui.toast.close")} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted hover:bg-line/60 hover:text-ink">✕</button>
       </div>
-      <div className="h-0.5 bg-line/50">
-        <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
-      </div>
+      {!batch.inline && (
+        <div className="h-0.5 bg-line/50">
+          <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
+        </div>
+      )}
     </div>
   );
 }
