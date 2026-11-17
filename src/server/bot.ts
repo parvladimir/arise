@@ -3,6 +3,8 @@
 // Настройки (deploy/.env на сервере): GAME_BOT_TOKEN, GAME_BOT_USERNAME, GAME_CHANNEL, GAME_URL, GAME_BOT_ADMINS.
 // Бот должен быть администратором канала (без права публикации), иначе Telegram не покажет ему подписчиков.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { accessDb, issueKey, type Player, type TgUser } from "./access";
 
 const TOKEN = process.env.GAME_BOT_TOKEN ?? "";
@@ -13,6 +15,9 @@ const ADMINS = new Set((process.env.GAME_BOT_ADMINS ?? "").split(/[\s,]+/).filte
 const RECHECK_DAYS = 7;
 const REMIND_DAYS = 14;
 const DAY = 86400_000;
+// Второй подарок подписчику: гайд «10 нейросетей для новичка» (PDF из воронки ТАКТ).
+const GIFT_FILE = join(process.cwd(), "bot-assets", "TAKT-10-neirosetei-dlya-novichka.pdf");
+const GIFT_NAME = "ТАКТ AI — 10 нейросетей для новичка.pdf";
 
 type Markup = { inline_keyboard: { text: string; url?: string; callback_data?: string }[][] };
 
@@ -58,7 +63,7 @@ async function grant(chatId: number, user: TgUser, source: string | null) {
     await send(
       chatId,
       "<b>AI RISE</b> — игра, в которой учишься работать с нейросетями: от первого промпта до своей ИИ-компании.\n\n" +
-        "Игра бесплатная. Нужна только подписка на канал <b>ТАКТ AI</b>: там новости ИИ без воды, разборы и новые главы игры.\n\n" +
+        "Игра бесплатная. Нужна только подписка на канал <b>ТАКТ AI</b>: там новости ИИ без воды, разборы и новые главы игры.\n\n🎁 После подписки получишь ещё и гайд «10 нейросетей для новичка».\n\n" +
         "Подпишись и нажми «Я подписался».",
       subscribeMarkup(),
     );
@@ -71,6 +76,30 @@ async function grant(chatId: number, user: TgUser, source: string | null) {
       "Ссылка именная, не пересылай её. Друзьям лучше дай этого бота.",
     { inline_keyboard: [[{ text: "Играть в AI RISE ▶", url: `${GAME_URL}/api/access?k=${key}` }]] },
   );
+  await sendGift(chatId, user.id).catch((e) => console.error("[bot] gift", (e as Error).message));
+}
+
+/** Гайд отправляем один раз на человека; файл грузим в Telegram однажды и дальше шлём по file_id. */
+async function sendGift(chatId: number, tgId: number) {
+  const d = accessDb();
+  const sentKey = `gift:${tgId}`;
+  if (d.prepare("SELECT 1 FROM bot_state WHERE k = ?").get(sentKey)) return;
+  const caption =
+    "🎁 И второй подарок: гайд «10 нейросетей для новичка».\n\nДля каждой: что умеет, 3 шага, что нажать, и готовый запрос, который можно скопировать. Сохрани, чтобы не потерять.";
+  const cached = (d.prepare("SELECT v FROM bot_state WHERE k = 'gift_file_id'").get() as { v: string } | undefined)?.v;
+  let fileId = cached;
+  if (cached) {
+    await api("sendDocument", { chat_id: chatId, document: cached, caption });
+  } else {
+    const form = new FormData();
+    form.set("chat_id", String(chatId));
+    form.set("caption", caption);
+    form.set("document", new Blob([readFileSync(GIFT_FILE)], { type: "application/pdf" }), GIFT_NAME);
+    const msg = await api<{ document?: { file_id: string } }>("sendDocument", form, 60000);
+    fileId = msg.document?.file_id;
+    if (fileId) d.prepare("INSERT INTO bot_state (k, v) VALUES ('gift_file_id', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").run(fileId);
+  }
+  d.prepare("INSERT INTO bot_state (k, v) VALUES (?, ?) ON CONFLICT(k) DO NOTHING").run(sentKey, String(Date.now()));
 }
 
 async function stats(chatId: number) {

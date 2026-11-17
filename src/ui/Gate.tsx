@@ -14,7 +14,7 @@ const POINTS = [
   { icon: "●", title: "Навык, который пригодится", text: "После игры ты пишешь промпты осознанно: роль, контекст, формат, ограничения. Это то, за что сегодня платят." },
 ];
 
-const STEPS = ["Открой бота ТАКТ AI в Telegram", "Подпишись на канал «ТАКТ все про ИИ»", "Получи личную ссылку и играй бесплатно"];
+const STEPS = ["Открой бота ТАКТ AI в Telegram", "Подпишись на канал «ТАКТ все про ИИ»", "Получи личную ссылку на игру и гайд «10 нейросетей» в подарок"];
 
 export function Gate({ botUrl, igUrl, bad }: { botUrl: string; igUrl?: string; bad?: boolean }) {
   const hasVideo = existsSync(join(process.cwd(), "public", PROMO_VIDEO));
@@ -56,7 +56,7 @@ export function Gate({ botUrl, igUrl, bad }: { botUrl: string; igUrl?: string; b
               </a>
             )}
           </div>
-          <p className="mt-3 text-sm text-muted">Бесплатно. Нужна только подписка на канал ТАКТ AI.</p>
+          <p className="mt-3 text-sm text-muted">Бесплатно. Нужна только подписка на канал ТАКТ AI. В подарок ещё и гайд «10 нейросетей для новичка».</p>
 
           <ol className="mx-auto mt-8 grid max-w-md gap-2 text-left lg:mx-0">
             {STEPS.map((s, i) => (
