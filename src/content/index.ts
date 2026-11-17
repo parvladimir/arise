@@ -4,6 +4,7 @@
 import { school } from "./school";
 import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./act2";
 import { shopItems } from "./shop";
+import { buildFixQuests, huntQuests } from "./modes";
 import { act3Cards, act3Glossary, act3Lessons, act3Quests } from "./act3";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
@@ -807,3 +808,6 @@ export const content: Content = {
     ...act3Quests,
   ],
 };
+
+// Новые виды заданий («Найди ошибку ИИ», «Почини промпт») — строятся на уже описанных заказах.
+content.quests.push(...huntQuests, ...buildFixQuests(content.quests));

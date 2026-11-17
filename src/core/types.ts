@@ -57,6 +57,10 @@ export interface Reaction {
 
 export interface PromptStage {
   taskKey: TextKey;
+  /** «Почини промпт»: стадия начинается с готового (плохого) набора карточек… */
+  preset?: Partial<Record<SlotId, string>>;
+  /** …и разрешает поменять не больше стольких строк. */
+  maxEdits?: number;
   slots: SlotId[];
   /** Карточки, доступные на этой стадии. */
   cards: string[];
@@ -115,7 +119,7 @@ export type QuestDef =
   | (QuestBase & {
       kind: "classify";
       client?: NpcId;
-      game: "factcheck" | "privacy" | "spot";
+      game: "factcheck" | "privacy" | "spot" | "hunt";
       introKey: TextKey;
       /** Текст-источник (абзацы статьи или строки выгрузки). */
       sourceKeys: TextKey[];

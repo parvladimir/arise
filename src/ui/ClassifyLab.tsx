@@ -5,6 +5,7 @@ import type { QuestDef } from "@/core/types";
 import { Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
 import { MascotHead } from "./Mascot";
+import { RewardSlot } from "./Toasts";
 
 type ClassifyQuest = Extract<QuestDef, { kind: "classify" }>;
 type Result = { questId: string; quality: number; passed: boolean; wrong: string[]; pay: number; shortcut?: boolean };
@@ -30,7 +31,7 @@ const toneClasses = (tone: string, on: boolean) => {
 };
 
 /** Мини-игры «Факт-чек» и «Скрой личное»: каждому пункту — один из трёх ответов. */
-export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameApi; quest: ClassifyQuest; onFinished: () => void; onLesson?: () => void }) {
+export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { game: GameApi; quest: ClassifyQuest; onFinished: () => void; onLesson?: () => void; onPassed?: () => void }) {
   const { t, dispatch } = game;
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<Result | null>(null);
@@ -47,18 +48,23 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
   const remaining = timed && startedAt !== null ? Math.max(0, Math.ceil(quest.timer! - (now - startedAt) / 1000)) : quest.timer ?? 0;
 
   const privacy = quest.game === "privacy";
-  const left = quest.items.filter((i) => !answers[i.id]).length;
+  const hunt = quest.game === "hunt";
+  const left = hunt ? 0 : quest.items.filter((i) => !answers[i.id]).length;
+  const marked = quest.items.filter((i) => answers[i.id] === "bug").length;
   const finished = Boolean(result?.passed);
   // После двух неудач подсвечиваем, где именно ошибка, чтобы игрок не застрял.
   const revealWrong = finished || fails >= 2;
 
   const submit = () => {
     setError(null);
-    const events = dispatch({ type: "submitClassify", questId: quest.id, answers: answersRef.current });
+    // В «Найди ошибку» отмечают только ошибки: всё неотмеченное считается «верно».
+    const sent = hunt ? Object.fromEntries(quest.items.map((i) => [i.id, answersRef.current[i.id] ?? "ok"])) : answersRef.current;
+    const events = dispatch({ type: "submitClassify", questId: quest.id, answers: sent });
     const rej = events.find((e) => e.type === "rejected");
     if (rej && rej.type === "rejected") return setError(t(rej.reasonKey));
     const res = events.find((e) => e.type === "classifyResult");
     if (res && res.type === "classifyResult") {
+      if (res.passed) onPassed?.();
       setResult(res);
       if (!res.passed) setFails((n) => n + 1);
       if (timed) setStartedAt(null);
@@ -91,18 +97,21 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
   const shortcut = () => {
     const events = dispatch({ type: "takeShortcut", questId: quest.id });
     const res = events.find((e) => e.type === "classifyResult");
-    if (res && res.type === "classifyResult") setResult({ ...res, shortcut: true });
+    if (res && res.type === "classifyResult") {
+      onPassed?.();
+      setResult({ ...res, shortcut: true });
+    }
   };
 
   const maskLabel = (itemTextKey: string) => `{${t(itemTextKey).split(" ")[0]!.toUpperCase()}}`;
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto">
+    <div className="h-full min-h-0 overflow-y-auto" data-reward-anchor={finished ? "" : undefined}>
       <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* Задача */}
         <div className="rounded-xl border border-line bg-surface-2/60 p-3.5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-semibold uppercase tracking-wider text-ok">{t(privacy ? "ui.check.privacy" : quest.game === "spot" ? "ui.check.spot" : "ui.check.factcheck")}</span>
+            <span className="font-semibold uppercase tracking-wider text-ok">{t(privacy ? "ui.check.privacy" : hunt ? "ui.check.hunt" : quest.game === "spot" ? "ui.check.spot" : "ui.check.factcheck")}</span>
             <span className="flex items-center gap-2">
               {quest.client && <span className="text-muted">{t("ui.neira.client")}: {t(`npc.${quest.client}`)}</span>}
               {onLesson && <button onClick={onLesson} className="rounded-md border border-ok/40 px-2 py-0.5 font-semibold text-ok hover:bg-ok/10">📘 {t("ui.lesson.open")}</button>}
@@ -113,7 +122,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
 
         {/* Источник */}
         <section className="check-source relative overflow-hidden rounded-xl border border-line bg-bg/60 p-4" aria-label={t("ui.check.source")}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">{t(privacy ? "ui.check.preview" : "ui.check.article")}</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted">{t(privacy ? "ui.check.preview" : hunt ? "ui.hunt.data" : "ui.check.article")}</p>
           <h3 className="mt-1 font-semibold leading-snug">{t(quest.sourceTitleKey)}</h3>
           {privacy ? (
             <PrivacyTable quest={quest} answers={answers} t={t} maskLabel={maskLabel} />
@@ -133,10 +142,10 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
         <section aria-label={t(privacy ? "ui.check.fields" : "ui.check.summary")}>
           <div className="flex items-center gap-2">
             <MascotHead className="h-7 w-7" />
-            <h3 className="font-semibold">{t(privacy ? "ui.check.fields" : "ui.check.summary")}</h3>
-            {!finished && <span className="ml-auto text-xs text-muted">{left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
+            <h3 className="font-semibold">{t(privacy ? "ui.check.fields" : hunt ? "ui.hunt.answer" : "ui.check.summary")}</h3>
+            {!finished && <span className="ml-auto text-xs text-muted">{hunt ? t("ui.hunt.marked", { n: marked }) : left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
           </div>
-          {timed && (
+          {timed && !result?.passed && (
             <div className="mt-3 rounded-xl border border-gold/40 bg-gold/5 p-3">
               {running ? (
                 <div>
@@ -158,7 +167,11 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
               ) : null}
             </div>
           )}
-          {(!timed || running || result) && <ul className="mt-3 space-y-2.5">
+          {hunt && (!timed || running || result) && (
+            <HuntText quest={quest} answers={answers} result={result} reveal={Boolean(revealWrong && result && !result.shortcut)} locked={finished || (timed && !running)} t={t}
+              toggle={(id) => setAnswers((a) => ({ ...a, [id]: a[id] === "bug" ? "" : "bug" }))} />
+          )}
+          {!hunt && (!timed || running || result) && <ul className="mt-3 space-y-2.5">
             {quest.items.map((item, i) => {
               const picked = answers[item.id];
               const wrong = result && result.wrong.includes(item.id);
@@ -209,8 +222,8 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
                 <span className={`rounded-full px-2.5 py-0.5 font-semibold ${result.passed ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad"}`}>
                   {result.shortcut ? t("ui.check.shortcutDone") : t("ui.check.result", { q: Math.round(result.quality * 100) })} · {t(result.passed ? "ui.neira.passed" : "ui.neira.failed")}
                 </span>
-                {result.pay > 0 && <span className="font-mono font-semibold text-gold">+{result.pay} ₵</span>}
               </div>
+              {result.passed && <RewardSlot />}
               {!result.passed && <p className="mt-2 text-sm">{t("ui.check.mistakes", { n: result.wrong.length })} {fails >= 2 ? t("ui.check.hintShown") : ""}</p>}
               {result.passed && !result.shortcut && result.wrong.length > 0 && <p className="mt-2 text-sm text-muted">{t("ui.check.passedWithMisses", { n: result.wrong.length })}</p>}
               {result.passed && !result.shortcut && result.wrong.length === 0 && <p className="mt-2 text-sm text-ok">{t("ui.check.perfect")}</p>}
@@ -240,6 +253,68 @@ export function ClassifyLab({ game, quest, onFinished, onLesson }: { game: GameA
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+/** Ответ ИИ сплошным текстом: каждая фраза — кнопка, тап помечает её как ошибку. */
+function HuntText({
+  quest,
+  answers,
+  result,
+  reveal,
+  locked,
+  toggle,
+  t,
+}: {
+  quest: ClassifyQuest;
+  answers: Record<string, string>;
+  result: Result | null;
+  reveal: boolean;
+  locked: boolean;
+  toggle: (id: string) => void;
+  t: GameApi["t"];
+}) {
+  const explained = reveal ? quest.items.filter((i) => i.answer === "bug" || answers[i.id] === "bug") : [];
+  return (
+    <div className="mt-3">
+      {!reveal && <p className="mb-2 text-xs leading-snug text-muted">{t("ui.hunt.hint")}</p>}
+      <div className="rounded-xl border border-ai/30 bg-surface-2/50 p-3.5 text-[15px] leading-[1.9]">
+        {quest.items.map((item) => {
+          const on = answers[item.id] === "bug";
+          const isBug = item.answer === "bug";
+          let cls = on ? "bg-bad/20 text-bad ring-1 ring-bad/60" : "hover:bg-ai/10";
+          if (reveal) cls = isBug ? (on ? "bg-ok/20 text-ok ring-1 ring-ok/60" : "bg-bad/20 text-bad ring-1 ring-bad/60 underline decoration-wavy") : on ? "bg-gold/15 text-gold line-through" : "";
+          return (
+            <button
+              key={item.id}
+              type="button"
+              disabled={locked || reveal}
+              aria-pressed={on}
+              onClick={() => toggle(item.id)}
+              className={`inline rounded px-0.5 text-left transition-colors disabled:cursor-default ${cls}`}
+            >
+              {t(item.textKey)}
+            </button>
+          );
+        })}
+      </div>
+      {explained.length > 0 && result && (
+        <ul className="mt-3 space-y-2">
+          {explained.map((item) => {
+            const on = answers[item.id] === "bug";
+            const isBug = item.answer === "bug";
+            const label = isBug ? (on ? "ui.hunt.found" : "ui.hunt.missed") : "ui.hunt.falseAlarm";
+            const tone = isBug && on ? "border-ok/40 bg-ok/5 text-ok" : isBug ? "border-bad/50 bg-bad/5 text-bad" : "border-gold/40 bg-gold/5 text-gold";
+            return (
+              <li key={item.id} className={`rounded-lg border p-2.5 text-xs leading-snug ${tone}`}>
+                <span className="font-semibold">{t(label)}:</span> <span className="text-ink">«{t(item.textKey).trim()}»</span>
+                {item.explainKey && <span className="mt-1 block text-muted">{t(item.explainKey)}</span>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

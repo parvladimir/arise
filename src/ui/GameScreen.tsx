@@ -357,13 +357,16 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
   if (classify && checking !== classify.id) setChecking(classify.id);
   // Сданную проверку держим на экране только пока она на нём и осталась. Если показали что-то другое
   // (урок или следующий заказ), старый факт-чек больше не всплывает пустым.
-  const keepClassify = Boolean(shownClassify && shownClassify.kind === "classify" && (!prompt || classify));
+  // `holding` — у этой проверки на экране результат: его показываем, пока игрок не нажмёт «Дальше».
+  const [holding, setHolding] = useState<string | null>(null);
+  const held = Boolean(!classify && holding && holding === checking);
+  const keepClassify = Boolean(shownClassify && shownClassify.kind === "classify" && (!prompt || classify || held));
   // Урок перед заданием: показывается сам при первом открытии, потом — по кнопке «Урок».
   const lesson = lessonFor(classify?.id ?? prompt?.id);
   const [reading, setReading] = useState<string | null>(null);
   // Профи урок сам не открывается: он доступен по кнопке «Урок».
   const unseen = lesson && !state.lessons.includes(lesson.id) && levelOf(state) !== "pro";
-  if (lesson && (unseen || reading === lesson.id)) {
+  if (lesson && !held && (unseen || reading === lesson.id)) {
     if (checking && !classify) setChecking(null);
     return (
       <LessonCard
@@ -385,7 +388,9 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
         game={game}
         quest={shownClassify}
         onLesson={classify ? openLesson : undefined}
+        onPassed={() => setHolding(shownClassify.id)}
         onFinished={() => {
+          setHolding(null);
           setChecking(null);
           onFinished();
         }}

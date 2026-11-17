@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { content } from "@/content";
 import type { GameEvent, GameState, PromptResult, QuestDef, SlotId } from "@/core/types";
 import { matches, runPrompt } from "@/core/promptSim";
+import { countEdits } from "@/core/engine";
 import { PromptPreview, Takeaway } from "./Learn";
 import { FreeformInput } from "./Freeform";
 import { analyzeFreeform } from "@/core/freeform";
@@ -60,6 +61,14 @@ export function PromptLab({
   const viewQuest = quest ?? (shown ? (content.quests.find((q) => q.id === shown.questId) as PromptQuest) : undefined);
   const stageIndex = shown && shown.questId === viewQuest?.id ? shown.stage : (viewQuest ? state.quests[viewQuest.id]?.stage ?? 0 : 0);
   const stage = viewQuest?.stages[stageIndex];
+  // «Почини промпт»: стадия начинается с плохого промпта заказчика.
+  const presetKey = stage?.preset ? `${viewQuest?.id}:${stageIndex}` : null;
+  useEffect(() => {
+    if (!presetKey || !stage?.preset) return;
+    setSelection({ ...stage.preset });
+    setMode("cards");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetKey]);
   const tokenized = useMemo(
     () => (shown ? shown.result.segments.map((seg) => ({ tokens: tokenize(t(seg.textKey)), invented: seg.hallucination })) : []),
     [shown, t],
@@ -154,6 +163,10 @@ export function PromptLab({
     }
   };
 
+  const preset = stage.preset;
+  const maxEdits = stage.maxEdits ?? 0;
+  const edits = preset ? countEdits(preset, picked) : 0;
+  const before = preset ? runPrompt(stage, preset, t, {}).segments.map((g) => t(g.textKey)).join(" ") : "";
   // Шаг принят, но заказ не закончен: следующий шаг ждёт нажатия «Дальше» (или выбора карточки).
   const awaitingNext = Boolean(resultForThisStage?.result.passed && !resultForThisStage.finished);
   const nextStage = awaitingNext ? viewQuest.stages[stageIndex + 1] : undefined;
@@ -220,11 +233,24 @@ export function PromptLab({
             </div>
             {clientNpc && <div className="mt-1 text-sm text-muted">{t("ui.neira.client")}: {t(`npc.${clientNpc}`)}</div>}
             <p className="mt-1.5 leading-snug">{t(stage.taskKey)}</p>
+            {preset && (
+              <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full bg-gold/15 px-2.5 py-0.5 font-bold uppercase tracking-wider text-gold">🔧 {t("ui.fix.badge")}</span>
+                <span className={`rounded-full px-2.5 py-0.5 font-mono font-semibold ${edits >= maxEdits ? "bg-bad/15 text-bad" : "bg-ai/15 text-ai"}`}>{t("ui.fix.edits", { n: edits, max: maxEdits })}</span>
+                <span className="basis-full text-muted">{t("ui.fix.hint", { max: maxEdits })}</span>
+              </div>
+            )}
+            {preset && !r && (
+              <div className="mt-3 rounded-lg border border-bad/40 bg-bad/5 p-3 lg:hidden">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-bad">✕ {t("ui.fix.before")}</p>
+                <p className="mt-1.5 whitespace-pre-line font-mono text-[13px] leading-relaxed text-ink/85">{before}</p>
+              </div>
+            )}
           </div>
 
           <div className="mt-5 flex items-center gap-2">
             <h3 className="text-sm font-semibold text-muted">{t("ui.neira.prompt")}</h3>
-            <div className="ml-auto flex rounded-lg border border-line bg-surface p-0.5 text-xs" role="tablist">
+            <div className={`ml-auto flex rounded-lg border border-line bg-surface p-0.5 text-xs ${preset ? "hidden" : ""}`} role="tablist">
               {(["cards", "free"] as const).map((m) => (
                 <button
                   key={m}
@@ -263,7 +289,10 @@ export function PromptLab({
                             aria-pressed={on}
                             onClick={() => {
                               if (awaitingNext) next();
-                              setSelection((s) => ({ ...s, [slot]: on && !awaitingNext ? undefined : c.id }));
+                              const nextSel = { ...picked, [slot]: on && !awaitingNext ? undefined : c.id };
+                              if (preset && countEdits(preset, nextSel) > maxEdits) return setError(t("ui.fix.limit"));
+                              setError(null);
+                              setSelection(nextSel);
                             }}
                             className={`rounded-lg border px-3 py-1.5 text-left text-sm transition ${on ? "border-ai bg-ai/20 text-ink shadow-[0_0_0_1px_var(--color-ai)]" : "border-line bg-surface hover:border-ai/60"}`}
                           >
@@ -340,6 +369,12 @@ export function PromptLab({
             <h3 className="font-semibold">{t("ui.neira.answer")}</h3>
           </div>
 
+          {!r && preset && (
+            <div className="mt-4 rounded-xl border border-bad/40 bg-bad/5 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-bad">✕ {t("ui.fix.before")}</p>
+              <p className="mt-2 whitespace-pre-line font-mono text-[14px] leading-relaxed text-ink/85">{before}</p>
+            </div>
+          )}
           {!r && <p className="mt-6 text-sm text-muted">{t("ui.neira.waiting")}</p>}
 
           {r && (

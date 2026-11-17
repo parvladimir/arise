@@ -151,6 +151,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
         }
       }
       for (const slot of stage.required) if (!action.selection[slot]) return reject("err.missingSlot");
+      if (stage.preset && stage.maxEdits !== undefined && countEdits(stage.preset, action.selection) > stage.maxEdits) return reject("err.tooManyEdits");
 
       const stageIndex = progress.stage;
       const result = runPrompt({ ...stage, pass: passFor(state, stage.pass) }, action.selection, ctx.t, progress.selections);
@@ -276,6 +277,14 @@ function collectIncome(state: GameState, ctx: Ctx, now: number): number {
     return amount;
   }
   return 0;
+}
+
+/** «Почини промпт»: сколько строк отличается от исходного набора (замена или удаление — одна правка). */
+export function countEdits(preset: Partial<Record<string, string>>, selection: Partial<Record<string, string>>): number {
+  const slots = new Set([...Object.keys(preset), ...Object.keys(selection)]);
+  let n = 0;
+  for (const s of slots) if ((preset[s] || undefined) !== (selection[s] || undefined)) n += 1;
+  return n;
 }
 
 // ---------- Внутренние помощники ----------

@@ -589,3 +589,42 @@ describe("лестница покупок", () => {
     expect(c.money).toBe(120 + 60 * 12);
   });
 });
+
+describe("новые виды заданий", () => {
+  const t = ctx.t;
+  it("«Почини промпт»: плохой промпт не проходит, а за 2 правки можно пройти", () => {
+    for (const id of ["fix1", "fix2", "fix3"]) {
+      const stage = stageOf(id);
+      const preset = stage.preset as Record<string, string>;
+      expect(runPrompt(stage, preset, t, {}).passed, id).toBe(false);
+      const cards = stage.cards.map((c) => content.cards.find((x) => x.id === c)!).filter((c) => stage.slots.includes(c.slot));
+      const options = [...cards.map((c) => [c.slot, c.id] as const), ...stage.slots.map((s) => [s, ""] as const)];
+      let found = false;
+      for (const a of options) {
+        for (const b of options) {
+          const sel: Record<string, string> = { ...preset, [a[0]]: a[1], [b[0]]: b[1] };
+          if (stage.required.some((s) => !sel[s])) continue;
+          if (runPrompt(stage, sel, t, {}).passed) found = true;
+        }
+        if (found) break;
+      }
+      expect(found, id).toBe(true);
+      for (const k of [`${id}.title`, `${id}.goal`, `${id}.offer`, `${id}.task`, `${id}.done`]) expect(hasKey(k), k).toBe(true);
+    }
+  });
+
+  it("«Найди ошибку»: тексты на месте, отмечены все ошибки — заказ пройден", () => {
+    for (const id of ["hunt1", "hunt2", "hunt3"]) {
+      const q = content.quests.find((x) => x.id === id) as Extract<QuestDef, { kind: "classify" }>;
+      for (const k of [q.titleKey, q.introKey, q.sourceTitleKey, ...q.sourceKeys, ...q.items.map((i) => i.textKey), ...q.items.flatMap((i) => (i.explainKey ? [i.explainKey] : []))])
+        expect(hasKey(k), k).toBe(true);
+      expect(q.items.filter((i) => i.answer === "bug").length).toBeGreaterThanOrEqual(3);
+    }
+    const s = newGameState(profile, ctx);
+    s.quests.hunt1 = { status: "active", stage: 0, attempts: 0, bestQuality: 0, selections: {} } as GameState["quests"][string];
+    const q = content.quests.find((x) => x.id === "hunt1") as Extract<QuestDef, { kind: "classify" }>;
+    const answers = Object.fromEntries(q.items.map((i) => [i.id, i.answer]));
+    const r = apply(s, { type: "submitClassify", questId: "hunt1", answers }, ctx);
+    expect(r.events.find((e) => e.type === "classifyResult")).toMatchObject({ passed: true, quality: 1 });
+  });
+});
