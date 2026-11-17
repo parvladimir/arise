@@ -20,7 +20,7 @@ rsync -az --delete \
   ./ "$SERVER:$REMOTE/"
 
 echo "▸ 3/4 Собираю и запускаю (сборка идёт с пониженным приоритетом, чтобы не мешать ТАКТ)"
-ssh "$SERVER" "cd $REMOTE/deploy && nice -n 15 docker compose build && docker compose up -d && docker image prune -f >/dev/null"
+ssh "$SERVER" "touch $REMOTE/deploy/.env && chmod 600 $REMOTE/deploy/.env && cd $REMOTE/deploy && nice -n 15 docker compose build && docker compose up -d && docker image prune -f >/dev/null"
 
 echo "▸ 4/4 Подключаю адрес $DOMAIN в Caddy"
 ssh "$SERVER" bash -s -- "$DOMAIN" <<'REMOTE_SH'

@@ -11,6 +11,9 @@ services:
     pids_limit: 200
     logging: {driver: json-file, options: {max-size: "5m", max-file: "2"}}
     networks: [takt]
+    # Ключи бота доступа и настройки ворот (только на сервере, в git не попадают): GAME_BOT_TOKEN, GAME_BOT_USERNAME,
+    # GAME_BOT_ADMINS, GAME_CHANNEL, GAME_URL, IG_URL. Без GAME_BOT_USERNAME игра открыта всем.
+    env_file: .env
     # База игроков: аккаунты и прогресс (SQLite). Том не удаляется при пересборке.
     volumes: ["arise-data:/app/data"]
 
