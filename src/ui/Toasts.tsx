@@ -1,12 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { content } from "@/content";
 import type { GameState, Toast } from "@/core/types";
 import type { GameApi } from "./useGame";
 import { Mascot, MascotHead } from "./Mascot";
 
-type Batch = { key: number; items: Toast[]; ms: number };
+/** inline — награда за заказ показывается прямо в ответе ТАКТ ИИ, а не поверх экрана. */
+type Batch = { key: number; items: Toast[]; ms: number; inline: boolean };
+
+const SLOT_EVENT = "arise:reward-slot";
+
+/** Место для карточки награды внутри ответа ТАКТ ИИ: там она ничего не закрывает. */
+export function RewardSlot() {
+  useEffect(() => {
+    window.dispatchEvent(new Event(SLOT_EVENT));
+    return () => {
+      window.setTimeout(() => window.dispatchEvent(new Event(SLOT_EVENT)), 0);
+    };
+  }, []);
+  return <div id="reward-slot" />;
+}
 let counter = 0;
 
 export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; state: GameState; hold?: boolean; onBusy?: (busy: boolean) => void }) {
@@ -24,19 +39,36 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
     const items = incoming.filter((x) => x.kind !== "milestone");
     if (items.length === 0) return;
     // Большая награда висит 10 секунд, одиночная мелочь — 6. Карточки показываются по очереди, не стопкой.
-    const batch = { key: ++counter, items, ms: items.length > 2 ? 10000 : 6000 };
+    const inline = Boolean(document.querySelector("[data-reward-anchor]"));
+    const batch = { key: ++counter, items, ms: items.length > 2 ? 10000 : 6000, inline };
     setBatches((b) => [...b, batch]);
   }, [state.toasts, dispatch]);
 
   const current = batches[0];
-  useEffect(() => onBusy?.(Boolean(current)), [current, onBusy]);
-  const timer = usePausableTimer(current?.key ?? null, current?.ms ?? 0, () => current && close(current.key));
+  // Слот в ответе появляется, когда ТАКТ ИИ допечатал; пропадает по «Дальше» — тогда и карточка уходит.
+  const [, rerender] = useState(0);
+  useEffect(() => {
+    const on = () => rerender((n) => n + 1);
+    window.addEventListener(SLOT_EVENT, on);
+    return () => window.removeEventListener(SLOT_EVENT, on);
+  }, []);
+  const slot = current?.inline ? document.getElementById("reward-slot") : null;
+  const anchored = current?.inline ? Boolean(document.querySelector("[data-reward-anchor]")) : false;
+  const sawSlot = useRef<number | null>(null);
+  if (slot && current) sawSlot.current = current.key;
+  useEffect(() => {
+    if (!current?.inline) return;
+    if (!anchored || (!slot && sawSlot.current === current.key)) close(current.key);
+  });
+  useEffect(() => onBusy?.(Boolean(current && !current.inline)), [current, onBusy]);
+  const timer = usePausableTimer(current && !current.inline ? current.key : null, current?.ms ?? 0, () => current && close(current.key));
 
   return (
     <>
       <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex flex-col items-center px-3 sm:top-20" aria-live="polite">
-        {current && <RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
+        {current && !current.inline && <RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
       </div>
+      {current && slot && createPortal(<RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={() => {}} resume={() => {}} />, slot)}
       {milestone === "milestone.actEnd" && !hold && <ActEnd game={game} state={state} onClose={() => setMilestone(null)} />}
       {milestone && milestone !== "milestone.actEnd" && !hold && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-bg/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="milestone">
@@ -96,7 +128,7 @@ function RewardCard({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; 
   const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
   if (apps.length) rows.push({ icon: "▣", tone: "text-ok border-ok/40 bg-ok/10", label: t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel"), value: apps.join(" · ") });
   return (
-    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className="toast-card pointer-events-auto relative w-full max-w-sm sm:w-80 overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
+    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className={`toast-card pointer-events-auto relative w-full ${batch.inline ? "" : "max-w-sm sm:w-80"} overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur`}>
       <div className="flex items-center gap-2 px-4 pt-3">
         <MascotHead mood="happy" className="h-7 w-7" />
         <p className="flex-1 font-mono text-[11px] uppercase tracking-[0.25em] text-muted">{t("ui.toast.title")}</p>
@@ -131,9 +163,9 @@ function RewardCard({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; 
           ))}
         </ul>
       )}
-      <div className="mt-3 h-1 bg-line/50">
+      {batch.inline ? <div className="h-3" /> : <div className="mt-3 h-1 bg-line/50">
         <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
-      </div>
+      </div>}
     </div>
   );
 }
@@ -158,10 +190,15 @@ function ActEnd({ game, state, onClose }: { game: GameApi; state: GameState; onC
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-bg/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="act-end">
       <div className="act-card anim-rise relative w-full max-w-lg overflow-hidden rounded-3xl border border-ai/40 bg-surface p-6 shadow-2xl shadow-ai/25 sm:p-8">
         <div className="act-glow pointer-events-none absolute inset-0" aria-hidden />
-        <Mascot pose="cheer" mood="happy" className="pointer-events-none absolute -right-3 top-2 h-24 opacity-95 sm:h-32" />
         <div className="relative">
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-ok">{t("ui.act.kicker")}</p>
-          <h2 id="act-end" className="mt-2 text-3xl font-black leading-tight sm:text-4xl">{t("ui.act.title")}</h2>
+          {/* Робот стоит рядом с заголовком, а не поверх текста. */}
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-xs uppercase leading-relaxed tracking-[0.2em] text-ok">{t("ui.act.kicker")}</p>
+              <h2 id="act-end" className="mt-2 text-3xl font-black leading-tight sm:text-4xl">{t("ui.act.title")}</h2>
+            </div>
+            <Mascot pose="cheer" mood="happy" className="pointer-events-none h-20 shrink-0 opacity-95 sm:h-28" />
+          </div>
           <p className="mt-2 text-muted">{t("milestone.actEnd")}</p>
           <dl className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {stats.map((s, i) => (

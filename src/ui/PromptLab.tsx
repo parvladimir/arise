@@ -9,6 +9,7 @@ import { FreeformInput } from "./Freeform";
 import { analyzeFreeform } from "@/core/freeform";
 import { ruMatch } from "@/content/locales/ru.match";
 import type { GameApi } from "./useGame";
+import { RewardSlot } from "./Toasts";
 import { MascotHead } from "./Mascot";
 
 const NPC_COLOR: Record<string, string> = { boris: "#fb923c", vera: "#f472b6", editor: "#38bdf8", anna: "#f5b544", dima: "#8b3dff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
@@ -333,7 +334,7 @@ export function PromptLab({
         </div>
 
         {/* Ответ */}
-        <div className={`min-h-0 overflow-y-auto p-4 lg:block ${tab === "answer" ? "block" : "hidden"}`}>
+        <div className={`min-h-0 overflow-y-auto p-4 lg:block ${tab === "answer" ? "block" : "hidden"}`} data-reward-anchor={resultForThisStage?.finished ? "" : undefined}>
           <div className="flex items-center gap-2">
             <MascotHead mood={phase === "thinking" ? "think" : "idle"} className="h-9 w-9" />
             <h3 className="font-semibold">{t("ui.neira.answer")}</h3>
@@ -369,8 +370,8 @@ export function PromptLab({
                     <span className={`rounded-full px-2.5 py-0.5 font-semibold ${r.passed ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad"}`}>
                       {t("ui.neira.quality", { q: Math.round(r.quality * 100) })} · {t(r.passed ? "ui.neira.passed" : "ui.neira.failed")}
                     </span>
-                    {resultForThisStage?.finished && resultForThisStage.pay > 0 && <span className="font-mono font-semibold text-gold">+{resultForThisStage.pay} ₵</span>}
                   </div>
+                  {resultForThisStage?.finished && <RewardSlot />}
                   {reactions.length > 0 && (
                     <ul className="space-y-2" aria-label={t("ui.neira.reactions")}>
                       {reactions.map((re) => (
