@@ -389,3 +389,13 @@ body {
 @keyframes hunt-tap { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px) scale(0.92); } }
 .hunt-tap { display: inline-block; animation: hunt-tap 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .hunt-tap { animation: none; } }
+
+/* Живой ТАКТ AI в комнате */
+.buddy-move { transition: left 2.5s cubic-bezier(0.45, 0, 0.3, 1); }
+.buddy-walk > .mascot { animation: buddy-walk 0.5s ease-in-out infinite; }
+@keyframes buddy-walk { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5%) rotate(3deg); } }
+.buddy-joy > .mascot { animation: buddy-joy 0.6s ease-in-out 4; }
+@keyframes buddy-joy { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14%) scale(1.04); } }
+.buddy-bubble { animation: buddy-bubble 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes buddy-bubble { from { opacity: 0; transform: translateY(8px) scale(0.92); } to { opacity: 1; transform: none; } }
+[data-motion="off"] .buddy-walk > .mascot, [data-motion="off"] .buddy-joy > .mascot, [data-motion="off"] .buddy-bubble { animation: none; }

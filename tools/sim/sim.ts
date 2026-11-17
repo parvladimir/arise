@@ -85,7 +85,8 @@ const SHOP_PLAN: Record<Profile, string[]> = {
   hasty: ["coffee", "lamp"],
 };
 
-export function simulate(profile: Profile, seed = 1): SimResult {
+/** maxStage: дальше этого этапа сюжет не берём (баланс «торопливый/аккуратный» проверяется для этапов 1–3). */
+export function simulate(profile: Profile, seed = 1, maxStage = Infinity): SimResult {
   const rand = rng(seed);
   let state = newGameState({ name: "Sim", avatar: "a1", pronoun: "they" }, ctx);
   const attempts: Record<string, number> = {};
@@ -105,7 +106,7 @@ export function simulate(profile: Profile, seed = 1): SimResult {
     };
     // Сюжет идёт первым; подработку берём, только если не хватает денег на покупку (или она уже начата).
     const activeGig = content.quests.find((q) => q.repeatable && state.quests[q.id]?.status === "active");
-    const story = content.quests.find((q) => !q.repeatable && open(q));
+    const story = content.quests.find((q) => !q.repeatable && open(q) && q.stage <= maxStage);
     const gig = content.quests.filter((q) => q.repeatable && open(q))[gigs % 3];
     const quest = (activeGig ?? (needMoney ? gig : story)) as QuestDef | undefined;
     if (!quest) break;

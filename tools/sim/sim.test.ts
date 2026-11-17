@@ -8,9 +8,9 @@ const stagesOf = (id: string) => {
   return q?.kind === "prompt" ? q.stages.length : 1;
 };
 
-const run = (p: Profile, seed: number) => {
+const run = (p: Profile, seed: number, maxStage?: number) => {
   resetSim();
-  return simulate(p, seed);
+  return simulate(p, seed, maxStage);
 };
 
 describe("симуляция экономики первого акта", () => {
@@ -24,8 +24,9 @@ describe("симуляция экономики первого акта", () => 
     });
 
     it(`торопливый зарабатывает не меньше 60% от аккуратного (seed ${seed})`, () => {
-      const careful = run("careful", seed);
-      const hasty = run("hasty", seed);
+      // Правило для первых трёх этапов. В главе 4 аккуратность окупается сильнее: репутация копится и поднимает оплату.
+      const careful = run("careful", seed, 3);
+      const hasty = run("hasty", seed, 3);
       expect(hasty.earned).toBeGreaterThanOrEqual(careful.earned * 0.6);
       expect(hasty.earned).toBeLessThan(careful.earned);
     });
