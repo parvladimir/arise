@@ -355,12 +355,16 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
   // Пока на экране результат проверки, держим её открытой, даже если задание уже закрыто.
   const shownClassify = classify ?? (checking ? content.quests.find((q) => q.id === checking && q.kind === "classify") : undefined);
   if (classify && checking !== classify.id) setChecking(classify.id);
+  // Сданную проверку держим на экране только пока она на нём и осталась. Если показали что-то другое
+  // (урок или следующий заказ), старый факт-чек больше не всплывает пустым.
+  const keepClassify = Boolean(shownClassify && shownClassify.kind === "classify" && (!prompt || classify));
   // Урок перед заданием: показывается сам при первом открытии, потом — по кнопке «Урок».
   const lesson = lessonFor(classify?.id ?? prompt?.id);
   const [reading, setReading] = useState<string | null>(null);
   // Профи урок сам не открывается: он доступен по кнопке «Урок».
   const unseen = lesson && !state.lessons.includes(lesson.id) && levelOf(state) !== "pro";
   if (lesson && (unseen || reading === lesson.id)) {
+    if (checking && !classify) setChecking(null);
     return (
       <LessonCard
         key={lesson.id}
@@ -374,7 +378,7 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
     );
   }
   const openLesson = lesson ? () => setReading(lesson.id) : undefined;
-  if (shownClassify && shownClassify.kind === "classify" && (!prompt || classify)) {
+  if (keepClassify && shownClassify && shownClassify.kind === "classify") {
     return (
       <ClassifyLab
         key={shownClassify.id}
@@ -388,6 +392,7 @@ function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: G
       />
     );
   }
+  if (checking && !classify) setChecking(null);
   return <PromptLab game={game} state={state} quest={prompt} motion={motion} onFinished={onFinished} onLesson={openLesson} />;
 }
 
