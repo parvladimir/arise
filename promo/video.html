@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ru"><head><meta charset="utf-8">
-<!-- Ролик-презентация AI RISE (1080×1920, 9:16). Кадры рисует render(t) детерминированно, render.mjs снимает их по одному. -->
+<!-- Ролик-презентация AI RISE (1080×1920, 9:16): крючок из глаголов-фишек, логотип, 7 экранов игры, призыв. Кадры рисует render(t) детерминированно, render.mjs снимает их по одному. -->
 <style>
 @font-face { font-family: I; src: url(fonts/Inter-SemiBold.otf); font-weight: 600; }
 @font-face { font-family: I; src: url(fonts/Inter-Bold.otf); font-weight: 700; }
@@ -15,18 +15,19 @@ body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
   linear-gradient(rgba(146,87,255,.13) 2px, transparent 2px), linear-gradient(90deg, rgba(146,87,255,.13) 2px, transparent 2px);
   background-size: 90px 90px; }
 .scene { position: absolute; inset: 0; opacity: 0; }
-.cap { position: absolute; left: 80px; right: 120px; top: 250px; font-weight: 700; font-size: 66px; line-height: 1.08; letter-spacing: -1px; }
+.cap { position: absolute; left: 80px; right: 120px; top: 210px; font-weight: 700; font-size: 66px; line-height: 1.08; letter-spacing: -1px; }
 .cap b { color: #b48cff; }
 .sub { margin-top: 22px; font-weight: 600; font-size: 38px; line-height: 1.25; color: #a9b4cf; letter-spacing: 0; }
-.phone { position: absolute; left: 210px; top: 640px; width: 660px; height: 1000px; border-radius: 56px; overflow: hidden;
+.phone { position: absolute; left: 210px; top: 660px; width: 660px; height: 1000px; border-radius: 56px; overflow: hidden;
   border: 6px solid #2c2a55; box-shadow: 0 40px 120px rgba(146,87,255,.35), 0 0 0 2px rgba(255,255,255,.06) inset; background: #0b0a16; }
 .phone img { width: 100%; display: block; will-change: transform; }
-.hook { position: absolute; left: 80px; right: 80px; top: 560px; font-family: ID, I; font-weight: 900; font-size: 112px; line-height: 1.02; letter-spacing: -3px; }
+.hook { position: absolute; left: 80px; right: 80px; top: 520px; font-family: ID, I; font-weight: 900; font-size: 140px; line-height: 1.02; letter-spacing: -3px; }
 .hook span { display: inline-block; }
 .big { font-family: ID, I; font-weight: 900; }
 .pill { display: inline-block; padding: 14px 26px; border-radius: 999px; border: 2px solid rgba(255,255,255,.14); background: rgba(20,19,41,.8); font-size: 34px; margin: 0 12px 16px 0; }
 #bar { position: absolute; left: 60px; right: 60px; top: 120px; height: 8px; border-radius: 9px; background: rgba(255,255,255,.12); }
 #bar i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, #9257ff, #22d3ee); }
+.verb { display:inline-block; padding:12px 28px; border-radius:999px; background:linear-gradient(90deg,#9257ff,#22d3ee); font-family:ID,I; font-weight:900; font-size:40px; letter-spacing:3px; color:#fff; margin-bottom:26px; }
 .ladder { position: absolute; left: 80px; right: 120px; top: 640px; }
 .step { display: flex; align-items: center; gap: 28px; padding: 30px 34px; margin-bottom: 22px; border-radius: 32px; background: rgba(20,19,41,.85); border: 2px solid #2c2a55; font-size: 44px; font-weight: 700; }
 .step em { font-style: normal; font-size: 64px; width: 80px; text-align: center; }
@@ -37,7 +38,7 @@ body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
 </style></head><body>
 <div id="bg"></div><div id="grid"></div>
 
-<!-- 1. Крючок -->
+<!-- Крючок: глаголы-фишки игры -->
 <section class="scene" id="s-hook">
   <div class="hook" id="hook"></div>
 </section>
@@ -47,28 +48,12 @@ body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
   <img src="emblem.webp" id="logo-emb" style="position:absolute;left:390px;top:470px;width:300px">
   <div style="position:absolute;left:0;right:0;top:800px;font-size:40px;letter-spacing:12px;color:#a9b4cf">ТАКТ AI ПРЕДСТАВЛЯЕТ</div>
   <div class="big" id="logo-title" style="position:absolute;left:0;right:0;top:880px;font-size:250px;line-height:.9;letter-spacing:-8px">AI<br><span style="background:linear-gradient(90deg,#9257ff,#22d3ee);-webkit-background-clip:text;color:transparent">RISE</span></div>
-  <div id="logo-sub" style="position:absolute;left:120px;right:120px;top:1370px;font-size:44px;line-height:1.25;color:#cfd6ea;font-weight:600">Игра, в которой учишься работать с нейросетями</div>
+  <div id="logo-sub" style="position:absolute;left:120px;right:120px;top:1370px;font-size:44px;line-height:1.25;color:#cfd6ea;font-weight:600">Игра про карьеру с нейросетями: от первого промпта до своего ИИ-агентства</div>
 </section>
 
-<!-- 3–7. Кадры игры -->
-<section class="scene" data-shot><div class="cap">Начинаешь с нуля:<br><b>комната, ноутбук</b> и сообщение от друга</div><div class="phone"><img src="shots/04-room.png"></div></section>
-<section class="scene" data-shot><div class="cap">Друг подкидывает<br><b>первую задачу</b><div class="sub">Каждый разговор ведёт к новому навыку</div></div><div class="phone"><img src="shots/06-chat.png"></div></section>
-<section class="scene" data-shot><div class="cap"><b>Короткие уроки</b><br>прямо в игре<div class="sub">Что такое промпт, токены, контекст, роли — 16 уроков Школы ТАКТ</div></div><div class="phone"><img src="shots/07-lesson.png"></div></section>
-<section class="scene" data-shot><div class="cap">Собираешь промпт<br><b>из карточек</b><div class="sub">или пишешь своими словами</div></div><div class="phone"><img src="shots/09-cards.png"></div></section>
-<section class="scene" data-shot><div class="cap">Нейросеть отвечает,<br><b>заказчик оценивает</b><div class="sub">Качество 100% — заказ принят, деньги на счёт</div></div><div class="phone"><img src="shots/10-answer.png"></div></section>
+<div id="shots"></div>
 
-<!-- 8. Карьера -->
-<section class="scene" id="s-ladder">
-  <div class="cap">Как та самая игра<br>про компьютерщика,<br><b>только про ИИ</b></div>
-  <div class="ladder">
-    <div class="step"><em>✍️</em>Первые подработки</div>
-    <div class="step"><em>💻</em>Техника и новые навыки</div>
-    <div class="step"><em>📈</em>Заказчики посерьёзнее</div>
-    <div class="step"><em>🚀</em>Своя ИИ-студия</div>
-  </div>
-</section>
-
-<!-- 9. Призыв -->
+<!-- Призыв -->
 <section class="scene" id="s-cta">
   <div class="cta">
     <div class="big" style="font-size:104px;line-height:1;letter-spacing:-3px">Играй<br><span style="color:#b48cff">бесплатно</span></div>
@@ -84,20 +69,30 @@ body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
 <div id="bar"><i></i></div>
 
 <script>
-const D = 36;                       // длительность, сек
-const SC = [                        // [id или индекс кадра, начало, конец, прокрутка от, до (доля высоты картинки)]
-  ["s-hook", 0, 3.2], ["s-logo", 3.2, 6.6],
-  [0, 6.6, 10.4, 0.0, 0.10], [1, 10.4, 14.4, 0.0, 0.0], [2, 14.4, 18.6, 0.02, 0.22],
-  [3, 18.6, 23.0, 0.12, 0.30], [4, 23.0, 27.4, 0.05, 0.16],
-  ["s-ladder", 27.4, 31.4], ["s-cta", 31.4, 36.0],
+const SHOTS = [   // [картинка, глагол, заголовок, подпись, прокрутка от, до]
+  ["school.png", "ИЗУЧАЙ", "Школа ТАКТ: <b>основы ИИ</b>", "Короткие уроки и мини-игры: что такое ИИ, промпт, токены, роли"],
+  ["09-cards.png", "ПИШИ ПРОМПТЫ", "Собирай запрос <b>из карточек</b>", "или пиши своими словами, а нейросеть отвечает", 0.12, 0.28],
+  ["orders.png", "ЗАРАБАТЫВАЙ", "Бери <b>заказы</b> от клиентов", "Сдавай на ★★★, держи серию и получай до +50% к оплате"],
+  ["skills.png", "ПРОКАЧИВАЙСЯ", "Качай <b>навыки</b> и уровень", "Общение с ИИ, ИИ-грамотность, а дальше Creative AI, Automation и Business"],
+  ["shop.png", "ПОКУПАЙ", "Техника, курсы, <b>апгрейды</b>", "Каждая покупка помогает в работе: больше опыта и денег"],
+  ["shop-home.png", "РАСТИ", "От съёмной комнаты <b>до своего ИИ-агентства</b>", "Студия, квартира с видом на город и офис с командой"],
+  ["laptop.png", "ИССЛЕДУЙ", "Свой ноутбук <b>с ТАКТ OS</b>", "Сообщения, сюжет, новые приложения открываются по ходу игры"],
 ];
+const HOOK = ["Развивайся.", "Зарабатывай.", "Покупай.", "Изучай ИИ."];
+const HOOK_STEP = 0.55, HOOK_END = 3.4, LOGO_END = 6.4, SHOT_LEN = 3.6, CTA_LEN = 4.6;
+const D = +(LOGO_END + SHOTS.length * SHOT_LEN + CTA_LEN).toFixed(2);
+document.getElementById("shots").innerHTML = SHOTS.map(([img, verb, cap, sub]) =>
+  `<section class="scene" data-shot><div class="cap"><span class="verb">${verb}</span><br>${cap}<div class="sub">${sub}</div></div><div class="phone"><img src="shots/${img}"></div></section>`).join("");
+const SC = [["s-hook", 0, HOOK_END], ["s-logo", HOOK_END, LOGO_END],
+  ...SHOTS.map((sh, i) => [i, LOGO_END + i * SHOT_LEN, LOGO_END + (i + 1) * SHOT_LEN, sh[4] ?? 0, sh[5] ?? 0.04]),
+  ["s-cta", D - CTA_LEN, D]];
 const shots = [...document.querySelectorAll("[data-shot]")];
+
 const clamp = (x) => Math.max(0, Math.min(1, x));
 const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
 const easeBack = (x) => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
-const HOOK = ["Помнишь", "игру", "про", "компьютерщика", "из", "90-х?"];
 const hook = document.getElementById("hook");
-hook.innerHTML = HOOK.map((w) => `<span>${w}</span>`).join(" ") + `<div style="margin-top:50px;font-size:96px;color:#b48cff"><span id="hook2">Теперь она про ИИ.</span></div>`;
+hook.innerHTML = HOOK.map((w, i) => `<span style="display:block;${i % 2 ? "color:#b48cff" : ""}">${w}</span>`).join("") + `<div style="margin-top:46px;font-family:I;font-weight:700;font-size:56px;letter-spacing:0;color:#cfd6ea"><span id="hook2">Всё это в одной игре про ИИ</span></div>`;
 
 window.render = (t) => {
   document.querySelector("#bar i").style.width = `${(t / D) * 100}%`;
@@ -119,11 +114,11 @@ window.render = (t) => {
       img.style.transform = `translateY(${-(f0 + (f1 - f0) * easeOut(p * 1.1)) * h}px)`;
     } else if (key === "s-hook") {
       [...hook.querySelectorAll(":scope > span")].forEach((s, i) => {
-        const q = easeBack((local - i * 0.22) / 0.35);
-        s.style.opacity = clamp((local - i * 0.22) / 0.15); s.style.transform = `translateY(${(1 - q) * 60}px) scale(${0.8 + 0.2 * q})`;
+        const q = easeBack((local - i * HOOK_STEP) / 0.3);
+        s.style.opacity = clamp((local - i * HOOK_STEP) / 0.12); s.style.transform = `translateY(${(1 - q) * 60}px) scale(${0.8 + 0.2 * q})`;
       });
-      const q = easeBack((local - 1.8) / 0.4), h2 = document.getElementById("hook2");
-      h2.style.opacity = clamp((local - 1.8) / 0.15); h2.style.display = "inline-block"; h2.style.transform = `scale(${0.7 + 0.3 * q})`;
+      const q = easeBack((local - 2.35) / 0.4), h2 = document.getElementById("hook2");
+      h2.style.opacity = clamp((local - 2.35) / 0.15); h2.style.display = "inline-block"; h2.style.transform = `scale(${0.7 + 0.3 * q})`;
     } else if (key === "s-logo") {
       document.getElementById("logo-emb").style.transform = `scale(${0.6 + 0.4 * easeBack(local / 0.5)}) rotate(${(1 - easeOut(local / 0.6)) * -25}deg)`;
       document.getElementById("logo-title").style.transform = `scale(${0.85 + 0.15 * easeBack((local - 0.25) / 0.5)})`;
