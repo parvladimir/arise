@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<!-- Ролик-презентация AI RISE (1080×1920, 9:16). Кадры рисует render(t) детерминированно, render.mjs снимает их по одному. -->
+<style>
+@font-face { font-family: I; src: url(fonts/Inter-SemiBold.otf); font-weight: 600; }
+@font-face { font-family: I; src: url(fonts/Inter-Bold.otf); font-weight: 700; }
+@font-face { font-family: ID; src: url(fonts/InterDisplay-Black.otf); font-weight: 900; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #0b0a16; }
+body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
+#bg { position: absolute; inset: 0; background:
+  radial-gradient(900px 700px at 20% 15%, rgba(146,87,255,.35), transparent 70%),
+  radial-gradient(800px 800px at 90% 85%, rgba(34,211,238,.18), transparent 70%), #0b0a16; }
+#grid { position: absolute; inset: -200px; background-image:
+  linear-gradient(rgba(146,87,255,.13) 2px, transparent 2px), linear-gradient(90deg, rgba(146,87,255,.13) 2px, transparent 2px);
+  background-size: 90px 90px; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.cap { position: absolute; left: 80px; right: 120px; top: 250px; font-weight: 700; font-size: 66px; line-height: 1.08; letter-spacing: -1px; }
+.cap b { color: #b48cff; }
+.sub { margin-top: 22px; font-weight: 600; font-size: 38px; line-height: 1.25; color: #a9b4cf; letter-spacing: 0; }
+.phone { position: absolute; left: 210px; top: 640px; width: 660px; height: 1000px; border-radius: 56px; overflow: hidden;
+  border: 6px solid #2c2a55; box-shadow: 0 40px 120px rgba(146,87,255,.35), 0 0 0 2px rgba(255,255,255,.06) inset; background: #0b0a16; }
+.phone img { width: 100%; display: block; will-change: transform; }
+.hook { position: absolute; left: 80px; right: 80px; top: 560px; font-family: ID, I; font-weight: 900; font-size: 112px; line-height: 1.02; letter-spacing: -3px; }
+.hook span { display: inline-block; }
+.big { font-family: ID, I; font-weight: 900; }
+.pill { display: inline-block; padding: 14px 26px; border-radius: 999px; border: 2px solid rgba(255,255,255,.14); background: rgba(20,19,41,.8); font-size: 34px; margin: 0 12px 16px 0; }
+#bar { position: absolute; left: 60px; right: 60px; top: 120px; height: 8px; border-radius: 9px; background: rgba(255,255,255,.12); }
+#bar i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, #9257ff, #22d3ee); }
+.ladder { position: absolute; left: 80px; right: 120px; top: 640px; }
+.step { display: flex; align-items: center; gap: 28px; padding: 30px 34px; margin-bottom: 22px; border-radius: 32px; background: rgba(20,19,41,.85); border: 2px solid #2c2a55; font-size: 44px; font-weight: 700; }
+.step em { font-style: normal; font-size: 64px; width: 80px; text-align: center; }
+.cta { position: absolute; left: 80px; right: 120px; top: 300px; }
+.face { position:absolute; display:flex; align-items:center; justify-content:center; gap:22%; }
+.face i { display:block; width:17%; height:38%; border-radius:999px; background:#00d4ff; box-shadow:0 0 12px #00d4ff, 0 0 30px rgba(0,212,255,.6); }
+.btn { display: inline-block; margin-top: 46px; padding: 34px 50px; border-radius: 40px; background: #9257ff; font-size: 50px; font-weight: 700; box-shadow: 0 20px 80px rgba(146,87,255,.6); }
+</style></head><body>
+<div id="bg"></div><div id="grid"></div>
+
+<!-- 1. Крючок -->
+<section class="scene" id="s-hook">
+  <div class="hook" id="hook"></div>
+</section>
+
+<!-- 2. Логотип -->
+<section class="scene" id="s-logo" style="text-align:center">
+  <img src="emblem.webp" id="logo-emb" style="position:absolute;left:390px;top:470px;width:300px">
+  <div style="position:absolute;left:0;right:0;top:800px;font-size:40px;letter-spacing:12px;color:#a9b4cf">ТАКТ AI ПРЕДСТАВЛЯЕТ</div>
+  <div class="big" id="logo-title" style="position:absolute;left:0;right:0;top:880px;font-size:250px;line-height:.9;letter-spacing:-8px">AI<br><span style="background:linear-gradient(90deg,#9257ff,#22d3ee);-webkit-background-clip:text;color:transparent">RISE</span></div>
+  <div id="logo-sub" style="position:absolute;left:120px;right:120px;top:1370px;font-size:44px;line-height:1.25;color:#cfd6ea;font-weight:600">Игра, в которой учишься работать с нейросетями</div>
+</section>
+
+<!-- 3–7. Кадры игры -->
+<section class="scene" data-shot><div class="cap">Начинаешь с нуля:<br><b>комната, ноутбук</b> и сообщение от друга</div><div class="phone"><img src="shots/04-room.png"></div></section>
+<section class="scene" data-shot><div class="cap">Друг подкидывает<br><b>первую задачу</b><div class="sub">Каждый разговор ведёт к новому навыку</div></div><div class="phone"><img src="shots/06-chat.png"></div></section>
+<section class="scene" data-shot><div class="cap"><b>Короткие уроки</b><br>прямо в игре<div class="sub">Что такое промпт, токены, контекст, роли — 16 уроков Школы ТАКТ</div></div><div class="phone"><img src="shots/07-lesson.png"></div></section>
+<section class="scene" data-shot><div class="cap">Собираешь промпт<br><b>из карточек</b><div class="sub">или пишешь своими словами</div></div><div class="phone"><img src="shots/09-cards.png"></div></section>
+<section class="scene" data-shot><div class="cap">Нейросеть отвечает,<br><b>заказчик оценивает</b><div class="sub">Качество 100% — заказ принят, деньги на счёт</div></div><div class="phone"><img src="shots/10-answer.png"></div></section>
+
+<!-- 8. Карьера -->
+<section class="scene" id="s-ladder">
+  <div class="cap">Как та самая игра<br>про компьютерщика,<br><b>только про ИИ</b></div>
+  <div class="ladder">
+    <div class="step"><em>✍️</em>Первые подработки</div>
+    <div class="step"><em>💻</em>Техника и новые навыки</div>
+    <div class="step"><em>📈</em>Заказчики посерьёзнее</div>
+    <div class="step"><em>🚀</em>Своя ИИ-студия</div>
+  </div>
+</section>
+
+<!-- 9. Призыв -->
+<section class="scene" id="s-cta">
+  <div class="cta">
+    <div class="big" style="font-size:104px;line-height:1;letter-spacing:-3px">Играй<br><span style="color:#b48cff">бесплатно</span></div>
+    <div class="sub" style="font-size:44px;margin-top:34px;color:#e8edf7">Подпишись на <b style="color:#b48cff">ТАКТ AI</b> в Telegram,<br>бот пришлёт ссылку на игру</div>
+    <div class="btn" id="cta-btn">✈ Ссылка в шапке профиля</div>
+  </div>
+  <div id="cta-m" style="position:absolute;right:40px;top:980px;height:640px">
+    <img src="mascot-point.webp" style="height:640px;display:block">
+    <span class="face" style="left:12.2%;width:56.3%;top:16%;height:26.2%"><i></i><i></i></span>
+  </div>
+</section>
+
+<div id="bar"><i></i></div>
+
+<script>
+const D = 36;                       // длительность, сек
+const SC = [                        // [id или индекс кадра, начало, конец, прокрутка от, до (доля высоты картинки)]
+  ["s-hook", 0, 3.2], ["s-logo", 3.2, 6.6],
+  [0, 6.6, 10.4, 0.0, 0.10], [1, 10.4, 14.4, 0.0, 0.0], [2, 14.4, 18.6, 0.02, 0.22],
+  [3, 18.6, 23.0, 0.12, 0.30], [4, 23.0, 27.4, 0.05, 0.16],
+  ["s-ladder", 27.4, 31.4], ["s-cta", 31.4, 36.0],
+];
+const shots = [...document.querySelectorAll("[data-shot]")];
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const easeBack = (x) => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const HOOK = ["Помнишь", "игру", "про", "компьютерщика", "из", "90-х?"];
+const hook = document.getElementById("hook");
+hook.innerHTML = HOOK.map((w) => `<span>${w}</span>`).join(" ") + `<div style="margin-top:50px;font-size:96px;color:#b48cff"><span id="hook2">Теперь она про ИИ.</span></div>`;
+
+window.render = (t) => {
+  document.querySelector("#bar i").style.width = `${(t / D) * 100}%`;
+  document.getElementById("grid").style.transform = `translate(${(t * 30) % 90}px, ${(t * 45) % 90}px)`;
+  for (const [key, a, b, f0, f1] of SC) {
+    const el = typeof key === "number" ? shots[key] : document.getElementById(key);
+    const local = t - a, len = b - a;
+    const fadeIn = clamp(local / 0.35), fadeOut = clamp((b - t) / 0.3);
+    const last = b >= D;
+    const vis = t >= a && t < b + 0.001 ? Math.min(fadeIn, last ? 1 : fadeOut) : 0;
+    el.style.opacity = vis;
+    if (!vis) continue;
+    const p = clamp(local / len);
+    if (typeof key === "number") {
+      const cap = el.querySelector(".cap"), ph = el.querySelector(".phone"), img = ph.querySelector("img");
+      cap.style.transform = `translateY(${(1 - easeOut(local / 0.5)) * 40}px)`;
+      ph.style.transform = `translateY(${(1 - easeOut(local / 0.6)) * 160}px) scale(${1 + p * 0.04})`;
+      const h = img.getBoundingClientRect().height / (1 + p * 0.04);
+      img.style.transform = `translateY(${-(f0 + (f1 - f0) * easeOut(p * 1.1)) * h}px)`;
+    } else if (key === "s-hook") {
+      [...hook.querySelectorAll(":scope > span")].forEach((s, i) => {
+        const q = easeBack((local - i * 0.22) / 0.35);
+        s.style.opacity = clamp((local - i * 0.22) / 0.15); s.style.transform = `translateY(${(1 - q) * 60}px) scale(${0.8 + 0.2 * q})`;
+      });
+      const q = easeBack((local - 1.8) / 0.4), h2 = document.getElementById("hook2");
+      h2.style.opacity = clamp((local - 1.8) / 0.15); h2.style.display = "inline-block"; h2.style.transform = `scale(${0.7 + 0.3 * q})`;
+    } else if (key === "s-logo") {
+      document.getElementById("logo-emb").style.transform = `scale(${0.6 + 0.4 * easeBack(local / 0.5)}) rotate(${(1 - easeOut(local / 0.6)) * -25}deg)`;
+      document.getElementById("logo-title").style.transform = `scale(${0.85 + 0.15 * easeBack((local - 0.25) / 0.5)})`;
+      document.getElementById("logo-title").style.opacity = clamp((local - 0.25) / 0.25);
+      document.getElementById("logo-sub").style.opacity = clamp((local - 0.9) / 0.4);
+    } else if (key === "s-ladder") {
+      el.querySelectorAll(".step").forEach((s, i) => {
+        const q = easeOut((local - 0.4 - i * 0.45) / 0.45);
+        s.style.opacity = q; s.style.transform = `translateX(${(1 - q) * 300}px)`;
+      });
+    } else if (key === "s-cta") {
+      el.querySelector(".cta").style.transform = `translateY(${(1 - easeOut(local / 0.5)) * 50}px)`;
+      const btn = el.querySelector(".btn"); btn.style.transform = `scale(${1 + 0.035 * Math.sin(local * 6)})`;
+      el.querySelectorAll('.face i').forEach((e) => (e.style.transform = `scaleY(${(local % 2.2) > 2.05 ? 0.15 : 1})`));
+      document.getElementById("cta-m").style.transform = `translateY(${(1 - easeBack((local - 0.3) / 0.6)) * 500 + Math.sin(local * 3) * 10}px)`;
+    }
+  }
+};
+window.DURATION = D;
+// #site — вариант для промо-страницы игры: вместо «шапки профиля» кнопка бота.
+if (location.hash === "#site") document.getElementById("cta-btn").textContent = "✈ Жми «Получить доступ»";
+render(0);
+</script></body></html>
