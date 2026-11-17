@@ -228,7 +228,17 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
                 {result.passed && !result.shortcut && <ResultStars game={game} quality={result.quality} />}
               </div>
               {result.passed && <RewardSlot />}
-              {!result.passed && <p className="mt-2 text-sm">{t("ui.check.mistakes", { n: result.wrong.length })} {fails >= 2 ? t("ui.check.hintShown") : ""}</p>}
+              {!result.passed && !hunt && <p className="mt-2 text-sm">{t("ui.check.mistakes", { n: result.wrong.length })} {fails >= 2 ? t("ui.check.hintShown") : ""}</p>}
+              {!result.passed && hunt && (() => {
+                const fa = quest.items.filter((i) => i.answer !== "bug" && answers[i.id] === "bug").length;
+                const miss = quest.items.filter((i) => i.answer === "bug" && answers[i.id] !== "bug").length;
+                return (
+                  <div className="mt-2 space-y-1.5 text-sm">
+                    <p>{t("ui.hunt.failSummary", { fa, miss })} {fails >= 2 ? t("ui.check.hintShown") : ""}</p>
+                    {fa > 0 && <p className="rounded-lg bg-gold/10 px-2.5 py-1.5 font-semibold text-gold">💡 {t("ui.hunt.inverted")}</p>}
+                  </div>
+                );
+              })()}
               {result.passed && !result.shortcut && result.wrong.length > 0 && <p className="mt-2 text-sm text-muted">{t("ui.check.passedWithMisses", { n: result.wrong.length })}</p>}
               {result.passed && !result.shortcut && result.wrong.length === 0 && <p className="mt-2 text-sm text-ok">{t("ui.check.perfect")}</p>}
               {result.shortcut && <p className="mt-2 text-sm text-muted">{t("ui.check.shortcutAfter")}</p>}
@@ -276,6 +286,7 @@ function HuntHowTo({ t, bugs, seconds }: { t: GameApi["t"]; bugs: number; second
               <span className="rounded px-1 underline decoration-ai/60 decoration-dashed underline-offset-[5px]"><span className="mr-1 text-[11px] font-bold text-ai/70">○</span>{t("ui.hunt.example")}</span>
               <span className="text-muted">→</span>
               <span className="rounded bg-bad/20 px-1 text-bad ring-1 ring-bad/60"><span className="mr-1 text-[11px] font-bold">✕</span>{t("ui.hunt.example")}</span>
+              <span className="text-xs text-muted">{t("ui.hunt.exampleNote")}</span>
             </span>
           </span>
         </li>
@@ -307,16 +318,23 @@ function HuntText({
   toggle: (id: string) => void;
   t: GameApi["t"];
 }) {
-  const explained = reveal ? quest.items.filter((i) => i.answer === "bug" || answers[i.id] === "bug") : [];
+  // После неудачи сразу видно, какие отметки стояли на верных фразах; пропущенные ошибки — только после 2-й неудачи.
+  const failed = Boolean(result && !result.passed && !reveal);
+  const explained = reveal
+    ? quest.items.filter((i) => i.answer === "bug" || answers[i.id] === "bug")
+    : failed
+      ? quest.items.filter((i) => i.answer !== "bug" && answers[i.id] === "bug")
+      : [];
   return (
     <div className="mt-3">
       {!reveal && !locked && (
         <div className="mb-2.5 flex items-center gap-2.5 rounded-xl border border-ai/50 bg-ai/10 px-3 py-2 text-sm font-semibold text-ink">
           <span aria-hidden className="hunt-tap text-xl">👆</span>
           <span className="min-w-0 flex-1 leading-snug">{t("ui.hunt.tapNow")}</span>
-          <span className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs ${marked >= bugs ? "bg-ok/20 text-ok" : "bg-bad/15 text-bad"}`}>{marked} / {bugs}</span>
+          <span className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs ${marked === bugs ? "bg-ok/20 text-ok" : marked > bugs ? "bg-gold/20 text-gold" : "bg-bad/15 text-bad"}`}>{marked} / {bugs}</span>
         </div>
       )}
+      {!reveal && !locked && marked > bugs && <p className="mb-2.5 rounded-lg bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold">⚠ {t("ui.hunt.tooMany", { n: bugs })}</p>}
       <div className="rounded-xl border border-ai/30 bg-surface-2/50 p-3.5 text-[15px] leading-[2.1]">
         {quest.items.map((item) => {
           const on = answers[item.id] === "bug";
@@ -324,6 +342,7 @@ function HuntText({
           let cls = on
             ? "bg-bad/20 text-bad ring-1 ring-bad/60"
             : "cursor-pointer underline decoration-ai/60 decoration-dashed decoration-1 underline-offset-[5px] hover:bg-ai/15 hover:decoration-ai";
+          if (failed && on && !isBug) cls = "bg-gold/15 text-gold line-through decoration-gold";
           if (reveal) cls = isBug ? (on ? "bg-ok/20 text-ok ring-1 ring-ok/60" : "bg-bad/20 text-bad ring-1 ring-bad/60 underline decoration-wavy") : on ? "bg-gold/15 text-gold line-through" : "";
           return (
             <button
