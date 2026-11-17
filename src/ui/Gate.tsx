@@ -4,6 +4,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Mascot, TaktLogo } from "./Mascot";
+import { GateLogin } from "./GateLogin";
 
 const PROMO_VIDEO = "/promo/ai-rise.mp4";
 
@@ -58,6 +59,8 @@ export function Gate({ botUrl, igUrl, bad }: { botUrl: string; igUrl?: string; b
           </div>
           <p className="mt-3 text-sm text-muted">Бесплатно. Нужна только подписка на канал ТАКТ AI. В подарок ещё и гайд «10 нейросетей для новичка».</p>
 
+          <GateLogin botUrl={botUrl} />
+
           <ol className="mx-auto mt-8 grid max-w-md gap-2 text-left lg:mx-0">
             {STEPS.map((s, i) => (
               <li key={s} className="flex items-center gap-3 rounded-xl border border-white/10 bg-surface/70 px-4 py-3 text-sm">
@@ -101,7 +104,7 @@ export function Gate({ botUrl, igUrl, bad }: { botUrl: string; igUrl?: string; b
       </section>
 
       <p className="mx-auto mt-10 max-w-5xl text-center text-sm text-muted">
-        Уже играл и заходил в аккаунт? Войди через бота ещё раз: ссылка та же, прогресс на месте.
+        Игра переехала на game.taktai.de. Если ты уже играл, но видишь эту страницу, открой ссылку из бота ещё раз или войди по почте: прогресс на месте.
       </p>
     </main>
   );
