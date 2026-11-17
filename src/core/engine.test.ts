@@ -558,3 +558,11 @@ describe("уровни и Школа ТАКТ ИИ", () => {
   });
 
 });
+
+describe("снятая карточка", () => {
+  it("пустой слот в выборе не считается чужой карточкой", () => {
+    const s = at("q2");
+    const r = apply(s, { type: "submitPrompt", questId: "q2", selection: { goal: "g.tap.fix", recipient: undefined } as never }, ctx);
+    expect(r.events.some((e) => e.type === "rejected")).toBe(false);
+  });
+});

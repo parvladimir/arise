@@ -144,6 +144,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       if (!stage) return reject("err.questUnavailable");
 
       for (const [slot, cardId] of Object.entries(action.selection)) {
+        if (!cardId) continue; // снятая карточка — пустой слот, а не ошибка
         const card = ctx.content.cards.find((c) => c.id === cardId);
         if (!card || card.slot !== slot || !stage.cards.includes(card.id) || !state.slots.includes(card.slot) || !stage.slots.includes(card.slot)) {
           return reject("err.badCard");

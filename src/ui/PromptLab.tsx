@@ -132,7 +132,7 @@ export function PromptLab({
       setError(t("ui.neira.required", { slots: missing.map((s) => t(`slot.${s}`)).join(", ") }));
       return;
     }
-    const clean = Object.fromEntries(Object.entries(selection).filter(([slot]) => slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
+    const clean = Object.fromEntries(Object.entries(selection).filter(([slot, id]) => id && slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
     const events: GameEvent[] = dispatch({ type: "submitPrompt", questId: viewQuest.id, selection: clean, freeform: mode === "free" });
     const res = events.find((e) => e.type === "promptResult");
     const rej = events.find((e) => e.type === "rejected");
@@ -165,7 +165,7 @@ export function PromptLab({
   const selKey = JSON.stringify(selection) + stageIndex;
   const preResult = pre && pre.key === selKey && !(resultForThisStage?.result.passed) ? pre.result : null;
   const precheck = () => {
-    const clean = Object.fromEntries(Object.entries(selection).filter(([slot]) => slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
+    const clean = Object.fromEntries(Object.entries(selection).filter(([slot, id]) => id && slots.includes(slot as SlotId) && state.slots.includes(slot as SlotId)));
     setPre({ key: selKey, result: runPrompt(stage, clean, t, state.quests[viewQuest.id]?.selections ?? {}) });
   };
   // Для проваленной «правдивости» объясняем: что именно выдумано и из-за какой карточки
