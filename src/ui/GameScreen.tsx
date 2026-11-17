@@ -19,6 +19,7 @@ import { MascotHead, TaktLogo } from "./Mascot";
 import { PushBanner } from "./Notify";
 import { DeskAlert, DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
+import { Finale } from "./Finale";
 import type { GameApi } from "./useGame";
 
 const ALL_APPS: AppId[] = ["neira", "school", "orders", "shop", "skills", "journal"];
@@ -229,6 +230,9 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       </nav>
 
       <Toasts game={game} state={state} hold={view === "laptop" && app === "neira"} onBusy={setRewardOpen} />
+      {!rewardOpen && currentGoal(state, content).textKey === content.finalGoalKey && !state.flags.includes("seen:finale") && (
+        <Finale game={game} state={state} openDaily={() => go("laptop", "orders")} />
+      )}
       <PushBanner game={game} state={state} blocked={rewardOpen} suppress={visibleChat} openChat={(c) => { go("phone", undefined, c); setPhonePulse((n) => n + 1); }} />
     </div>
   );
@@ -259,7 +263,7 @@ function Laptop({
 }) {
   const { t } = game;
   const openApp = app && state.apps.includes(app) ? app : null;
-  // Значки на иконках: сколько новых заказов, есть ли задача для ТАКТ ИИ, куда ведёт текущая цель
+  // Значки на иконках: сколько новых заказов, есть ли задача для ТАКТ AI, куда ведёт текущая цель
   const goalApp = goalTarget(state).app;
   const badges: Partial<Record<AppId, string>> = {};
   const newOrders = boardQuests(state, content).filter((q) => !q.repeatable && state.quests[q.id]?.status === "available").length;
@@ -347,7 +351,7 @@ function Laptop({
   );
 }
 
-/** ТАКТ ИИ показывает либо конструктор запроса, либо мини-игру проверки — смотря какое задание в работе. */
+/** ТАКТ AI показывает либо конструктор запроса, либо мини-игру проверки — смотря какое задание в работе. */
 function NeiraApp({ game, state, motion, onFinished }: { game: GameApi; state: GameState; motion: boolean; onFinished: () => void }) {
   const prompt = activePromptQuest(state);
   const classify = activeClassifyQuest(state);

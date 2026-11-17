@@ -84,6 +84,23 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       if (!state.lessons.includes(action.lessonId)) state.lessons.push(action.lessonId);
       return { state, events };
 
+    case "startDaily": {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(action.day)) return reject("err.questUnavailable");
+      const list = dailyFor(state, ctx.content, action.day);
+      const today = state.daily?.day === action.day ? state.daily : { day: action.day, done: [] as string[] };
+      today.ids = list.map((q) => q.id); // набор фиксируется на весь день
+      const quest = list.find((q) => q.id === action.questId);
+      const progress = state.quests[action.questId];
+      if (!quest || !progress || today.done.includes(quest.id)) return reject("err.questUnavailable");
+      state.daily = today;
+      Object.assign(progress, { status: "active", stage: 0, attempts: 0, selections: {}, daily: action.day });
+      return { state, events };
+    }
+
+    case "seeFinale":
+      addFlag(state, "seen:finale");
+      return { state, events };
+
     case "finishSchool": {
       const mod = ctx.content.school.find((m) => m.id === action.moduleId);
       if (!mod || action.total <= 0 || action.correct < 0 || action.correct > action.total) return reject("err.questUnavailable");
@@ -377,6 +394,73 @@ function updateRush(state: GameState, ctx: Ctx, completedId: string) {
   }
 }
 
+// ---------- Заказы дня ----------
+
+export const DAILY_COUNT = 3;
+export const DAILY_BONUS = { money: 150, xp: 30 };
+
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
+/** Пул заказов дня: всё, что игрок уже сдал на «собери промпт» или «проверь» и за что платят. */
+export function dailyPool(state: GameState, content: Content): QuestDef[] {
+  return content.quests.filter((q) => (q.kind === "prompt" || q.kind === "classify") && q.reward.pay && (state.quests[q.id]?.status === "done" || state.quests[q.id]?.daily));
+}
+
+/** Три заказа на дату: одинаковые весь день, назавтра другие. Пока пул меньше трёх — заказов дня нет. */
+export function dailyFor(state: GameState, content: Content, day: string): QuestDef[] {
+  if (state.daily?.day === day && state.daily.ids?.length) {
+    return state.daily.ids.flatMap((id) => content.quests.filter((q) => q.id === id));
+  }
+  const pool = dailyPool(state, content);
+  if (pool.length < DAILY_COUNT) return [];
+  return pool
+    .map((q) => ({ q, k: hashStr(`${day}:${q.id}`) }))
+    .sort((a, b) => a.k - b.k)
+    .slice(0, DAILY_COUNT)
+    .map((x) => x.q);
+}
+
+/** Повторная сдача: деньги, опыт, звёзды и серия — да; сюжет (сообщения, флаги, репутация, достижения) — нет. */
+function completeDaily(state: GameState, quest: QuestDef, progress: GameState["quests"][string], quality: number, ctx: Ctx, events: GameEvent[]): number {
+  const day = progress.daily!;
+  delete progress.daily;
+  const r = quest.reward;
+  const stars = starsFor(quality);
+  const clean = cleanRun(quest, progress.attempts);
+  const prevStreak = state.streak ?? 0;
+  const streak = stars === 3 && clean ? prevStreak + 1 : 0;
+  state.streak = streak;
+  state.bestStreak = Math.max(state.bestStreak ?? 0, streak);
+  const bonus = streakBonus(streak);
+  state.toasts.push({ kind: "result", stars, streak, prevStreak, streakBonus: bonus, rush: false });
+  let pay = 0;
+  if (r.pay) {
+    const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
+    const itemMul = 1 + itemPayBoost(state, ctx);
+    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * levelMul * itemMul * (1 + bonus), client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
+    if (pay > 0 && addLedger(state, `daily:${day}:${quest.id}`, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
+    else pay = 0;
+  }
+  if (r.xp) {
+    const xp = Math.round(r.xp * 0.5 * (1 + itemXpBoost(state, ctx)));
+    state.xp += xp;
+    state.toasts.push({ kind: "xp", amount: xp });
+  }
+  if (!state.daily || state.daily.day !== day) state.daily = { day, done: [], ids: [quest.id] };
+  if (!state.daily.done.includes(quest.id)) state.daily.done.push(quest.id);
+  if (state.daily.done.length === DAILY_COUNT && addLedger(state, `dailyAll:${day}`, DAILY_BONUS.money, "ui.daily.bonusReason")) {
+    state.toasts.push({ kind: "money", amount: DAILY_BONUS.money });
+    state.xp += DAILY_BONUS.xp;
+    state.toasts.push({ kind: "xp", amount: DAILY_BONUS.xp });
+  }
+  events.push({ type: "questDone", questId: quest.id });
+  return pay;
+}
+
 /** Выполненные подработки: каждая сдаётся один раз и остаётся в списке «Выполнено». */
 export function doneGigs(state: GameState, content: Content): QuestDef[] {
   return content.quests.filter((q) => q.repeatable && state.quests[q.id]?.status === "done");
@@ -387,6 +471,7 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   const progress = state.quests[quest.id];
   if (!progress || progress.status === "done") return 0;
   progress.status = "done";
+  if (progress.daily) return completeDaily(state, quest, progress, quality, ctx, events);
   const r = quest.reward;
 
   let pay = 0;
@@ -486,7 +571,7 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
 }
 
 export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string; school?: boolean } {
-  // Новичок начинает со Школы ТАКТ ИИ: пока не пройдены азы, цель ведёт туда.
+  // Новичок начинает со Школы ТАКТ AI: пока не пройдены азы, цель ведёт туда.
   if (needsSchool(state, content)) {
     return { textKey: "goal.school", school: true };
   }

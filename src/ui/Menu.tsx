@@ -71,7 +71,7 @@ function DemoChat({ motion }: { motion: boolean }) {
     <div className="menu-chat relative w-full overflow-hidden rounded-2xl border border-ai/30 bg-surface/80 p-4 text-left shadow-2xl shadow-ai/20 backdrop-blur-md">
       <div className="flex items-center gap-2 border-b border-line pb-3">
         <MascotHead mood={phase === "thinking" ? "think" : phase === "answer" && n >= words.length ? "happy" : "idle"} className="h-8 w-8" />
-        <span className="text-sm font-semibold">ТАКТ ИИ</span>
+        <span className="text-sm font-semibold">ТАКТ AI</span>
         <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-ok">
           <span className="menu-live h-1.5 w-1.5 rounded-full bg-ok" aria-hidden /> online
         </span>
@@ -137,10 +137,10 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
 
       <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-10 px-4 py-10 sm:px-8 lg:grid-cols-[1.1fr_1fr]">
         <div className="anim-rise min-w-0 text-center lg:text-left">
-          <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-3" aria-label="ТАКТ ИИ">
+          <a href={TG_URL} target="_blank" rel="noopener noreferrer" className="group inline-flex items-center gap-3" aria-label="ТАКТ AI">
             <TaktLogo className="h-16 drop-shadow-[0_0_24px_rgba(139,61,255,0.55)] transition group-hover:scale-105 sm:h-20" />
             <span className="text-left">
-              <span className="takt-text block text-2xl font-black leading-none tracking-wide sm:text-3xl">ТАКТ ИИ</span>
+              <span className="takt-text block text-2xl font-black leading-none tracking-wide sm:text-3xl">ТАКТ AI</span>
               <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.3em] text-muted">{t("ui.menu.presents2")}</span>
             </span>
           </a>

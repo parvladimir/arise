@@ -1,4 +1,4 @@
-// Маскот ТАКТ ИИ: белый робот с тёмным экраном-лицом. Лицо рисуется поверх экрана,
+// Маскот ТАКТ AI: белый робот с тёмным экраном-лицом. Лицо рисуется поверх экрана,
 // поэтому одна картинка позы даёт разные эмоции: спокойный, думает, радуется, грустит.
 
 export type MascotPose = "idle" | "wave" | "point" | "cheer";
@@ -51,5 +51,5 @@ export function MascotHead({ mood = "idle", className = "h-8 w-8" }: { mood?: Ma
 /** Логотип ТАКТ: эмблема и надпись. */
 export function TaktLogo({ className = "h-10" }: { className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/brand/emblem.webp" alt="ТАКТ ИИ" className={`w-auto select-none ${className}`} draggable={false} />;
+  return <img src="/brand/emblem.webp" alt="ТАКТ AI" className={`w-auto select-none ${className}`} draggable={false} />;
 }

@@ -101,6 +101,14 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
     incomeAt: typeof raw.incomeAt === "number" && Number.isFinite(raw.incomeAt) ? raw.incomeAt : undefined,
     streak: num(raw.streak, 0),
     bestStreak: num(raw.bestStreak, 0),
+    daily:
+      typeof raw.daily === "object" && raw.daily !== null && typeof raw.daily.day === "string" && Array.isArray(raw.daily.done)
+        ? {
+            day: raw.daily.day,
+            done: raw.daily.done.filter((x: unknown) => typeof x === "string"),
+            ids: Array.isArray(raw.daily.ids) ? raw.daily.ids.filter((x: unknown) => typeof x === "string") : undefined,
+          }
+        : undefined,
     rush:
       typeof raw.rush === "object" && raw.rush !== null && typeof raw.rush.questId === "string" && typeof raw.rush.left === "number"
         ? { questId: raw.rush.questId, left: raw.rush.left }

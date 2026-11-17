@@ -13,6 +13,8 @@ export interface Target {
 export function goalTarget(state: GameState): Target {
   const goal = currentGoal(state, content);
   if (goal.school) return { view: "laptop", app: "school" };
+  // Сюжет пройден — цель ведёт к заказам дня.
+  if (goal.textKey === content.finalGoalKey) return { view: "laptop", app: "orders" };
   const id = goal.questId;
   const q = id ? content.quests.find((x) => x.id === id) : undefined;
   if (!q) return { view: "room" };

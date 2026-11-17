@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI RISE · ТАКТ ИИ",
-  description: "Игра от ТАКТ ИИ: учись писать промпты и понимать нейросети на живых задачах.",
+  title: "AI RISE · ТАКТ AI",
+  description: "Игра от ТАКТ AI: учись писать промпты и понимать нейросети на живых задачах.",
   applicationName: "AI RISE",
   // На iPhone игра с экрана «Домой» открывается без панелей Safari, как приложение.
   appleWebApp: { capable: true, title: "AI RISE", statusBarStyle: "black" },

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { content } from "@/content";
-import { boardQuests, cleanRun, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
+import { boardQuests, cleanRun, dailyFor, DAILY_BONUS, DAILY_COUNT, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
 import { basePay, skillLevel } from "@/core/economy";
 import type { GameState, ItemCategory, ItemDef } from "@/core/types";
 import type { GameApi } from "./useGame";
@@ -19,7 +19,8 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.orders.title")}</h2>
       <p className="mt-1 text-xs leading-snug text-muted">🔥 {t("ui.streak.hint")}</p>
-      {list.length === 0 && <p className="mt-4 text-sm text-muted">{t(finished.length > 0 ? "ui.orders.allDone" : "ui.orders.empty")}</p>}
+      <DailyOrders game={game} state={state} openNeira={openNeira} />
+      {list.length === 0 && dailyFor(state, content, todayKey()).length === 0 && <p className="mt-4 text-sm text-muted">{t(finished.length > 0 ? "ui.orders.allDone" : "ui.orders.empty")}</p>}
       <ul className="mt-4 space-y-3">
         {list.map((q) => {
           const status = state.quests[q.id]!.status;
@@ -347,5 +348,62 @@ export function ResultStars({ game, quality }: { game: GameApi; quality: number 
       <Stars n={n} className="text-lg" />
       {n < 3 && <span className="text-xs text-muted">{game.t("ui.stars.how")}</span>}
     </span>
+  );
+}
+
+/** Дата игрока YYYY-MM-DD: от неё зависит набор заказов дня. */
+export function todayKey(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Три заказа дня из уже знакомых: деньги, опыт, звёзды и серия, бонус за все три. */
+function DailyOrders({ game, state, openNeira }: { game: GameApi; state: GameState; openNeira: () => void }) {
+  const { t, dispatch } = game;
+  const day = todayKey();
+  const list = dailyFor(state, content, day);
+  const done = state.daily?.day === day ? state.daily.done : [];
+  if (list.length === 0) return null;
+  const all = list.every((q) => done.includes(q.id));
+  return (
+    <section className="daily-card mt-4 rounded-2xl border border-ai/40 bg-gradient-to-br from-ai/10 via-surface-2/60 to-ok/10 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-bold">📅 {t("ui.daily.title")}</h3>
+        <span className={`rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold ${all ? "bg-ok/20 text-ok" : "bg-ai/15 text-ai"}`}>{t("ui.daily.progress", { n: done.length, total: DAILY_COUNT })}</span>
+      </div>
+      <p className="mt-1 text-xs leading-snug text-muted">{all ? t("ui.daily.allDone") : t("ui.daily.sub", { money: DAILY_BONUS.money, xp: DAILY_BONUS.xp })}</p>
+      <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+        {list.map((q) => {
+          const p = state.quests[q.id]!;
+          const isDone = done.includes(q.id);
+          const active = p.status === "active" && p.daily === day;
+          const from = q.offer.type === "auto" ? null : q.offer.from;
+          return (
+            <li key={q.id} className={`flex flex-col rounded-xl border p-3 ${isDone ? "border-ok/40 bg-ok/5" : "border-line bg-surface/80"}`}>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ai">{q.kind === "classify" ? "🔎" : "✍️"} {t("ui.daily.badge")}</span>
+              <span className="mt-1 text-sm font-semibold leading-snug">{t(q.titleKey)}</span>
+              {from && <span className="text-xs text-muted">{t(`npc.${from}`).split(",")[0]}</span>}
+              <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">{t("ui.daily.best")}: <Stars n={starsFor(p.bestQuality)} /></span>
+              <div className="mt-auto pt-2.5">
+                {isDone ? (
+                  <span className="text-sm font-semibold text-ok">{t("ui.daily.done")}</span>
+                ) : active ? (
+                  <button onClick={openNeira} className="w-full rounded-lg border border-ai px-3 py-1.5 text-sm font-semibold text-ai hover:bg-ai/10">{t("ui.orders.open")}</button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const ev = dispatch({ type: "startDaily", questId: q.id, day });
+                      if (!ev.some((e) => e.type === "rejected")) openNeira();
+                    }}
+                    className="w-full rounded-lg bg-ai px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110"
+                  >
+                    {t("ui.daily.take")}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

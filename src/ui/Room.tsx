@@ -274,11 +274,11 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         ))}
       </g>
 
-      {/* Неоновая вывеска ТАКТ ИИ на стене */}
+      {/* Неоновая вывеска ТАКТ AI на стене */}
       <g aria-hidden className="fx-neon">
         <ellipse cx="290" cy="94" rx="60" ry="26" fill="#8b3dff" opacity="0.18" filter="url(#blur6)" />
         <image href="/brand/emblem.webp" x="232" y="72" width="54" height="40" />
-        <text x="290" y="99" fontSize="15" fontWeight="900" fill="url(#taktText)" letterSpacing="1">ТАКТ ИИ</text>
+        <text x="290" y="99" fontSize="15" fontWeight="900" fill="url(#taktText)" letterSpacing="1">ТАКТ AI</text>
         {has("agency") && <text x="291" y="118" fontSize="7.5" fontWeight="800" fill="#2dd4bf" letterSpacing="3.5">{t("room.agency")}</text>}
       </g>
 
@@ -391,7 +391,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
             </g>
             <circle cx="431" cy="262" r="17" fill="#8b3dff" opacity="0.35" filter="url(#blur6)" className="fx-pulse" />
             <image href="/brand/emblem.webp" x="412" y="246" width="38" height="28" />
-            {!hints.laptop && <text x="431" y="291" textAnchor="middle" fontSize="7" fontWeight="900" fill="url(#taktText)" letterSpacing="0.5">ТАКТ ИИ</text>}
+            {!hints.laptop && <text x="431" y="291" textAnchor="middle" fontSize="7" fontWeight="900" fill="url(#taktText)" letterSpacing="0.5">ТАКТ AI</text>}
           </g>
         ) : (
           <image href="/brand/emblem.webp" x="381" y="256" width="38" height="28" opacity="0.5" />
@@ -408,7 +408,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <text x="400" y="318.5" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#c4b5fd" letterSpacing="1.5" opacity="0.8">ТАКТ</text>
       </g>
 
-      {/* ТАКТ ИИ: голографический шар над ноутбуком */}
+      {/* ТАКТ AI: голографический шар над ноутбуком */}
       {neira && (
         <g aria-hidden className="fx-float">
           <ellipse cx="400" cy="206" rx="20" ry="4" fill="none" stroke="#2dd4bf" strokeOpacity="0.5" className="fx-ring" />

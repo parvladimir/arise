@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 // Установка игры на рабочий стол телефона (Android: «Установить приложение», iOS: «На экран „Домой“»).
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AI RISE · ТАКТ ИИ",
+    name: "AI RISE · ТАКТ AI",
     short_name: "AI RISE",
-    description: "Игра от ТАКТ ИИ: учись писать промпты и понимать нейросети на живых задачах.",
+    description: "Игра от ТАКТ AI: учись писать промпты и понимать нейросети на живых задачах.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

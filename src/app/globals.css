@@ -59,7 +59,7 @@ body {
   .anim-rise, .anim-glow, .toast-card, .toast-row { animation: none; }
 }
 
-/* ───────── ТАКТ ИИ: «думает» и печатает ───────── */
+/* ───────── ТАКТ AI: «думает» и печатает ───────── */
 .neira-orb {
   position: relative;
   width: 38px;
@@ -321,7 +321,7 @@ body {
 [data-motion="off"] .desk-ticker-track { animation: none; white-space: normal; padding-left: 0.75rem; }
 [data-motion="off"] .desk-ticker-track > span + span { display: none; }
 
-/* ───────── Маскот ТАКТ ИИ ───────── */
+/* ───────── Маскот ТАКТ AI ───────── */
 .mascot-float { animation: mascot-float 4.5s ease-in-out infinite; }
 @keyframes mascot-float { 50% { transform: translateY(-6%); } }
 .mascot-face { position: absolute; display: flex; align-items: center; justify-content: center; gap: 22%; pointer-events: none; }
@@ -368,7 +368,7 @@ body {
 .phone-notice { animation: push-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
 [data-motion="off"] .phone-notice { animation: none; }
 
-/* Школа ТАКТ ИИ: неверный ответ слегка встряхивается */
+/* Школа ТАКТ AI: неверный ответ слегка встряхивается */
 @keyframes school-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-5px); }

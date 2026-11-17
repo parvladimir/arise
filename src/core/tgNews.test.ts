@@ -20,7 +20,7 @@ describe("лента Telegram-канала", () => {
 
   it("служебные сообщения и приветствие не попадают в новости", () => {
     const extra = `<div class="tgme_widget_message_wrap"><div class="tgme_widget_message service_message" data-post="takt_news_ai/50"><div class="tgme_widget_message_text js-message_text">ТАКТ все про ИИ pinned a file</div></div></div>
-<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="takt_news_ai/51"><div class="tgme_widget_message_text js-message_text">🚀 Добро пожаловать в ТАКТ ИИ!</div></div></div>`;
+<div class="tgme_widget_message_wrap"><div class="tgme_widget_message" data-post="takt_news_ai/51"><div class="tgme_widget_message_text js-message_text">🚀 Добро пожаловать в ТАКТ AI!</div></div></div>`;
     expect(parseTgChannel(extra, "takt_news_ai")).toEqual([]);
   });
 

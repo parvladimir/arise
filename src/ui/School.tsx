@@ -18,7 +18,7 @@ function shuffle<X>(list: X[]): X[] {
   return a;
 }
 
-/** Школа ТАКТ ИИ: список мини-игр и сама игра. */
+/** Школа ТАКТ AI: список мини-игр и сама игра. */
 export function School({ game, state }: { game: GameApi; state: GameState }) {
   const { t } = game;
   const [playing, setPlaying] = useState<string | null>(null);

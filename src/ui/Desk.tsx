@@ -23,7 +23,7 @@ function Widget({ title, tone, children, delay }: { title: string; tone: string;
   );
 }
 
-/** Виджеты рабочего стола: кошелёк и уровень, цель, статус ТАКТ ИИ, сообщения, карточка «ИИ за минуту». */
+/** Виджеты рабочего стола: кошелёк и уровень, цель, статус ТАКТ AI, сообщения, карточка «ИИ за минуту». */
 export function DeskWidgets({ game, state, onGoal, openNeira, openPhone }: { game: GameApi; state: GameState; onGoal: () => void; openNeira: () => void; openPhone: () => void }) {
   const { t } = game;
   const lvl = levelFromXp(state.xp);

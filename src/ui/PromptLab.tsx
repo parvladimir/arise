@@ -76,7 +76,7 @@ export function PromptLab({
   );
   const totalTokens = tokenized.reduce((n, s) => n + s.tokens.length, 0);
 
-  // Ответ «живой»: ТАКТ ИИ сначала думает, потом печатает слово за словом с паузами на знаках препинания.
+  // Ответ «живой»: ТАКТ AI сначала думает, потом печатает слово за словом с паузами на знаках препинания.
   // Только setTimeout (не requestAnimationFrame): Safari и фоновые вкладки не должны «застревать» на середине.
   useEffect(() => {
     if (!shown) return;

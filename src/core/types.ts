@@ -34,7 +34,7 @@ export interface SegmentVariant {
   hallucination?: boolean;
 }
 
-/** Сегмент ответа «ТАКТ ИИ»: берётся первый подходящий вариант. */
+/** Сегмент ответа «ТАКТ AI»: берётся первый подходящий вариант. */
 export interface ResponseSegment {
   id: string;
   variants: SegmentVariant[];
@@ -48,7 +48,7 @@ export type Criterion =
   /** Карточка в слоте совпадает с выбранной на одной из прошлых стадий (согласованность кампании). */
   | { id: string; labelKey: TextKey; weight: number; kind: "sameAsStage"; stage: number; slot: SlotId; hard?: boolean };
 
-/** Реплика заказчика под ответом ТАКТ ИИ: показывается первая подходящая. */
+/** Реплика заказчика под ответом ТАКТ AI: показывается первая подходящая. */
 export interface Reaction {
   when?: When;
   from: NpcId;
@@ -214,7 +214,7 @@ export interface GlossaryDef {
   questId: string;
 }
 
-// ---------- Школа ТАКТ ИИ: обучающие мини-игры ----------
+// ---------- Школа ТАКТ AI: обучающие мини-игры ----------
 
 /** Вопрос с вариантами: «правда или миф», «какой ИИ подходит», «какой промпт сильнее». */
 export interface SchoolQuizItem {
@@ -279,6 +279,8 @@ export interface QuestProgress {
   choice?: string;
   /** Сколько раз сдана подработка. */
   runs?: number;
+  /** Задание взято повторно как «заказ дня» (дата YYYY-MM-DD). */
+  daily?: string;
 }
 
 export interface ChatMessage {
@@ -334,6 +336,8 @@ export interface GameState {
   bestStreak?: number;
   /** Срочный заказ на доске: ×2 к оплате, если сдать без ошибок. left — через сколько других заказов он сгорит. */
   rush?: { questId: string; left: number };
+  /** Заказы дня: какие уже сданы сегодня. */
+  daily?: { day: string; done: string[]; ids?: string[] };
 }
 
 export type Toast =
@@ -357,6 +361,9 @@ export type Action =
   | { type: "takeShortcut"; questId: string }
   | { type: "readChat"; npc: NpcId }
   | { type: "seeLesson"; lessonId: string }
+  /** Взять заказ дня. day — дата игрока YYYY-MM-DD: от неё зависит набор заказов. */
+  | { type: "startDaily"; questId: string; day: string }
+  | { type: "seeFinale" }
   | { type: "finishSchool"; moduleId: string; correct: number; total: number }
   | { type: "clearToasts" };
 

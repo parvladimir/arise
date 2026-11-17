@@ -7,12 +7,12 @@ import type { GameState, Toast } from "@/core/types";
 import type { GameApi } from "./useGame";
 import { Mascot, MascotHead } from "./Mascot";
 
-/** inline — награда за заказ показывается прямо в ответе ТАКТ ИИ, а не поверх экрана. */
+/** inline — награда за заказ показывается прямо в ответе ТАКТ AI, а не поверх экрана. */
 type Batch = { key: number; items: Toast[]; ms: number; inline: boolean };
 
 const SLOT_EVENT = "arise:reward-slot";
 
-/** Место для карточки награды внутри ответа ТАКТ ИИ: там она ничего не закрывает. */
+/** Место для карточки награды внутри ответа ТАКТ AI: там она ничего не закрывает. */
 export function RewardSlot() {
   useEffect(() => {
     window.dispatchEvent(new Event(SLOT_EVENT));
@@ -45,7 +45,7 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
   }, [state.toasts, dispatch]);
 
   const current = batches[0];
-  // Слот в ответе появляется, когда ТАКТ ИИ допечатал; пропадает по «Дальше» — тогда и карточка уходит.
+  // Слот в ответе появляется, когда ТАКТ AI допечатал; пропадает по «Дальше» — тогда и карточка уходит.
   const [, rerender] = useState(0);
   useEffect(() => {
     const on = () => rerender((n) => n + 1);
@@ -56,7 +56,7 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
   const anchored = current?.inline ? Boolean(document.querySelector("[data-reward-anchor]")) : false;
   useEffect(() => {
     if (!current?.inline) return;
-    // Слот появляется и пропадает, пока ТАКТ ИИ печатает; карточка уходит, только когда ответ закрыт «Дальше».
+    // Слот появляется и пропадает, пока ТАКТ AI печатает; карточка уходит, только когда ответ закрыт «Дальше».
     if (!anchored) close(current.key);
   });
   useEffect(() => onBusy?.(Boolean(current && !current.inline)), [current, onBusy]);

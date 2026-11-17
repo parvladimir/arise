@@ -48,7 +48,7 @@ describe("начало игры", () => {
     expect(currentGoal(s, content).textKey).toBe("q1.goal");
   });
 
-  it("любой ответ Диме открывает ТАКТ ИИ и задание Q2", () => {
+  it("любой ответ Диме открывает ТАКТ AI и задание Q2", () => {
     for (const choiceId of ["what", "heard", "show"]) {
       const { state } = play([{ type: "choose", questId: "q1", choiceId }]);
       expect(state.apps).toContain("neira");
@@ -103,7 +103,7 @@ describe("Q3 — первый заказ", () => {
     expect(state.quests.q4?.status).toBe("active");
   });
 
-  it("без данных ТАКТ ИИ выдумывает тыквенный латте — Анна не принимает", () => {
+  it("без данных ТАКТ AI выдумывает тыквенный латте — Анна не принимает", () => {
     const { state, events } = play(
       [{ type: "submitPrompt", questId: "q3", selection: { goal: "g.cafe.menu", audience: "a.students", tone: "t.playful" } }],
       before(),
@@ -338,7 +338,7 @@ const factsRight = { year: "contra", founders: "source", hub: "source", staff: "
 const privacyRight = { name: "mask", phone: "remove", plate: "remove", car: "keep", date: "keep", debt: "remove" };
 
 describe("Q6–Q13 — вторая половина акта", () => {
-  it("Q6: без данных ТАКТ ИИ обещает обед на двоих — не принимается", () => {
+  it("Q6: без данных ТАКТ AI обещает обед на двоих — не принимается", () => {
     const { state, events } = play([{ type: "submitPrompt", questId: "q6", selection: { goal: "g.rev.reply", tone: "t.warm" } }], at("q6"));
     expect(state.quests.q6?.status).toBe("active");
     expect(events.find((e) => e.type === "promptResult")).toMatchObject({ result: { passed: false } });
@@ -516,7 +516,7 @@ describe("Этап 2 — покупки, подработки, таймер", ()
   });
 });
 
-describe("уровни и Школа ТАКТ ИИ", () => {
+describe("уровни и Школа ТАКТ AI", () => {
   const start = (level: "novice" | "practice" | "pro") => play([{ type: "newGame", profile: { ...profile, level } }]).state;
 
   it("новичка цель ведёт в школу, пока не пройдены азы", () => {
@@ -692,5 +692,46 @@ describe("звёзды, серии, срочные заказы", () => {
     s.rush = { questId: "hunt2", left: 2 };
     const back = deserialize(serialize(s));
     expect(back && "state" in back ? back.state : back).toMatchObject({ streak: 4, bestStreak: 6, rush: { questId: "hunt2", left: 2 } });
+  });
+});
+
+describe("заказы дня", () => {
+  const right = (id: string) => Object.fromEntries((content.quests.find((x) => x.id === id) as Extract<QuestDef, { kind: "classify" }>).items.map((i) => [i.id, i.answer]));
+  const done = (): GameState => {
+    const s = newGameState(profile, ctx);
+    s.quests = {};
+    for (const id of ["hunt1", "hunt2", "hunt3", "q3", "q5"]) s.quests[id] = { status: "done", stage: 0, attempts: 1, bestQuality: 0.8, selections: {} };
+    return s;
+  };
+
+  it("3 заказа на день, одинаковые весь день, в другой день — другой набор", () => {
+    const s = done();
+    const a = engine.dailyFor(s, content, "2026-11-17").map((q) => q.id);
+    expect(a).toHaveLength(3);
+    expect(engine.dailyFor(s, content, "2026-11-17").map((q) => q.id)).toEqual(a);
+    const days = ["2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21"].map((d) => engine.dailyFor(s, content, d).map((q) => q.id).join());
+    expect(days.some((d) => d !== a.join())).toBe(true);
+    expect(engine.dailyFor(newGameState(profile, ctx), content, "2026-11-17")).toEqual([]);
+  });
+
+  it("повторная сдача платит, не пишет сюжетных сообщений, дважды за день не берётся; за все три — бонус", () => {
+    let s = done();
+    const day = "2026-11-17";
+    const ids = engine.dailyFor(s, content, day).map((q) => q.id);
+    const msgs = s.messages.length;
+    const money0 = s.money;
+    for (const id of ids) {
+      s = apply(s, { type: "startDaily", questId: id, day }, ctx).state;
+      expect(s.quests[id]!.status).toBe("active");
+      const q = content.quests.find((x) => x.id === id)!;
+      if (q.kind === "classify") s = apply(s, { type: "submitClassify", questId: id, answers: right(id) }, ctx).state;
+      else s = apply(s, { type: "submitPrompt", questId: id, selection: id === "q3" ? (perfectQ3 as Extract<Action, { type: "submitPrompt" }>).selection : {} }, ctx).state;
+    }
+    const passed = ids.filter((id) => s.quests[id]!.status === "done");
+    expect(s.messages.length).toBe(msgs);
+    expect(s.money).toBeGreaterThan(money0);
+    expect(apply(s, { type: "startDaily", questId: passed[0]!, day }, ctx).events[0]).toMatchObject({ type: "rejected" });
+    if (passed.length === 3) expect(s.ledger.some((e) => e.key === `dailyAll:${day}`)).toBe(true);
+    expect(apply(s, { type: "startDaily", questId: ids[0]!, day: "завтра" }, ctx).events[0]).toMatchObject({ type: "rejected" });
   });
 });

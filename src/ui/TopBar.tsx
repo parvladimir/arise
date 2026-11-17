@@ -66,7 +66,7 @@ export function TopBar({
         <div className={`order-last flex w-full min-w-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 md:order-none md:w-auto md:max-w-xl ${waiting ? "" : "md:ml-auto"}`}>
           <span className="shrink-0 text-xs font-semibold uppercase tracking-wider text-ok">{t("ui.goal")}</span>
           <span className="min-w-0 flex-1 truncate text-sm" title={t(goal.textKey)}>{t(goal.textKey)}</span>
-          {goal.questId && (
+          {(goal.questId || goal.textKey === content.finalGoalKey) && (
             <button onClick={onGo} className="shrink-0 rounded-md bg-ai px-2.5 py-1 text-xs font-semibold text-white hover:brightness-110">
               {t("ui.go")}
             </button>
