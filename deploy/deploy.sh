@@ -5,7 +5,9 @@
 set -euo pipefail
 SERVER="${1:-root@178.104.59.10}"
 HOST="${SERVER#*@}"
-DOMAIN="${2:-arise.$(echo "$HOST" | tr . -).sslip.io}"
+DOMAIN="${2:-game.taktai.de}"
+# Старый технический адрес: ссылки, которые бот уже раздал, переадресуются на основной домен.
+OLD_DOMAIN="arise.$(echo "$HOST" | tr . -).sslip.io"
 REMOTE=/opt/arise
 cd "$(dirname "$0")/.."
 
@@ -23,7 +25,7 @@ echo "▸ 3/4 Собираю и запускаю (сборка идёт с по�
 ssh "$SERVER" "touch $REMOTE/deploy/.env && chmod 600 $REMOTE/deploy/.env && cd $REMOTE/deploy && nice -n 15 docker compose build && docker compose up -d && docker image prune -f >/dev/null"
 
 echo "▸ 4/4 Подключаю адрес $DOMAIN в Caddy"
-ssh "$SERVER" bash -s -- "$DOMAIN" <<'REMOTE_SH'
+ssh "$SERVER" bash -s -- "$DOMAIN" "$OLD_DOMAIN" <<'REMOTE_SH'
 set -e
 cat > /opt/caddy-sites/arise.caddy <<CADDY
 $1 {
@@ -36,6 +38,12 @@ $1 {
 	}
 }
 CADDY
+if [ "$2" != "$1" ]; then
+  printf '\n%s {\n\tredir https://%s{uri} 308\n}\n' "$2" "$1" >> /opt/caddy-sites/arise.caddy
+fi
+# адрес игры для ссылок бота
+sed -i "s|^GAME_URL=.*|GAME_URL=https://$1|" /opt/arise/deploy/.env
+cd /opt/arise/deploy && docker compose up -d >/dev/null
 docker exec takt-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 REMOTE_SH
 
