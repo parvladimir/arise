@@ -408,17 +408,6 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <text x="400" y="318.5" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#c4b5fd" letterSpacing="1.5" opacity="0.8">ТАКТ</text>
       </g>
 
-      {/* ТАКТ AI: голографический шар над ноутбуком */}
-      {neira && (
-        <g aria-hidden className="fx-float">
-          <ellipse cx="400" cy="206" rx="20" ry="4" fill="none" stroke="#2dd4bf" strokeOpacity="0.5" className="fx-ring" />
-          <circle cx="400" cy="182" r="20" fill="#8b3dff" opacity="0.3" filter="url(#blur6)" />
-          <image href="/brand/head.webp" x="380" y="158" width="40" height="40" />
-          <ellipse cx="395" cy="181" rx="1.6" ry="2.6" fill="#00d4ff" className="mascot-svg-eye" />
-          <ellipse cx="405" cy="181" rx="1.6" ry="2.6" fill="#00d4ff" className="mascot-svg-eye" />
-        </g>
-      )}
-
       {/* Кружка с паром */}
       <g aria-hidden>
         <rect x="500" y="294" width="18" height="22" rx="4" fill="#e8edf7" />

@@ -20,6 +20,7 @@ import { PushBanner } from "./Notify";
 import { DeskAlert, DeskTicker, DeskWidgets } from "./Desk";
 import { TopBar } from "./TopBar";
 import { Finale } from "./Finale";
+import { RoomBuddy } from "./RoomBuddy";
 import type { GameApi } from "./useGame";
 
 const ALL_APPS: AppId[] = ["neira", "school", "orders", "shop", "skills", "journal"];
@@ -164,8 +165,17 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
         {/* Основная сцена: комната или ноутбук */}
         <main className={`relative min-h-0 flex-1 ${view === "phone" ? "hidden lg:block" : ""}`}>
           <div className={`flex h-full flex-col gap-3 lg:block ${view === "laptop" ? "hidden lg:block" : ""}`}>
-            <div className="aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
+            <div className="relative aspect-[4/3] shrink-0 overflow-hidden rounded-2xl border border-line bg-surface lg:aspect-auto lg:h-full">
               <Room t={t} compact={narrow} state={state} highlight={highlight} hints={roomHints} open={(v) => (v === "phone" ? openPhone() : v === "laptop" ? openLaptop() : go(v, app))} />
+              {state.apps.includes("neira") && view !== "laptop" && (
+                <RoomBuddy
+                  state={state}
+                  t={t}
+                  motion={motion}
+                  compact={narrow}
+                  onAction={(a) => (a === "phone" ? openPhone() : a === "goal" ? goToGoal() : go("laptop", a))}
+                />
+              )}
             </div>
             {roomHints.phone && showNoticeCard && (
               <button
