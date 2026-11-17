@@ -6,6 +6,7 @@ import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./a
 import { shopItems } from "./shop";
 import { buildFixQuests, huntQuests } from "./modes";
 import { act3Cards, act3Glossary, act3Lessons, act3Quests } from "./act3";
+import { act4Cards, act4Glossary, act4Lessons, act4Quests } from "./act4";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
 const card = (id: string, slot: SlotId): PromptCard => ({ id, slot, textKey: `card.${id}` });
@@ -350,9 +351,9 @@ const glossary: GlossaryDef[] = [
 
 export const content: Content = {
   school,
-  lessons: [...lessons, ...act2Lessons, ...act3Lessons],
-  glossary: [...glossary, ...act2Glossary, ...act3Glossary],
-  cards: [...cards, ...act2Cards, ...act3Cards],
+  lessons: [...lessons, ...act2Lessons, ...act3Lessons, ...act4Lessons],
+  glossary: [...glossary, ...act2Glossary, ...act3Glossary, ...act4Glossary],
+  cards: [...cards, ...act2Cards, ...act3Cards, ...act4Cards],
   finalGoalKey: "goal.end",
   skills: [
     { id: "aiComm", nameKey: "skill.aiComm", levels: [1, 3, 6] },
@@ -806,6 +807,7 @@ export const content: Content = {
     },
     ...act2Quests,
     ...act3Quests,
+    ...act4Quests,
   ],
 };
 

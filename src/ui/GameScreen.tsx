@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { content } from "@/content";
-import { currentGoal } from "@/core/engine";
+import { currentGoal, FINALE_FLAG } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
 import { boardQuests, levelOf } from "@/core/engine";
@@ -240,7 +240,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       </nav>
 
       <Toasts game={game} state={state} hold={view === "laptop" && app === "neira"} onBusy={setRewardOpen} />
-      {!rewardOpen && currentGoal(state, content).textKey === content.finalGoalKey && !state.flags.includes("seen:finale") && (
+      {!rewardOpen && currentGoal(state, content).textKey === content.finalGoalKey && !state.flags.includes(FINALE_FLAG) && (
         <Finale game={game} state={state} openDaily={() => go("laptop", "orders")} />
       )}
       <PushBanner game={game} state={state} blocked={rewardOpen} suppress={visibleChat} openChat={(c) => { go("phone", undefined, c); setPhonePulse((n) => n + 1); }} />

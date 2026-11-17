@@ -98,7 +98,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
     }
 
     case "seeFinale":
-      addFlag(state, "seen:finale");
+      addFlag(state, FINALE_FLAG);
       return { state, events };
 
     case "finishSchool": {
@@ -397,6 +397,8 @@ function updateRush(state: GameState, ctx: Ctx, completedId: string) {
 // ---------- Заказы дня ----------
 
 export const DAILY_COUNT = 3;
+/** Флаг «финал показан» привязан к главе: после новой главы экран покажется снова. */
+export const FINALE_FLAG = "seen:finale:4";
 export const DAILY_BONUS = { money: 150, xp: 30 };
 
 function hashStr(s: string): number {
