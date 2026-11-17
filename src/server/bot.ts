@@ -5,7 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { accessDb, issueKey, type Player, type TgUser } from "./access";
+import { accessDb, issueKey, trackLead, type Player, type TgUser } from "./access";
 
 const TOKEN = process.env.GAME_BOT_TOKEN ?? "";
 const CHANNEL = process.env.GAME_CHANNEL ?? "@takt_news_ai";
@@ -59,6 +59,7 @@ async function grant(chatId: number, user: TgUser, source: string | null) {
     for (const a of ADMINS) await send(a, "⚠️ Бот не может проверить подписку. Он точно администратор канала " + CHANNEL + "?").catch(() => {});
     return;
   }
+  trackLead(user.id, source, ok);
   if (!ok) {
     await send(
       chatId,

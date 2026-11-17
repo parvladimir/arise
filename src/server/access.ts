@@ -50,6 +50,21 @@ export function accessDb(): DatabaseSync {
         opened_at INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS bot_state (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+      -- Воронка для статистики станции ТАКТ: кто пришёл в бота, был ли уже подписан, когда подписался.
+      CREATE TABLE IF NOT EXISTS tg_leads (
+        tg_id INTEGER PRIMARY KEY,
+        source TEXT,
+        first_seen INTEGER NOT NULL,
+        was_subscribed INTEGER NOT NULL,
+        subscribed_at INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS funnel_daily (
+        day TEXT NOT NULL,
+        source TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        n INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (day, source, metric)
+      );
     `);
     ready.add(d);
   }
@@ -93,4 +108,76 @@ export function hasAccess(cookie: (name: string) => string | undefined): boolean
   if (!gateEnabled()) return true;
   if (playerByKey(cookie(ACCESS_COOKIE))) return true;
   return userFromToken(cookie(SESSION_COOKIE)) !== null;
+}
+
+const dayOf = (t: number) => new Date(t).toISOString().slice(0, 10);
+const cleanSource = (s: string | null | undefined) => (s ?? "").replace(/[^\w-]/g, "").slice(0, 32) || "direct";
+
+/** Счётчик по дням (например, показы промо-страницы игры). */
+export function bump(metric: string, source: string | null | undefined, now = Date.now()) {
+  accessDb()
+    .prepare("INSERT INTO funnel_daily (day, source, metric, n) VALUES (?, ?, ?, 1) ON CONFLICT(day, source, metric) DO UPDATE SET n = n + 1")
+    .run(dayOf(now), cleanSource(source), metric);
+}
+
+/** Человек написал боту: запоминаем, был ли он уже подписан, и момент подписки. */
+export function trackLead(tgId: number, source: string | null, subscribed: boolean, now = Date.now()) {
+  const d = accessDb();
+  d.prepare("INSERT INTO tg_leads (tg_id, source, first_seen, was_subscribed, subscribed_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tg_id) DO NOTHING")
+    .run(tgId, cleanSource(source), now, subscribed ? 1 : 0, subscribed ? now : null);
+  if (subscribed) d.prepare("UPDATE tg_leads SET subscribed_at = ? WHERE tg_id = ? AND subscribed_at IS NULL").run(now, tgId);
+}
+
+export interface FunnelStats {
+  at: number;
+  totals: { views: number; leads: number; newSubs: number; wereSubs: number; links: number; opened: number; stillSubscribed: number };
+  week: { views: number; leads: number; newSubs: number; opened: number };
+  bySource: { source: string; views: number; leads: number; newSubs: number }[];
+  days: { day: string; views: number; leads: number; newSubs: number }[];
+}
+
+/** Сводка для вкладки «Статистика» на станции ТАКТ. */
+export function funnelStats(now = Date.now()): FunnelStats {
+  const d = accessDb();
+  const one = (sql: string, ...p: (number | string)[]) => Number((d.prepare(sql).get(...p) as { n: number | null }).n ?? 0);
+  const weekAgo = now - 7 * 86400_000;
+  const weekDay = dayOf(weekAgo);
+  const NEW = "was_subscribed = 0 AND subscribed_at IS NOT NULL";
+  const sources = new Map<string, { source: string; views: number; leads: number; newSubs: number }>();
+  const src = (s: string) => sources.get(s) ?? (sources.set(s, { source: s, views: 0, leads: 0, newSubs: 0 }), sources.get(s)!);
+  for (const r of d.prepare("SELECT source, SUM(n) AS n FROM funnel_daily WHERE metric = 'view' GROUP BY source").all() as { source: string; n: number }[]) src(r.source).views = r.n;
+  for (const r of d.prepare(`SELECT source, COUNT(*) AS n, SUM(${NEW}) AS s FROM tg_leads GROUP BY source`).all() as { source: string; n: number; s: number }[]) {
+    src(r.source).leads = r.n;
+    src(r.source).newSubs = r.s ?? 0;
+  }
+  const days: FunnelStats["days"] = [];
+  for (let i = 13; i >= 0; i--) {
+    const day = dayOf(now - i * 86400_000);
+    days.push({
+      day,
+      views: one("SELECT SUM(n) AS n FROM funnel_daily WHERE metric = 'view' AND day = ?", day),
+      leads: one("SELECT COUNT(*) AS n FROM tg_leads WHERE date(first_seen / 1000, 'unixepoch') = ?", day),
+      newSubs: one(`SELECT COUNT(*) AS n FROM tg_leads WHERE ${NEW} AND date(subscribed_at / 1000, 'unixepoch') = ?`, day),
+    });
+  }
+  return {
+    at: now,
+    totals: {
+      views: one("SELECT SUM(n) AS n FROM funnel_daily WHERE metric = 'view'"),
+      leads: one("SELECT COUNT(*) AS n FROM tg_leads"),
+      newSubs: one(`SELECT COUNT(*) AS n FROM tg_leads WHERE ${NEW}`),
+      wereSubs: one("SELECT COUNT(*) AS n FROM tg_leads WHERE was_subscribed = 1"),
+      links: one("SELECT COUNT(*) AS n FROM tg_players"),
+      opened: one("SELECT COUNT(*) AS n FROM tg_players WHERE opened_at > 0"),
+      stillSubscribed: one("SELECT COUNT(*) AS n FROM tg_players WHERE subscribed = 1"),
+    },
+    week: {
+      views: one("SELECT SUM(n) AS n FROM funnel_daily WHERE metric = 'view' AND day >= ?", weekDay),
+      leads: one("SELECT COUNT(*) AS n FROM tg_leads WHERE first_seen >= ?", weekAgo),
+      newSubs: one(`SELECT COUNT(*) AS n FROM tg_leads WHERE ${NEW} AND subscribed_at >= ?`, weekAgo),
+      opened: one("SELECT COUNT(*) AS n FROM tg_players WHERE opened_at >= ?", weekAgo),
+    },
+    bySource: [...sources.values()].sort((a, b) => b.views + b.leads - (a.views + a.leads)),
+    days,
+  };
 }

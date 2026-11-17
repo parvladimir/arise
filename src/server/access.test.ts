@@ -47,3 +47,23 @@ describe("доступ по подписке", () => {
     expect(playerByKey(key)!.opened_at).toBe(1000);
   });
 });
+
+describe("воронка для станции", () => {
+  beforeEach(() => setDb(openDb(":memory:")));
+  afterEach(() => setDb(null));
+
+  it("считает показы, приходы и новых подписчиков по источникам", async () => {
+    const { bump, trackLead, funnelStats } = await import("./access");
+    const now = Date.UTC(2026, 10, 18, 12);
+    bump("view", "ig", now); bump("view", "ig", now); bump("view", null, now);
+    trackLead(1, "ig", false, now);          // пришёл без подписки
+    trackLead(1, "ig", true, now + 60_000);   // подписался — это новый подписчик благодаря игре
+    trackLead(2, "site", true, now);         // уже был подписан
+    trackLead(3, "ig", false, now);          // так и не подписался
+    const s = funnelStats(now + 3600_000);
+    expect(s.totals).toMatchObject({ views: 3, leads: 3, newSubs: 1, wereSubs: 1 });
+    const ig = s.bySource.find((x) => x.source === "ig")!;
+    expect(ig).toMatchObject({ views: 2, leads: 2, newSubs: 1 });
+    expect(s.days.at(-1)).toMatchObject({ views: 3, leads: 3, newSubs: 1 });
+  });
+});
