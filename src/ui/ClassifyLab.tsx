@@ -52,6 +52,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
   const hunt = quest.game === "hunt";
   const left = hunt ? 0 : quest.items.filter((i) => !answers[i.id]).length;
   const marked = quest.items.filter((i) => answers[i.id] === "bug").length;
+  const bugs = quest.items.filter((i) => i.answer === "bug").length;
   const finished = Boolean(result?.passed);
   // После двух неудач подсвечиваем, где именно ошибка, чтобы игрок не застрял.
   const revealWrong = finished || fails >= 2;
@@ -145,7 +146,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
           <div className="flex items-center gap-2">
             <MascotHead className="h-7 w-7" />
             <h3 className="font-semibold">{t(privacy ? "ui.check.fields" : hunt ? "ui.hunt.answer" : "ui.check.summary")}</h3>
-            {!finished && <span className="ml-auto text-xs text-muted">{hunt ? t("ui.hunt.marked", { n: marked }) : left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
+            {!finished && <span className="ml-auto text-xs text-muted">{hunt ? t("ui.hunt.marked", { n: marked, total: bugs }) : left > 0 ? t("ui.check.left", { n: left }) : t("ui.check.ready")}</span>}
           </div>
           {timed && !result?.passed && (
             <div className="mt-3 rounded-xl border border-gold/40 bg-gold/5 p-3">
@@ -161,7 +162,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
               ) : !result?.passed ? (
                 <div className="text-sm">
                   {timedOut && <p className="mb-2 font-semibold text-bad">{t("ui.check.timeUp")}</p>}
-                  <p className="text-muted">{t("ui.check.timerHint", { n: quest.timer! })}</p>
+                  {hunt ? <HuntHowTo t={t} bugs={bugs} seconds={quest.timer!} /> : <p className="text-muted">{t("ui.check.timerHint", { n: quest.timer! })}</p>}
                   <button onClick={start} className="menu-cta mt-3 w-full rounded-xl py-2.5 font-semibold text-white">
                     <span className="relative">⏱ {t("ui.check.start")}</span>
                   </button>
@@ -170,7 +171,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
             </div>
           )}
           {hunt && (!timed || running || result) && (
-            <HuntText quest={quest} answers={answers} result={result} reveal={Boolean(revealWrong && result && !result.shortcut)} locked={finished || (timed && !running)} t={t}
+            <HuntText quest={quest} answers={answers} marked={marked} bugs={bugs} result={result} reveal={Boolean(revealWrong && result && !result.shortcut)} locked={finished || (timed && !running)} t={t}
               toggle={(id) => setAnswers((a) => ({ ...a, [id]: a[id] === "bug" ? "" : "bug" }))} />
           )}
           {!hunt && (!timed || running || result) && <ul className="mt-3 space-y-2.5">
@@ -260,10 +261,36 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
   );
 }
 
+/** До старта: как играть, по шагам и с примером, как выглядит отмеченная фраза. */
+function HuntHowTo({ t, bugs, seconds }: { t: GameApi["t"]; bugs: number; seconds: number }) {
+  return (
+    <div className="text-sm leading-snug">
+      <p className="font-semibold text-ink">{t("ui.hunt.howTitle")}</p>
+      <ol className="mt-2 space-y-2">
+        <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ai/20 text-[11px] font-bold text-ai">1</span><span>{t("ui.hunt.how1")}</span></li>
+        <li className="flex gap-2">
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ai/20 text-[11px] font-bold text-ai">2</span>
+          <span>
+            {t("ui.hunt.how2")}
+            <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[13px]">
+              <span className="rounded px-1 underline decoration-ai/60 decoration-dashed underline-offset-[5px]"><span className="mr-1 text-[11px] font-bold text-ai/70">○</span>{t("ui.hunt.example")}</span>
+              <span className="text-muted">→</span>
+              <span className="rounded bg-bad/20 px-1 text-bad ring-1 ring-bad/60"><span className="mr-1 text-[11px] font-bold">✕</span>{t("ui.hunt.example")}</span>
+            </span>
+          </span>
+        </li>
+        <li className="flex gap-2"><span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-ai/20 text-[11px] font-bold text-ai">3</span><span>{t("ui.hunt.how3", { n: bugs, s: seconds })}</span></li>
+      </ol>
+    </div>
+  );
+}
+
 /** Ответ ИИ сплошным текстом: каждая фраза — кнопка, тап помечает её как ошибку. */
 function HuntText({
   quest,
   answers,
+  marked,
+  bugs,
   result,
   reveal,
   locked,
@@ -272,6 +299,8 @@ function HuntText({
 }: {
   quest: ClassifyQuest;
   answers: Record<string, string>;
+  marked: number;
+  bugs: number;
   result: Result | null;
   reveal: boolean;
   locked: boolean;
@@ -281,12 +310,20 @@ function HuntText({
   const explained = reveal ? quest.items.filter((i) => i.answer === "bug" || answers[i.id] === "bug") : [];
   return (
     <div className="mt-3">
-      {!reveal && <p className="mb-2 text-xs leading-snug text-muted">{t("ui.hunt.hint")}</p>}
-      <div className="rounded-xl border border-ai/30 bg-surface-2/50 p-3.5 text-[15px] leading-[1.9]">
+      {!reveal && !locked && (
+        <div className="mb-2.5 flex items-center gap-2.5 rounded-xl border border-ai/50 bg-ai/10 px-3 py-2 text-sm font-semibold text-ink">
+          <span aria-hidden className="hunt-tap text-xl">👆</span>
+          <span className="min-w-0 flex-1 leading-snug">{t("ui.hunt.tapNow")}</span>
+          <span className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-xs ${marked >= bugs ? "bg-ok/20 text-ok" : "bg-bad/15 text-bad"}`}>{marked} / {bugs}</span>
+        </div>
+      )}
+      <div className="rounded-xl border border-ai/30 bg-surface-2/50 p-3.5 text-[15px] leading-[2.1]">
         {quest.items.map((item) => {
           const on = answers[item.id] === "bug";
           const isBug = item.answer === "bug";
-          let cls = on ? "bg-bad/20 text-bad ring-1 ring-bad/60" : "hover:bg-ai/10";
+          let cls = on
+            ? "bg-bad/20 text-bad ring-1 ring-bad/60"
+            : "cursor-pointer underline decoration-ai/60 decoration-dashed decoration-1 underline-offset-[5px] hover:bg-ai/15 hover:decoration-ai";
           if (reveal) cls = isBug ? (on ? "bg-ok/20 text-ok ring-1 ring-ok/60" : "bg-bad/20 text-bad ring-1 ring-bad/60 underline decoration-wavy") : on ? "bg-gold/15 text-gold line-through" : "";
           return (
             <button
@@ -295,9 +332,10 @@ function HuntText({
               disabled={locked || reveal}
               aria-pressed={on}
               onClick={() => toggle(item.id)}
-              className={`inline rounded px-0.5 text-left transition-colors disabled:cursor-default ${cls}`}
+              className={`inline rounded px-1 py-0.5 text-left transition-colors [box-decoration-break:clone] disabled:cursor-default ${cls}`}
             >
-              {t(item.textKey)}
+              {!reveal && !locked && <span aria-hidden className={`mr-1 inline-block w-3 text-center text-[11px] font-bold ${on ? "text-bad" : "text-ai/70"}`}>{on ? "✕" : "○"}</span>}
+              {t(item.textKey).trim()}{" "}
             </button>
           );
         })}
