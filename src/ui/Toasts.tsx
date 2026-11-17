@@ -65,8 +65,9 @@ export function Toasts({ game, state, hold = false, onBusy }: { game: GameApi; s
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex flex-col items-center px-3 sm:top-20" aria-live="polite">
-        {current && !current.inline && <RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
+      {/* Вне заказа награда — узкая полоса поверх верхней панели: игровой экран под ней не закрывается. */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-3 pt-2" aria-live="polite">
+        {current && !current.inline && <RewardStrip key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={timer.pause} resume={timer.resume} />}
       </div>
       {current && slot && createPortal(<RewardCard key={current.key} batch={current} t={t} onClose={() => close(current.key)} pause={() => {}} resume={() => {}} />, slot)}
       {milestone === "milestone.actEnd" && !hold && <ActEnd game={game} state={state} onClose={() => setMilestone(null)} />}
@@ -166,6 +167,38 @@ function RewardCard({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; 
       {batch.inline ? <div className="h-3" /> : <div className="mt-3 h-1 bg-line/50">
         <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
       </div>}
+    </div>
+  );
+}
+
+/** Компактная награда в одну-две строки: опыт, кредиты, достижение, открытые приложения. */
+function RewardStrip({ batch, t, onClose, pause, resume }: { batch: Batch; t: T; onClose: () => void; pause: () => void; resume: () => void }) {
+  const money = batch.items.reduce((n, x) => n + (x.kind === "money" ? x.amount : 0), 0);
+  const xp = batch.items.reduce((n, x) => n + (x.kind === "xp" ? x.amount : 0), 0);
+  const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
+  const parts: { text: string; tone: string }[] = [];
+  if (money > 0) parts.push({ text: t("ui.toast.money", { n: money }), tone: "border-gold/40 bg-gold/10 text-gold font-mono" });
+  if (xp > 0) parts.push({ text: t("ui.toast.xp", { n: xp }), tone: "border-ai/40 bg-ai/10 text-ai font-mono" });
+  for (const x of batch.items) {
+    if (x.kind === "achievement") parts.push({ text: `★ ${t(`ach.${x.id}`)}`, tone: "border-gold/40 bg-gold/10 text-gold" });
+    if (x.kind === "skill") parts.push({ text: `▲ ${t("ui.toast.skillValue", { name: t(content.skills.find((s) => s.id === x.skill)?.nameKey ?? x.skill), level: x.level })}`, tone: "border-ai/40 bg-ai/10 text-ai" });
+  }
+  if (apps.length) parts.push({ text: `▣ ${t(apps.length > 1 ? "ui.toast.unlockMany" : "ui.toast.unlockLabel")}: ${apps.join(" · ")}`, tone: "border-ok/40 bg-ok/10 text-ok" });
+  return (
+    <div role="status" onMouseEnter={pause} onMouseLeave={resume} className="toast-card pointer-events-auto relative w-full max-w-2xl overflow-hidden rounded-2xl border border-ai/35 bg-surface/95 shadow-2xl shadow-ai/20 backdrop-blur">
+      <div className="flex items-center gap-3 px-3 py-2">
+        <MascotHead mood="happy" className="h-7 w-7" />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.25em] text-muted">{t("ui.toast.title")}</span>
+          {parts.map((p, i) => (
+            <span key={i} className={`toast-row rounded-full border px-2.5 py-0.5 text-sm font-semibold ${p.tone}`} style={{ animationDelay: `${80 + i * 90}ms` }}>{p.text}</span>
+          ))}
+        </div>
+        <button onClick={onClose} aria-label={t("ui.toast.close")} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-muted hover:bg-line/60 hover:text-ink">✕</button>
+      </div>
+      <div className="h-0.5 bg-line/50">
+        <div className="toast-timer h-full bg-gradient-to-r from-ai to-ok" style={{ animationDuration: `${batch.ms}ms` }} />
+      </div>
     </div>
   );
 }
