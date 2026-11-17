@@ -1,9 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { content } from "@/content";
-import { boardQuests, levelOf, doneGigs } from "@/core/engine";
+import { boardQuests, levelOf, doneGigs, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
 import { basePay, skillLevel } from "@/core/economy";
-import type { GameState } from "@/core/types";
+import type { GameState, ItemCategory, ItemDef } from "@/core/types";
 import type { GameApi } from "./useGame";
 
 export function Orders({ game, state, openNeira }: { game: GameApi; state: GameState; openNeira: () => void }) {
@@ -78,42 +79,124 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
   );
 }
 
+const CATEGORIES: ItemCategory[] = ["comfort", "work", "transport", "team", "home"];
+const ctxOf = (game: GameApi) => ({ content, t: game.t });
+
 export function Shop({ game, state }: { game: GameApi; state: GameState }) {
   const { t, dispatch } = game;
+  const ctx = ctxOf(game);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 20_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const visible = content.items.filter((item) => !item.requiresQuest || state.quests[item.requiresQuest]);
+  const has = (id: string) => state.inventory.includes(id);
+  const open = (item: ItemDef) => !item.requiresItem || has(item.requiresItem);
+  // Цель накопить: самая дешёвая доступная покупка, на которую пока не хватает.
+  const goal = visible.filter((i) => !has(i.id) && open(i)).sort((x, y) => x.price - y.price).find((i) => i.price > state.money);
+  const rate = incomeRate(state, ctx);
+  const pending = pendingIncome(state, ctx, now);
+  const pay = Math.round(itemPayBoost(state, ctx) * 100);
+  const xp = Math.round(itemXpBoost(state, ctx) * 100);
+  const bonuses = [pay ? t("ui.shop.effect.pay", { n: pay }) : "", xp ? t("ui.shop.effect.xp", { n: xp }) : ""].filter(Boolean);
+
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.shop.title")}</h2>
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {content.items.filter((item) => !item.requiresQuest || state.quests[item.requiresQuest]).map((item) => {
-          const owned = state.inventory.includes(item.id);
-          const forQuest = item.requiresQuest && state.quests[item.requiresQuest]?.status === "active";
-          const afford = state.money >= item.price;
-          return (
-            <li key={item.id} className={`anim-rise flex flex-col rounded-xl border p-4 ${forQuest && !owned ? "border-ok/60 bg-ok/5 shadow-[0_0_24px_-10px_var(--color-ok)]" : "border-line bg-surface-2/60"}`}>
-              <h3 className="flex flex-wrap items-center gap-2 font-semibold">
-                {t(item.nameKey)}
-                {forQuest && !owned && <span className="rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ok">{t("ui.shop.forQuest")}</span>}
-              </h3>
-              <p className="mt-1 flex-1 text-sm leading-snug text-muted">{t(item.descKey)}</p>
-              <div className="mt-3 flex items-center justify-between">
-                <span className="font-mono font-semibold text-gold">{t("ui.shop.price", { price: item.price })}</span>
-                {owned ? (
-                  <span className="text-sm text-ok">✓ {t("ui.shop.owned")}</span>
-                ) : (
-                  <button
-                    disabled={!afford}
-                    onClick={() => dispatch({ type: "buy", itemId: item.id })}
-                    className="rounded-lg bg-ai px-3.5 py-1.5 text-sm font-semibold text-white enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                    title={afford ? undefined : t("err.noMoney")}
+      <p className="mt-1 text-sm text-muted">{t("ui.shop.sub")}</p>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        {goal && (
+          <div className="rounded-xl border border-gold/40 bg-gold/5 p-4">
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <span className="text-muted">{t("ui.shop.goal")}</span>
+              <span className="font-mono text-gold">{state.money.toLocaleString("ru-RU")} / {goal.price.toLocaleString("ru-RU")} ₵</span>
+            </div>
+            <p className="mt-1 font-semibold">{goal.icon} {t(goal.nameKey)}</p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-line/60">
+              <div className="h-full rounded-full bg-gradient-to-r from-gold to-ok" style={{ width: `${Math.min(100, (state.money / goal.price) * 100)}%` }} />
+            </div>
+            <p className="mt-1.5 text-xs text-muted">{t("ui.shop.goalLeft", { n: goal.price - state.money })}</p>
+          </div>
+        )}
+        {rate > 0 && (
+          <div className="rounded-xl border border-ok/40 bg-ok/5 p-4">
+            <p className="text-sm leading-snug text-muted">{t("ui.shop.income", { rate })}</p>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="font-mono text-lg font-bold text-ok">{t("ui.shop.incomePending", { n: pending })}</span>
+              <button
+                disabled={pending < 1}
+                onClick={() => dispatch({ type: "collectIncome", now: Date.now() })}
+                className="rounded-lg bg-ok px-3.5 py-1.5 text-sm font-semibold text-bg enabled:hover:brightness-110 disabled:opacity-40"
+              >
+                {t("ui.shop.collect")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      {bonuses.length > 0 && <p className="mt-3 text-sm text-ok">{t("ui.shop.bonuses", { list: bonuses.join(", ") })}</p>}
+
+      {CATEGORIES.map((cat) => {
+        const items = visible.filter((i) => (i.category ?? "comfort") === cat);
+        if (items.length === 0) return null;
+        return (
+          <section key={cat} className="mt-6">
+            <h3 className="font-mono text-xs uppercase tracking-[0.2em] text-ai">{t(`ui.shop.cat.${cat}`)}</h3>
+            <ul className="mt-2 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((item) => {
+                const owned = has(item.id);
+                const locked = !open(item);
+                const forQuest = item.requiresQuest && state.quests[item.requiresQuest]?.status === "active";
+                const afford = state.money >= item.price;
+                const effects = [
+                  item.payBoost ? t("ui.shop.effect.pay", { n: Math.round(item.payBoost * 100) }) : "",
+                  item.xpBoost ? t("ui.shop.effect.xp", { n: Math.round(item.xpBoost * 100) }) : "",
+                  item.incomePerHour ? t("ui.shop.effect.income", { n: item.incomePerHour }) : "",
+                  item.rep ? t("ui.shop.effect.rep", { n: item.rep }) : "",
+                ].filter(Boolean);
+                const need = item.requiresItem ? content.items.find((i) => i.id === item.requiresItem) : undefined;
+                return (
+                  <li
+                    key={item.id}
+                    className={`flex flex-col rounded-xl border p-4 ${locked ? "border-dashed border-line opacity-60" : forQuest && !owned ? "border-ok/60 bg-ok/5 shadow-[0_0_24px_-10px_var(--color-ok)]" : owned ? "border-line bg-surface-2/30" : "border-line bg-surface-2/60"}`}
                   >
-                    {t("ui.shop.buy")}
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                    <h4 className="flex items-start gap-2 font-semibold leading-snug">
+                      {item.icon && <span aria-hidden className="shrink-0">{item.icon}</span>}
+                      <span className="min-w-0">{t(item.nameKey)}</span>
+                      {forQuest && !owned && <span className="shrink-0 rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ok">{t("ui.shop.forQuest")}</span>}
+                    </h4>
+                    <p className="mt-1 flex-1 text-sm leading-snug text-muted">{t(item.descKey)}</p>
+                    {effects.length > 0 && (
+                      <ul className="mt-2 flex flex-wrap gap-1.5">
+                        {effects.map((e) => <li key={e} className="rounded-full border border-ok/30 bg-ok/10 px-2 py-0.5 text-xs font-semibold text-ok">{e}</li>)}
+                      </ul>
+                    )}
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="whitespace-nowrap font-mono font-semibold text-gold">{t("ui.shop.price", { price: item.price.toLocaleString("ru-RU") })}</span>
+                      {owned ? (
+                        <span className="text-sm text-ok">✓ {t("ui.shop.owned")}</span>
+                      ) : locked ? (
+                        <span className="text-right text-xs text-muted">🔒 {t("ui.shop.needFirst", { name: need ? t(need.nameKey) : "" })}</span>
+                      ) : (
+                        <button
+                          disabled={!afford}
+                          onClick={() => dispatch({ type: "buy", itemId: item.id, now: Date.now() })}
+                          className="rounded-lg bg-ai px-3.5 py-1.5 text-sm font-semibold text-white enabled:hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                          title={afford ? undefined : t("err.noMoney")}
+                        >
+                          {t("ui.shop.buy")}
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

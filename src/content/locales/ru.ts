@@ -2,6 +2,7 @@
 
 import { ruSchool } from "./ru.school";
 import { ruAct3 } from "./ru.act3";
+import { ruShop } from "./ru.shop";
 
 export const ru: Record<string, string> = {
   // ---------- Интерфейс ----------
@@ -295,7 +296,7 @@ export const ru: Record<string, string> = {
   "item.cheatsheet.name": "Шпаргалка промптов",
   "item.cheatsheet.desc": "Открывает в ТАКТ ИИ слот «Примеры»: покажи ИИ образец — и ответ станет точнее.",
   "item.coffee.name": "Кофемашина",
-  "item.coffee.desc": "Свой кофе прямо на рабочем месте. Пока просто красиво.",
+  "item.coffee.desc": "Свой кофе прямо на рабочем месте: голова ясная, новое запоминается лучше.",
 
   // ---------- Карточки ----------
   "card.g.tap.about": "написать про кран",
@@ -1006,4 +1007,5 @@ export const ru: Record<string, string> = {
   "ui.shop.forQuest": "для задания",
   ...ruSchool,
   ...ruAct3,
+  ...ruShop,
 };

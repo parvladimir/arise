@@ -98,6 +98,7 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
     lessons: isStrArray(raw.lessons) ? raw.lessons : [],
     relations: typeof raw.relations === "object" && raw.relations !== null ? raw.relations : {},
     toasts: [],
+    incomeAt: typeof raw.incomeAt === "number" && Number.isFinite(raw.incomeAt) ? raw.incomeAt : undefined,
     nextMessageId: num(raw.nextMessageId, raw.messages.length + 1),
   };
 }

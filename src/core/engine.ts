@@ -220,15 +220,29 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       return { state, events };
     }
 
+    case "collectIncome": {
+      collectIncome(state, ctx, action.now);
+      return { state, events };
+    }
+
     case "buy": {
       const item = ctx.content.items.find((i) => i.id === action.itemId);
       if (!item || (item.requiresQuest && !state.quests[item.requiresQuest])) return reject("err.noItem");
       if (state.inventory.includes(item.id)) return reject("err.owned");
+      if (item.requiresItem && !state.inventory.includes(item.requiresItem)) return reject("err.noItem");
       if (state.money < item.price) return reject("err.noMoney");
+      // Перед покупкой нового источника дохода забираем накопленное по старой ставке.
+      if (item.incomePerHour && action.now) collectIncome(state, ctx, action.now);
       if (!addLedger(state, `buy:${item.id}`, -item.price, item.nameKey)) return reject("err.owned");
       state.inventory.push(item.id);
       for (const f of item.flags ?? []) addFlag(state, f);
       for (const slot of item.unlockSlots ?? []) if (!state.slots.includes(slot)) state.slots.push(slot);
+      if (item.rep) state.rep += item.rep;
+      if (item.incomePerHour && state.incomeAt === undefined) state.incomeAt = action.now ?? Date.now();
+      if (item.achievement && !state.achievements.includes(item.achievement)) {
+        state.achievements.push(item.achievement);
+        state.toasts.push({ kind: "achievement", id: item.achievement });
+      }
       events.push({ type: "bought", itemId: item.id });
       for (const q of ctx.content.quests) {
         if (q.kind === "purchase" && state.quests[q.id]?.status === "active" && (!q.items || q.items.includes(item.id))) completeQuest(state, q, 1, ctx, events);
@@ -236,6 +250,32 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       return { state, events };
     }
   }
+}
+
+// ---------- Покупки: бонусы и пассивный доход ----------
+
+const owned = (state: GameState, ctx: Ctx) => ctx.content.items.filter((i) => state.inventory.includes(i.id));
+export const itemPayBoost = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.payBoost ?? 0), 0);
+export const itemXpBoost = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.xpBoost ?? 0), 0);
+export const incomeRate = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.incomePerHour ?? 0), 0);
+export const INCOME_CAP_HOURS = 12;
+
+/** Сколько накопилось пассивного дохода к моменту now (не больше чем за 12 часов). */
+export function pendingIncome(state: GameState, ctx: Ctx, now: number): number {
+  const rate = incomeRate(state, ctx);
+  if (!rate || state.incomeAt === undefined) return 0;
+  const hours = Math.min(INCOME_CAP_HOURS, Math.max(0, now - state.incomeAt) / 3_600_000);
+  return Math.floor(rate * hours);
+}
+
+function collectIncome(state: GameState, ctx: Ctx, now: number): number {
+  const amount = pendingIncome(state, ctx, now);
+  if (state.incomeAt === undefined || amount > 0) state.incomeAt = now;
+  if (amount > 0 && addLedger(state, `income:${now}`, amount, "ui.shop.incomeLedger")) {
+    state.toasts.push({ kind: "money", amount });
+    return amount;
+  }
+  return 0;
 }
 
 // ---------- Внутренние помощники ----------
@@ -291,14 +331,16 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   if (r.pay) {
     const flagMul = Object.entries(r.payByFlag ?? {}).reduce((m, [f, k]) => (state.flags.includes(f) ? m * k : m), 1);
     const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
-    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul * levelMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
+    const itemMul = 1 + itemPayBoost(state, ctx);
+    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul * levelMul * itemMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
     const ledgerKey = quest.repeatable ? `quest:${quest.id}:${(progress.runs ?? 0) + 1}` : `quest:${quest.id}`;
     if (pay > 0 && addLedger(state, ledgerKey, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;
   }
   if (r.xp) {
-    state.xp += r.xp;
-    state.toasts.push({ kind: "xp", amount: r.xp });
+    const xp = Math.round(r.xp * (1 + itemXpBoost(state, ctx)));
+    state.xp += xp;
+    state.toasts.push({ kind: "xp", amount: xp });
   }
   if (r.rep && !shortcut) state.rep += quality >= 0.9 ? r.rep : Math.ceil(r.rep / 3);
   for (const [skill, uses] of Object.entries(shortcut ? {} : (r.skills ?? {})) as [SkillId, number][]) {

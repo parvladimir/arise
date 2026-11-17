@@ -3,6 +3,7 @@
 
 import { school } from "./school";
 import { act2Cards, act2Glossary, act2Items, act2Lessons, act2Quests } from "./act2";
+import { shopItems } from "./shop";
 import { act3Cards, act3Glossary, act3Lessons, act3Quests } from "./act3";
 import type { Content, GlossaryDef, LessonDef, PromptCard, ResponseSegment, SlotId } from "@/core/types";
 
@@ -357,10 +358,11 @@ export const content: Content = {
     { id: "aiLiteracy", nameKey: "skill.aiLiteracy", levels: [1, 3, 6] },
   ],
   items: [
-    { id: "lamp", nameKey: "item.lamp.name", descKey: "item.lamp.desc", price: 60 },
-    { id: "cheatsheet", nameKey: "item.cheatsheet.name", descKey: "item.cheatsheet.desc", price: 80, unlockSlots: ["examples"] },
-    { id: "coffee", nameKey: "item.coffee.name", descKey: "item.coffee.desc", price: 150 },
-    ...act2Items,
+    { id: "lamp", nameKey: "item.lamp.name", descKey: "item.lamp.desc", price: 60, category: "comfort", icon: "💡" },
+    { id: "cheatsheet", nameKey: "item.cheatsheet.name", descKey: "item.cheatsheet.desc", price: 80, unlockSlots: ["examples"], category: "work", icon: "📋" },
+    { id: "coffee", nameKey: "item.coffee.name", descKey: "item.coffee.desc", price: 150, category: "comfort", icon: "☕", xpBoost: 0.05 },
+    ...act2Items.map((i) => ({ ...i, category: "work" as const, icon: i.id === "neiraPlus" ? "✨" : "💻" })),
+    ...shopItems,
   ],
   quests: [
     {

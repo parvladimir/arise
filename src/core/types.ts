@@ -167,7 +167,22 @@ export interface ItemDef {
   flags?: string[];
   /** Товар появляется в магазине, только когда это задание открыто. */
   requiresQuest?: string;
+  /** Раздел магазина: мелочи, работа, транспорт, команда, жильё. */
+  category?: ItemCategory;
+  icon?: string;
+  /** Сначала нужно купить этот товар (лестница целей: самокат → машина). */
+  requiresItem?: string;
+  /** Прибавка к оплате всех заказов: 0.1 = +10%. */
+  payBoost?: number;
+  /** Прибавка к опыту за заказы: 0.1 = +10%. */
+  xpBoost?: number;
+  /** Пассивный доход: кредиты в час реального времени, пока игрок занят другим (копится до 12 часов). */
+  incomePerHour?: number;
+  rep?: number;
+  achievement?: string;
 }
+
+export type ItemCategory = "comfort" | "work" | "transport" | "team" | "home";
 
 export interface SkillDef {
   id: SkillId;
@@ -308,6 +323,8 @@ export interface GameState {
   /** Всплывающие события для интерфейса (сбрасываются интерфейсом). */
   toasts: Toast[];
   nextMessageId: number;
+  /** Когда последний раз забирали пассивный доход (мс). */
+  incomeAt?: number;
 }
 
 export type Toast =
@@ -323,7 +340,8 @@ export type Action =
   | { type: "choose"; questId: string; choiceId: string }
   | { type: "acceptQuest"; questId: string }
   | { type: "submitPrompt"; questId: string; selection: Partial<Record<SlotId, string>>; freeform?: boolean }
-  | { type: "buy"; itemId: string }
+  | { type: "buy"; itemId: string; now?: number }
+  | { type: "collectIncome"; now: number }
   | { type: "submitClassify"; questId: string; answers: Record<string, string> }
   | { type: "takeShortcut"; questId: string }
   | { type: "readChat"; npc: NpcId }

@@ -566,3 +566,26 @@ describe("снятая карточка", () => {
     expect(r.events.some((e) => e.type === "rejected")).toBe(false);
   });
 });
+
+describe("лестница покупок", () => {
+  it("машину нельзя купить без самоката, после самоката — можно", () => {
+    const s = at("q2");
+    s.money = 20000;
+    expect(apply(s, { type: "buy", itemId: "car" }, ctx).events.some((e) => e.type === "rejected")).toBe(true);
+    const a = apply(s, { type: "buy", itemId: "scooter" }, ctx).state;
+    const b = apply(a, { type: "buy", itemId: "car" }, ctx).state;
+    expect(b.inventory).toContain("car");
+    expect(b.achievements).toContain("driver");
+  });
+  it("помощник копит доход по часам, не больше чем за 12 часов", () => {
+    const s = at("q2");
+    s.money = 3000;
+    const t0 = 1_000_000_000_000;
+    const a = apply(s, { type: "buy", itemId: "junior", now: t0 }, ctx).state;
+    expect(a.money).toBe(0);
+    const b = apply(a, { type: "collectIncome", now: t0 + 2 * 3_600_000 }, ctx).state;
+    expect(b.money).toBe(120);
+    const c = apply(b, { type: "collectIncome", now: t0 + 100 * 3_600_000 }, ctx).state;
+    expect(c.money).toBe(120 + 60 * 12);
+  });
+});
