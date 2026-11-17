@@ -120,6 +120,14 @@ function RewardStrip({ batch, t, onClose, pause, resume }: { batch: Batch; t: T;
   const xp = batch.items.reduce((n, x) => n + (x.kind === "xp" ? x.amount : 0), 0);
   const apps = batch.items.flatMap((x) => (x.kind === "unlock" ? [t(`app.${x.app}`)] : []));
   const parts: { text: string; tone: string }[] = [];
+  const res = batch.items.find((x) => x.kind === "result");
+  if (res && res.kind === "result") {
+    parts.push({ text: "★".repeat(res.stars) + "☆".repeat(3 - res.stars), tone: "border-gold/50 bg-gold/10 text-gold tracking-widest" });
+    if (res.rush) parts.push({ text: t("ui.rush.toast"), tone: "border-bad/50 bg-bad/10 text-bad" });
+    if (res.streak >= 2 && res.streakBonus > 0) parts.push({ text: `${t("ui.streak.toast", { n: res.streak })} · ${t("ui.streak.bonus", { p: Math.round(res.streakBonus * 100) })}`, tone: "border-gold/50 bg-gold/15 text-gold" });
+    else if (res.streak >= 1) parts.push({ text: t("ui.streak.toast", { n: res.streak }), tone: "border-gold/40 bg-gold/5 text-gold" });
+    else if (res.prevStreak >= 2) parts.push({ text: t("ui.streak.lost", { n: res.prevStreak }), tone: "border-line bg-surface-2 text-muted" });
+  }
   if (money > 0) parts.push({ text: t("ui.toast.money", { n: money }), tone: "border-gold/40 bg-gold/10 text-gold font-mono" });
   if (xp > 0) parts.push({ text: t("ui.toast.xp", { n: xp }), tone: "border-ai/40 bg-ai/10 text-ai font-mono" });
   for (const x of batch.items) {

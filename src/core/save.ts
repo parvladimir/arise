@@ -99,6 +99,12 @@ function withDefaults(raw: GameState & Record<string, unknown>): GameState {
     relations: typeof raw.relations === "object" && raw.relations !== null ? raw.relations : {},
     toasts: [],
     incomeAt: typeof raw.incomeAt === "number" && Number.isFinite(raw.incomeAt) ? raw.incomeAt : undefined,
+    streak: num(raw.streak, 0),
+    bestStreak: num(raw.bestStreak, 0),
+    rush:
+      typeof raw.rush === "object" && raw.rush !== null && typeof raw.rush.questId === "string" && typeof raw.rush.left === "number"
+        ? { questId: raw.rush.questId, left: raw.rush.left }
+        : undefined,
     nextMessageId: num(raw.nextMessageId, raw.messages.length + 1),
   };
 }

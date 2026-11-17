@@ -4,6 +4,7 @@ import { ruSchool } from "./ru.school";
 import { ruAct3 } from "./ru.act3";
 import { ruShop } from "./ru.shop";
 import { ruModes } from "./ru.modes";
+import { ruDrive } from "./ru.drive";
 
 export const ru: Record<string, string> = {
   // ---------- Интерфейс ----------
@@ -1010,4 +1011,5 @@ export const ru: Record<string, string> = {
   ...ruAct3,
   ...ruShop,
   ...ruModes,
+  ...ruDrive,
 };

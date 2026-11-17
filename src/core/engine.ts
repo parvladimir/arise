@@ -322,6 +322,61 @@ function advanceClock(state: GameState, hours: number) {
   }
 }
 
+// ---------- Звёзды, серии, срочные заказы ----------
+
+/** ★★★ — от 95%, ★★ — от 85%, ★ — просто принято. */
+export function starsFor(quality: number): number {
+  return quality >= 0.95 ? 3 : quality >= 0.85 ? 2 : 1;
+}
+
+/** Сдано без единой неудачной попытки: попыток не больше, чем шагов в заказе. */
+export function cleanRun(quest: QuestDef, attempts: number): boolean {
+  const steps = quest.kind === "prompt" ? quest.stages.length : 1;
+  return attempts <= steps;
+}
+
+/** Бонус серии: со второго заказа подряд +10% за каждый, максимум +50%. */
+export function streakBonus(streak: number): number {
+  return Math.min(0.5, 0.1 * Math.max(0, streak - 1));
+}
+
+export const RUSH_LEFT = 3;
+/** С какого этапа работают денежные бонусы серии и срочные заказы. */
+export const DRIVE_FROM_STAGE = 2;
+
+/** Открыт ли уже этап, где серия даёт деньги. */
+export function driveActive(state: GameState, content: Content): boolean {
+  return content.quests.some((q) => q.stage >= DRIVE_FROM_STAGE && state.quests[q.id]);
+}
+
+function rushCandidates(state: GameState, ctx: Ctx, exclude: string[]): QuestDef[] {
+  return boardQuests(state, ctx.content).filter(
+    (q) => (q.kind === "prompt" || q.kind === "classify") && q.reward.pay && q.stage >= DRIVE_FROM_STAGE && state.quests[q.id]?.status === "available" && !exclude.includes(q.id),
+  );
+}
+
+/** После каждого сданного заказа: срочный тикает, сгорает или назначается новый. */
+function updateRush(state: GameState, ctx: Ctx, completedId: string) {
+  const r = state.rush;
+  const exclude = [completedId];
+  if (r) {
+    const st = state.quests[r.questId]?.status;
+    if (r.questId === completedId || !st || st === "done") state.rush = undefined;
+    else if (st === "available") {
+      r.left -= 1;
+      if (r.left <= 0) {
+        exclude.push(r.questId);
+        state.rush = undefined;
+      }
+    }
+  }
+  if (!state.rush) {
+    // Срочным становится самый «дорогой» заказ на доске: так ×2 действительно ощутим.
+    const pick = rushCandidates(state, ctx, exclude).sort((a, b) => b.stage - a.stage)[0];
+    if (pick) state.rush = { questId: pick.id, left: RUSH_LEFT };
+  }
+}
+
 /** Выполненные подработки: каждая сдаётся один раз и остаётся в списке «Выполнено». */
 export function doneGigs(state: GameState, content: Content): QuestDef[] {
   return content.quests.filter((q) => q.repeatable && state.quests[q.id]?.status === "done");
@@ -335,13 +390,31 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   const r = quest.reward;
 
   let pay = 0;
+  // Звёзды, серия и срочность — только для настоящих заказов (собрать промпт или проверить).
+  const scored = quest.kind === "prompt" || quest.kind === "classify";
+  let driveMul = 1;
+  if (scored) {
+    const stars = shortcut ? 1 : starsFor(quality);
+    const clean = !shortcut && cleanRun(quest, progress.attempts);
+    const prevStreak = state.streak ?? 0;
+    const streak = stars === 3 && clean ? prevStreak + 1 : 0;
+    state.streak = streak;
+    state.bestStreak = Math.max(state.bestStreak ?? 0, streak);
+    // Бонусы — только на заказах с доски: сюжетная экономика (и её баланс в tools/sim) не меняется.
+    // С первого акта считаются звёзды и серия, а деньги за них — со второго (баланс акта 1 проверяет tools/sim).
+    const board = quest.offer.type === "board" && quest.stage >= DRIVE_FROM_STAGE;
+    const rush = Boolean(r.pay && board && clean && state.rush?.questId === quest.id);
+    const bonus = r.pay && board ? streakBonus(streak) : 0;
+    driveMul = (1 + bonus) * (rush ? 2 : 1);
+    state.toasts.push({ kind: "result", stars, streak, prevStreak, streakBonus: bonus, rush });
+  }
   if (!shortcut) for (const f of r.flags ?? []) addFlag(state, f);
   for (const [npc, d] of Object.entries(r.rel ?? {}) as [NpcId, number][]) changeRel(state, npc, d);
   if (r.pay) {
     const flagMul = Object.entries(r.payByFlag ?? {}).reduce((m, [f, k]) => (state.flags.includes(f) ? m * k : m), 1);
     const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
     const itemMul = 1 + itemPayBoost(state, ctx);
-    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul * levelMul * itemMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
+    pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * flagMul * levelMul * itemMul * driveMul, client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
     const ledgerKey = quest.repeatable ? `quest:${quest.id}:${(progress.runs ?? 0) + 1}` : `quest:${quest.id}`;
     if (pay > 0 && addLedger(state, ledgerKey, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;
@@ -388,6 +461,7 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
   // Подработка сдаётся один раз и уходит с доски в «Выполнено».
   if (quest.repeatable) progress.runs = (progress.runs ?? 0) + 1;
   refreshQuests(state, ctx);
+  if (scored) updateRush(state, ctx, quest.id);
   return pay;
 }
 

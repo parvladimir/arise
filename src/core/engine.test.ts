@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { content } from "@/content";
 import { hasKey, makeTranslator } from "@/content/i18n";
+import * as engine from "./engine";
 import { apply, boardQuests, currentGoal, newGameState, passFor, refreshQuests, type Ctx } from "./engine";
 import { runPrompt } from "./promptSim";
 import { deserialize, serialize } from "./save";
@@ -626,5 +627,70 @@ describe("новые виды заданий", () => {
     const answers = Object.fromEntries(q.items.map((i) => [i.id, i.answer]));
     const r = apply(s, { type: "submitClassify", questId: "hunt1", answers }, ctx);
     expect(r.events.find((e) => e.type === "classifyResult")).toMatchObject({ passed: true, quality: 1 });
+  });
+});
+
+describe("звёзды, серии, срочные заказы", () => {
+  const hq = (id: string) => content.quests.find((x) => x.id === id) as Extract<QuestDef, { kind: "classify" }>;
+  const right = (id: string) => Object.fromEntries(hq(id).items.map((i) => [i.id, i.answer]));
+  const wrong = (id: string) => Object.fromEntries(hq(id).items.map((i) => [i.id, "ok"]));
+  const fresh = (): GameState => {
+    const s = newGameState(profile, ctx);
+    const p = (status: "active" | "available") => ({ status, stage: 0, attempts: 0, bestQuality: 0, selections: {} }) as GameState["quests"][string];
+    s.quests = { hunt1: p("active"), hunt2: p("available"), hunt3: p("available") };
+    return s;
+  };
+  const submit = (s: GameState, id: string, answers: Record<string, string>) => {
+    const r = apply(s, { type: "submitClassify", questId: id, answers }, ctx);
+    const res = r.events.find((e) => e.type === "classifyResult");
+    return { state: r.state, pay: res && res.type === "classifyResult" ? res.pay : 0 };
+  };
+
+  it("звёзды по качеству", () => {
+    const { starsFor } = engine;
+    expect([starsFor(1), starsFor(0.95), starsFor(0.9), starsFor(0.85), starsFor(0.8), starsFor(0.7)]).toEqual([3, 3, 2, 2, 1, 1]);
+  });
+
+  it("идеальный заказ начинает серию и назначает срочный; срочный платит ×2, серия добавляет бонус", () => {
+    let { state } = submit(fresh(), "hunt1", right("hunt1"));
+    expect(state.streak).toBe(1);
+    expect(state.rush).toEqual({ questId: "hunt3", left: 3 });
+    // Та же сдача без срочности и серии — для сравнения.
+    const base = structuredClone(state);
+    base.rush = undefined;
+    base.streak = 0;
+    base.quests.hunt3!.status = "active";
+    const plain = submit(base, "hunt3", right("hunt3")).pay;
+    state.quests.hunt3!.status = "active";
+    const r = submit(state, "hunt3", right("hunt3"));
+    expect(r.state.streak).toBe(2);
+    expect([...r.state.toasts].reverse().find((x) => x.kind === "result")).toMatchObject({ stars: 3, rush: true, streak: 2 });
+    expect(r.pay / plain).toBeGreaterThan(2.1);
+    expect(r.pay / plain).toBeLessThan(2.3);
+  });
+
+  it("ошибка рвёт серию и срочность", () => {
+    let { state } = submit(fresh(), "hunt1", right("hunt1"));
+    state.quests.hunt3!.status = "active";
+    state = submit(state, "hunt3", wrong("hunt3")).state; // провал
+    const r = submit(state, "hunt3", right("hunt3"));
+    expect(r.state.streak).toBe(0);
+    expect([...r.state.toasts].reverse().find((x) => x.kind === "result")).toMatchObject({ rush: false, prevStreak: 1 });
+  });
+
+  it("невзятый срочный сгорает после трёх других заказов", () => {
+    const s = fresh();
+    s.rush = { questId: "hunt3", left: 1 };
+    const { state } = submit(s, "hunt1", right("hunt1"));
+    expect(state.rush?.questId).toBe("hunt2");
+  });
+
+  it("серия и срочность переживают сохранение", () => {
+    const s = fresh();
+    s.streak = 4;
+    s.bestStreak = 6;
+    s.rush = { questId: "hunt2", left: 2 };
+    const back = deserialize(serialize(s));
+    expect(back && "state" in back ? back.state : back).toMatchObject({ streak: 4, bestStreak: 6, rush: { questId: "hunt2", left: 2 } });
   });
 });

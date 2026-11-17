@@ -11,6 +11,7 @@ import { analyzeFreeform } from "@/core/freeform";
 import { ruMatch } from "@/content/locales/ru.match";
 import type { GameApi } from "./useGame";
 import { RewardSlot } from "./Toasts";
+import { ResultStars, RushNote } from "./Apps";
 import { MascotHead } from "./Mascot";
 
 const NPC_COLOR: Record<string, string> = { boris: "#fb923c", vera: "#f472b6", editor: "#38bdf8", anna: "#f5b544", dima: "#8b3dff", sergey: "#f87171", olga: "#a78bfa", alex: "#34d399", nick: "#f472b6" };
@@ -233,6 +234,7 @@ export function PromptLab({
             </div>
             {clientNpc && <div className="mt-1 text-sm text-muted">{t("ui.neira.client")}: {t(`npc.${clientNpc}`)}</div>}
             <p className="mt-1.5 leading-snug">{t(stage.taskKey)}</p>
+            <RushNote game={game} state={state} questId={viewQuest.id} />
             {preset && (
               <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
                 <span className="rounded-full bg-gold/15 px-2.5 py-0.5 font-bold uppercase tracking-wider text-gold">🔧 {t("ui.fix.badge")}</span>
@@ -405,6 +407,7 @@ export function PromptLab({
                     <span className={`rounded-full px-2.5 py-0.5 font-semibold ${r.passed ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad"}`}>
                       {t("ui.neira.quality", { q: Math.round(r.quality * 100) })} · {t(r.passed ? "ui.neira.passed" : "ui.neira.failed")}
                     </span>
+                    {resultForThisStage?.finished && r.passed && <ResultStars game={game} quality={r.quality} />}
                   </div>
                   {resultForThisStage?.finished && <RewardSlot />}
                   {reactions.length > 0 && (

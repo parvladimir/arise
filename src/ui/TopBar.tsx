@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { content } from "@/content";
-import { currentGoal } from "@/core/engine";
+import { currentGoal, driveActive, streakBonus } from "@/core/engine";
 import { levelFromXp } from "@/core/economy";
 import type { GameState } from "@/core/types";
 import { Avatar } from "./Avatar";
@@ -28,6 +28,7 @@ export function TopBar({
   const lvl = levelFromXp(state.xp);
   const goal = currentGoal(state, content);
   const [open, setOpen] = useState(false);
+  const bonus = driveActive(state, content) ? Math.round(streakBonus(state.streak ?? 0) * 100) : 0;
 
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
@@ -46,6 +47,15 @@ export function TopBar({
         </div>
 
         <div className="font-mono text-lg font-semibold text-gold" aria-label="Кредиты">{state.money} ₵</div>
+        {(state.streak ?? 0) >= 1 && (
+          <div
+            className="streak-chip flex items-center gap-1 rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 text-xs font-bold text-gold"
+            title={t("ui.streak.title", { n: state.streak ?? 0, p: bonus })}
+          >
+            🔥 {t("ui.streak.chip", { n: state.streak ?? 0 })}
+            {bonus > 0 && <span className="font-mono text-gold/80">+{bonus}%</span>}
+          </div>
+        )}
         <div className="hidden text-sm text-muted sm:block">{t("ui.day", { day: state.day, hour: state.hour })}</div>
 
         {waiting && (

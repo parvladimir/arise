@@ -6,6 +6,7 @@ import { Takeaway } from "./Learn";
 import type { GameApi } from "./useGame";
 import { MascotHead } from "./Mascot";
 import { RewardSlot } from "./Toasts";
+import { ResultStars, RushNote } from "./Apps";
 
 type ClassifyQuest = Extract<QuestDef, { kind: "classify" }>;
 type Result = { questId: string; quality: number; passed: boolean; wrong: string[]; pay: number; shortcut?: boolean };
@@ -118,6 +119,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
             </span>
           </div>
           <p className="mt-1.5 leading-snug">{t(quest.introKey)}</p>
+          {game.state && <RushNote game={game} state={game.state} questId={quest.id} />}
         </div>
 
         {/* Источник */}
@@ -222,6 +224,7 @@ export function ClassifyLab({ game, quest, onFinished, onLesson, onPassed }: { g
                 <span className={`rounded-full px-2.5 py-0.5 font-semibold ${result.passed ? "bg-ok/15 text-ok" : "bg-bad/15 text-bad"}`}>
                   {result.shortcut ? t("ui.check.shortcutDone") : t("ui.check.result", { q: Math.round(result.quality * 100) })} · {t(result.passed ? "ui.neira.passed" : "ui.neira.failed")}
                 </span>
+                {result.passed && !result.shortcut && <ResultStars game={game} quality={result.quality} />}
               </div>
               {result.passed && <RewardSlot />}
               {!result.passed && <p className="mt-2 text-sm">{t("ui.check.mistakes", { n: result.wrong.length })} {fails >= 2 ? t("ui.check.hintShown") : ""}</p>}

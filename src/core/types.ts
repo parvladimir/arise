@@ -329,6 +329,11 @@ export interface GameState {
   nextMessageId: number;
   /** Когда последний раз забирали пассивный доход (мс). */
   incomeAt?: number;
+  /** Серия заказов подряд на ★★★ без ошибок. */
+  streak?: number;
+  bestStreak?: number;
+  /** Срочный заказ на доске: ×2 к оплате, если сдать без ошибок. left — через сколько других заказов он сгорит. */
+  rush?: { questId: string; left: number };
 }
 
 export type Toast =
@@ -337,7 +342,9 @@ export type Toast =
   | { kind: "achievement"; id: string }
   | { kind: "skill"; skill: SkillId; level: number }
   | { kind: "unlock"; app: AppId }
-  | { kind: "milestone"; textKey: TextKey };
+  | { kind: "milestone"; textKey: TextKey }
+  /** Итог заказа: звёзды, серия (и какой она была до этого), сработал ли срочный ×2. */
+  | { kind: "result"; stars: number; streak: number; prevStreak: number; streakBonus: number; rush: boolean };
 
 export type Action =
   | { type: "newGame"; profile: GameState["profile"] }

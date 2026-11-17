@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { content } from "@/content";
-import { boardQuests, levelOf, doneGigs, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
+import { boardQuests, cleanRun, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
 import { basePay, skillLevel } from "@/core/economy";
 import type { GameState, ItemCategory, ItemDef } from "@/core/types";
 import type { GameApi } from "./useGame";
@@ -18,16 +18,20 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.orders.title")}</h2>
+      <p className="mt-1 text-xs leading-snug text-muted">🔥 {t("ui.streak.hint")}</p>
       {list.length === 0 && <p className="mt-4 text-sm text-muted">{t(finished.length > 0 ? "ui.orders.allDone" : "ui.orders.empty")}</p>}
       <ul className="mt-4 space-y-3">
         {list.map((q) => {
           const status = state.quests[q.id]!.status;
           const from = q.offer.type === "auto" ? null : q.offer.from;
-          const pay = q.reward.pay ? Math.round(basePay(q.stage) * q.reward.pay.complexity * q.reward.pay.client * levelMul) : 0;
+          const rush = state.rush?.questId === q.id;
+          const rushOn = rush && cleanRun(q, state.quests[q.id]!.attempts);
+          const pay = q.reward.pay ? Math.round(basePay(q.stage) * q.reward.pay.complexity * q.reward.pay.client * levelMul * (rushOn ? 2 : 1)) : 0;
           return (
-            <li key={q.id} className="anim-rise rounded-xl border border-line bg-surface-2/60 p-4">
+            <li key={q.id} className={`anim-rise rounded-xl border p-4 ${rushOn ? "rush-card border-bad/60 bg-bad/5" : "border-line bg-surface-2/60"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 font-semibold">
+                  {rushOn && <span className="rush-badge rounded-full bg-bad px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("ui.rush.badge")}</span>}
                   {status === "available" && !q.repeatable && <span className="rounded-full bg-bad px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("ui.orders.new")}</span>}
                   {q.repeatable && <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gold">{t("ui.orders.gig")}</span>}
                   {t(q.titleKey)}
@@ -40,6 +44,12 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
                 </p>
               )}
               {q.offer.type !== "auto" && <p className="mt-2 text-[15px] leading-snug">«{t(q.offer.textKey)}»</p>}
+              {rush && (
+                <p className={`mt-2 rounded-lg px-2.5 py-1.5 text-xs leading-snug ${rushOn ? "bg-bad/10 text-bad" : "bg-surface text-muted"}`}>
+                  {rushOn ? t("ui.rush.rule") : t("ui.rush.missed")}
+                  {rushOn && status === "available" && <span className="block font-semibold">{t("ui.rush.left", { n: state.rush!.left })}</span>}
+                </p>
+              )}
               <div className="mt-3">
                 {status === "available" ? (
                   <button
@@ -69,6 +79,7 @@ export function Orders({ game, state, openNeira }: { game: GameApi; state: GameS
               <li key={q.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-ok/25 bg-ok/5 px-4 py-3 text-sm">
                 <span className="font-semibold text-ok">✓</span>
                 <span className="font-semibold">{t(q.titleKey)}</span>
+                <Stars n={starsFor(state.quests[q.id]!.bestQuality)} />
                 {q.offer.type !== "auto" && <span className="text-muted">{t(`npc.${q.offer.from}`)}</span>}
               </li>
             ))}
@@ -302,5 +313,39 @@ export function Journal({ game, state }: { game: GameApi; state: GameState }) {
         </ul>
       </section>
     </div>
+  );
+}
+
+/** Звёзды за заказ: ★★★ от 95%, ★★ от 85%. */
+export function Stars({ n, className = "" }: { n: number; className?: string }) {
+  return (
+    <span className={`font-mono tracking-wider text-gold ${className}`} aria-label={`${n} из 3`}>
+      {"★".repeat(n)}
+      <span className="text-muted/40">{"★".repeat(3 - n)}</span>
+    </span>
+  );
+}
+
+/** Плашка срочного заказа в самом задании: пока нет ошибок — ×2, после ошибки — обычная оплата. */
+export function RushNote({ game, state, questId }: { game: GameApi; state: GameState; questId: string }) {
+  const quest = content.quests.find((q) => q.id === questId);
+  const progress = state.quests[questId];
+  if (!quest || !progress || progress.status !== "active" || state.rush?.questId !== questId) return null;
+  const on = cleanRun(quest, progress.attempts);
+  return (
+    <p className={`mt-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold leading-snug ${on ? "rush-card bg-bad/10 text-bad" : "bg-surface text-muted"}`}>
+      {on ? `${game.t("ui.rush.badge")} · ${game.t("ui.rush.rule")}` : game.t("ui.rush.missed")}
+    </p>
+  );
+}
+
+/** Звёзды в итоге заказа и подсказка, как получить три. */
+export function ResultStars({ game, quality }: { game: GameApi; quality: number }) {
+  const n = starsFor(quality);
+  return (
+    <span className="flex items-center gap-2">
+      <Stars n={n} className="text-lg" />
+      {n < 3 && <span className="text-xs text-muted">{game.t("ui.stars.how")}</span>}
+    </span>
   );
 }

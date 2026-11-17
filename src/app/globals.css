@@ -378,3 +378,11 @@ body {
 }
 .school-shake { animation: school-shake 0.4s ease; }
 [data-motion="off"] .school-shake { animation: none; }
+
+/* Срочный заказ слегка пульсирует, серия мягко светится. */
+@keyframes rush-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-bad) 0%, transparent); } 50% { box-shadow: 0 0 22px -6px var(--color-bad); } }
+.rush-card { animation: rush-pulse 2.4s ease-in-out infinite; }
+@keyframes rush-blink { 50% { opacity: 0.65; } }
+.rush-badge { animation: rush-blink 1.6s ease-in-out infinite; }
+.streak-chip { box-shadow: 0 0 14px -6px var(--color-gold); }
+@media (prefers-reduced-motion: reduce) { .rush-card, .rush-badge { animation: none; } }
