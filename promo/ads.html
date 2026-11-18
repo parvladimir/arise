@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<!-- Рекламные ролики AI RISE: 5 сценариев на одном движке. Сценарий выбирается в адресе: ads.html#c=1 … #c=5 (+ &site для промо-страницы). -->
+<style>
+@font-face { font-family: I; src: url(fonts/Inter-SemiBold.otf); font-weight: 600; }
+@font-face { font-family: I; src: url(fonts/Inter-Bold.otf); font-weight: 700; }
+@font-face { font-family: ID; src: url(fonts/InterDisplay-Black.otf); font-weight: 900; }
+* { box-sizing: border-box; margin: 0; }
+:root { --acc: #b48cff; --acc2: #22d3ee; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #0b0a16; }
+body { font-family: I, sans-serif; color: #e8edf7; position: relative; }
+#bg { position: absolute; inset: 0; background:
+  radial-gradient(900px 700px at 20% 15%, rgba(146,87,255,.35), transparent 70%),
+  radial-gradient(800px 800px at 90% 85%, rgba(34,211,238,.18), transparent 70%), #0b0a16; }
+#grid { position: absolute; inset: -200px; background-image:
+  linear-gradient(rgba(146,87,255,.13) 2px, transparent 2px), linear-gradient(90deg, rgba(146,87,255,.13) 2px, transparent 2px);
+  background-size: 90px 90px; }
+.scene { position: absolute; inset: 0; opacity: 0; }
+.cap { position: absolute; left: 80px; right: 120px; top: 210px; font-weight: 700; font-size: 66px; line-height: 1.08; letter-spacing: -1px; }
+.cap b { color: var(--acc); }
+.sub { margin-top: 22px; font-weight: 600; font-size: 38px; line-height: 1.25; color: #a9b4cf; letter-spacing: 0; }
+.phone { position: absolute; left: 210px; top: 660px; width: 660px; height: 1000px; border-radius: 56px; overflow: hidden;
+  border: 6px solid #2c2a55; box-shadow: 0 40px 120px rgba(146,87,255,.35), 0 0 0 2px rgba(255,255,255,.06) inset; background: #0b0a16; }
+.phone img { width: 100%; display: block; will-change: transform; }
+.hook { position: absolute; left: 80px; right: 80px; top: 520px; font-family: ID, I; font-weight: 900; font-size: 140px; line-height: 1.02; letter-spacing: -3px; }
+.hook span { display: inline-block; }
+.big { font-family: ID, I; font-weight: 900; }
+.pill { display: inline-block; padding: 14px 26px; border-radius: 999px; border: 2px solid rgba(255,255,255,.14); background: rgba(20,19,41,.8); font-size: 34px; margin: 0 12px 16px 0; }
+#bar { position: absolute; left: 60px; right: 60px; top: 120px; height: 8px; border-radius: 9px; background: rgba(255,255,255,.12); }
+#bar i { display: block; height: 100%; border-radius: 9px; background: linear-gradient(90deg, #9257ff, #22d3ee); }
+.verb { display:inline-block; padding:12px 28px; border-radius:999px; background:linear-gradient(90deg,var(--acc),var(--acc2)); font-family:ID,I; font-weight:900; font-size:40px; letter-spacing:3px; color:#fff; margin-bottom:26px; }
+.ladder { position: absolute; left: 80px; right: 120px; top: 640px; }
+.step { display: flex; align-items: center; gap: 28px; padding: 30px 34px; margin-bottom: 22px; border-radius: 32px; background: rgba(20,19,41,.85); border: 2px solid #2c2a55; font-size: 44px; font-weight: 700; }
+.step em { font-style: normal; font-size: 64px; width: 80px; text-align: center; }
+.cta { position: absolute; left: 80px; right: 120px; top: 300px; }
+.face { position:absolute; display:flex; align-items:center; justify-content:center; gap:22%; }
+.face i { display:block; width:17%; height:38%; border-radius:999px; background:#00d4ff; box-shadow:0 0 12px #00d4ff, 0 0 30px rgba(0,212,255,.6); }
+.btn { display: inline-block; margin-top: 46px; padding: 34px 50px; border-radius: 40px; background: #9257ff; font-size: 50px; font-weight: 700; box-shadow: 0 20px 80px rgba(146,87,255,.6); }
+</style>
+<style>
+.statement { position:absolute; left:80px; right:100px; top:640px; font-family:ID,I; font-weight:900; font-size:132px; line-height:1; letter-spacing:-3px; }
+.statement small { display:block; margin-top:40px; font-family:I; font-weight:700; font-size:52px; letter-spacing:0; color:#cfd6ea; }
+.badge-big { font-size:56px; padding:16px 34px; }
+</style></head><body>
+<div id="bg"></div><div id="grid"></div>
+<div id="scenes"></div>
+<section class="scene" id="s-cta">
+  <div class="cta">
+    <div class="big" style="font-size:104px;line-height:1;letter-spacing:-3px">Играй<br><span style="color:var(--acc)">бесплатно</span></div>
+    <div class="sub" style="font-size:44px;margin-top:34px;color:#e8edf7">Подпишись на <b style="color:var(--acc)">ТАКТ AI</b> в Telegram:<br>бот пришлёт ссылку на игру<br>и гайд «10 нейросетей» 🎁</div>
+    <div class="btn" id="cta-btn">✈ Ссылка в шапке профиля</div>
+  </div>
+  <div id="cta-m" style="position:absolute;right:40px;top:1040px;height:600px">
+    <img src="mascot-point.webp" style="height:600px;display:block">
+    <span class="face" style="left:12.2%;width:56.3%;top:16%;height:26.2%"><i></i><i></i></span>
+  </div>
+</section>
+<div id="bar"><i></i></div>
+<script>
+// Типы сцен: hook (строки по одной), logo, shot (экран игры в телефоне), say (крупная фраза). Призыв в конце общий.
+const LOGO = { t: "logo", len: 2.6 };
+const CONCEPTS = {
+  1: { name: "Челлендж", acc: "#f5b544", acc2: "#ff7a45", scenes: [
+    { t: "hook", len: 3.0, lines: ["Спорим,", "не заработаешь", "10 000 ₵", "промптами?"], hi: [2] },
+    LOGO,
+    { t: "shot", img: "orders.png", badge: "ШАГ 1", cap: "Бери <b>заказы</b> от клиентов", sub: "Письма, реклама, посты — всё через нейросеть", len: 2.8 },
+    { t: "shot", img: "09-cards.png", badge: "ШАГ 2", cap: "Собери <b>промпт</b>", sub: "Чем точнее запрос, тем выше оплата", len: 2.8, f0: 0.12, f1: 0.26 },
+    { t: "shot", img: "10-answer.png", badge: "ШАГ 3", cap: "Сдай на <b>100%</b>", sub: "Заказчик принимает, деньги на счёт", len: 2.8, f0: 0.04, f1: 0.12 },
+    { t: "shot", img: "shop.png", badge: "ШАГ 4", cap: "Вкладывай <b>с умом</b>", sub: "Техника и курсы дают больше опыта и денег", len: 2.8 },
+    { t: "shot", img: "shop-home.png", badge: "ЦЕЛЬ", cap: "10 000 ₵ — <b>своя студия</b>", sub: "А дальше квартира и ИИ-агентство", len: 3.0 },
+    { t: "say", len: 2.0, text: "Принимаешь<br><span style='color:var(--acc)'>вызов?</span>" },
+  ]},
+  2: { name: "Путь", acc: "#22d3ee", acc2: "#9257ff", scenes: [
+    { t: "hook", len: 3.2, lines: ["Из съёмной", "комнаты —", "в своё", "ИИ-агентство"], hi: [3] },
+    LOGO,
+    { t: "shot", img: "04-room.png", badge: "ДЕНЬ 1", cap: "Комната, ноутбук <b>и 40 ₵</b>", sub: "Про нейросети ты пока ничего не знаешь", len: 3.0 },
+    { t: "shot", img: "06-chat.png", badge: "ДЕНЬ 1", cap: "Друг подкидывает <b>первую задачу</b>", sub: "«Открой ТАКТ AI и попроси написать хозяину»", len: 3.0 },
+    { t: "shot", img: "school.png", badge: "ДЕНЬ 2", cap: "Разбираешься, <b>как устроен ИИ</b>", sub: "Школа ТАКТ: короткие уроки и мини-игры", len: 3.0 },
+    { t: "shot", img: "orders.png", badge: "ДЕНЬ 5", cap: "Клиенты <b>сами несут заказы</b>", sub: "Серия без ошибок даёт до +50% к оплате", len: 3.0 },
+    { t: "shot", img: "room-late.png", badge: "ДЕНЬ 10", cap: "Своя техника <b>и 6 000 ₵</b>", sub: "Комнату уже не узнать", len: 3.0 },
+    { t: "shot", img: "shop-home.png", badge: "ДАЛЬШЕ", cap: "Студия, квартира, <b>своё агентство</b>", sub: "Куда дойдёшь ты?", len: 3.0 },
+  ]},
+  3: { name: "Учись играя", acc: "#b48cff", acc2: "#22d3ee", scenes: [
+    { t: "hook", len: 3.2, lines: ["ChatGPT", "пишет ерунду?", "Дело", "в запросе."], hi: [3] },
+    { t: "shot", img: "07-lesson.png", badge: "УРОК", cap: "Что такое промпт — <b>за минуту</b>", sub: "16 коротких уроков без воды", len: 3.0, f0: 0.02, f1: 0.2 },
+    { t: "shot", img: "08-task.png", badge: "ЗАДАЧА", cap: "Живая задача <b>от клиента</b>", sub: "Кран течёт неделю — напиши хозяину", len: 2.8 },
+    { t: "shot", img: "09-cards.png", badge: "ПРАКТИКА", cap: "Собираешь запрос <b>по частям</b>", sub: "Цель, адресат, тон, формат", len: 3.0, f0: 0.12, f1: 0.28 },
+    { t: "shot", img: "10-answer.png", badge: "РЕЗУЛЬТАТ", cap: "Нейросеть понимает <b>с первого раза</b>", sub: "Качество 100% · Принято", len: 3.0, f0: 0.04, f1: 0.12 },
+    { t: "shot", img: "skills.png", badge: "НАВЫК", cap: "Навык растёт <b>с каждым заказом</b>", sub: "И остаётся с тобой в реальной жизни", len: 2.8 },
+    LOGO,
+    { t: "say", len: 2.2, text: "Учишься,<br><span style='color:var(--acc)'>пока играешь</span>" },
+  ]},
+  4: { name: "POV", acc: "#ff5fa2", acc2: "#b48cff", scenes: [
+    { t: "hook", len: 3.0, lines: ["POV:", "друг сказал", "«попробуй", "этот ИИ»"], hi: [0] },
+    { t: "shot", img: "06-chat.png", badge: "POV", cap: "Ты такой: <b>«какой ещё ИИ?»</b>", sub: "", len: 2.6 },
+    { t: "shot", img: "10-answer.png", badge: "+5 МИНУТ", cap: "Письмо готово <b>на 100%</b>", sub: "", len: 2.6, f0: 0.04, f1: 0.12 },
+    { t: "shot", img: "orders.png", badge: "+1 ВЕЧЕР", cap: "Серия <b>18 заказов</b> 🔥", sub: "", len: 2.6 },
+    { t: "shot", img: "shop.png", badge: "+1 НЕДЕЛЯ", cap: "Игровой ноутбук <b>с видеокартой</b>", sub: "", len: 2.6 },
+    { t: "shot", img: "shop-home.png", badge: "А ДАЛЬШЕ", cap: "Своя <b>студия у парка</b>", sub: "", len: 2.6 },
+    LOGO,
+  ]},
+  5: { name: "Топ-5 фишек", acc: "#a3e635", acc2: "#22d3ee", scenes: [
+    { t: "hook", len: 2.8, lines: ["5 причин", "залипнуть", "в AI RISE"], hi: [2] },
+    { t: "shot", img: "laptop.png", badge: "#5", cap: "Свой ноутбук <b>с ТАКТ OS</b>", sub: "Приложения открываются по ходу игры", len: 3.0 },
+    { t: "shot", img: "shop.png", badge: "#4", cap: "Магазин: <b>от лампы до видеокарты</b>", sub: "Каждая покупка помогает в работе", len: 3.0 },
+    { t: "shot", img: "orders.png", badge: "#3", cap: "Заказы дня <b>и серия до +50%</b>", sub: "Сдавай на ★★★ без ошибок", len: 3.0 },
+    { t: "shot", img: "09-cards.png", badge: "#2", cap: "Промпты <b>из карточек</b>", sub: "Понятно, даже если ты с нуля", len: 3.0, f0: 0.12, f1: 0.26 },
+    { t: "shot", img: "school.png", badge: "#1", cap: "Реально <b>учишься ИИ</b>", sub: "Пока играешь, а не сидишь на скучном курсе", len: 3.2 },
+    LOGO,
+  ]},
+};
+const params = new URLSearchParams(location.hash.slice(1));
+const C = CONCEPTS[params.get("c") || "1"];
+document.documentElement.style.setProperty("--acc", C.acc);
+document.documentElement.style.setProperty("--acc2", C.acc2);
+document.getElementById("bar").querySelector("i").style.background = `linear-gradient(90deg, ${C.acc}, ${C.acc2})`;
+if (params.has("site")) document.getElementById("cta-btn").textContent = "✈ Жми «Получить доступ»";
+const CTA_LEN = 4.2;
+const root = document.getElementById("scenes");
+const SC = []; let at = 0;
+for (const s of C.scenes) {
+  const el = document.createElement("section"); el.className = "scene";
+  if (s.t === "hook") el.innerHTML = `<div class="hook">${s.lines.map((w, i) => `<span style="display:block;width:max-content;${(s.hi || []).includes(i) ? "color:var(--acc)" : ""}">${w}</span>`).join("")}</div>`;
+  else if (s.t === "logo") el.innerHTML = `<div style="text-align:center"><img src="emblem.webp" class="lg-emb" style="position:absolute;left:390px;top:470px;width:300px">
+    <div style="position:absolute;left:0;right:0;top:800px;font-size:40px;letter-spacing:12px;color:#a9b4cf">ТАКТ AI ПРЕДСТАВЛЯЕТ</div>
+    <div class="big lg-title" style="position:absolute;left:0;right:0;top:880px;font-size:250px;line-height:.9;letter-spacing:-8px">AI<br><span style="background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;color:transparent">RISE</span></div>
+    <div class="lg-sub" style="position:absolute;left:120px;right:120px;top:1370px;font-size:44px;line-height:1.25;color:#cfd6ea;font-weight:600">Игра про карьеру с нейросетями</div></div>`;
+  else if (s.t === "shot") el.innerHTML = `<div class="cap"><span class="verb${s.badge.length <= 3 ? " badge-big" : ""}">${s.badge}</span><br>${s.cap}${s.sub ? `<div class="sub">${s.sub}</div>` : ""}</div><div class="phone"><img src="shots/${s.img}"></div>`;
+  else if (s.t === "say") el.innerHTML = `<div class="statement">${s.text}</div>`;
+  root.append(el);
+  SC.push({ s, el, a: at, b: at + s.len }); at += s.len;
+}
+// Строки крючка не переносим: уменьшаем шрифт, пока самая длинная строка не влезет в 920 px.
+// Подгонка идёт при каждом кадре: шрифты подгружаются позже первой отрисовки.
+const fitHooks = () => document.querySelectorAll(".hook").forEach((h) => {
+  h.style.whiteSpace = "nowrap"; let fs = 140; h.style.fontSize = fs + "px";
+  const wide = () => Math.max(...[...h.children].map((c) => c.offsetWidth));
+  while (wide() > 920 && fs > 70) { fs -= 4; h.style.fontSize = fs + "px"; }
+});
+const D = +(at + CTA_LEN).toFixed(2);
+SC.push({ s: { t: "cta" }, el: document.getElementById("s-cta"), a: at, b: D });
+
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const easeBack = (x) => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+
+window.render = (t) => {
+  fitHooks();
+  document.querySelector("#bar i").style.width = `${(t / D) * 100}%`;
+  document.getElementById("grid").style.transform = `translate(${(t * 30) % 90}px, ${(t * 45) % 90}px)`;
+  for (const { s, el, a, b } of SC) {
+    const local = t - a, len = b - a;
+    const vis = t >= a && t < b + 0.001 ? Math.min(clamp(local / 0.3), b >= D ? 1 : clamp((b - t) / 0.25)) : 0;
+    el.style.opacity = vis;
+    if (!vis) continue;
+    const p = clamp(local / len);
+    if (s.t === "shot") {
+      const cap = el.querySelector(".cap"), ph = el.querySelector(".phone"), img = ph.querySelector("img");
+      cap.style.transform = `translateY(${(1 - easeOut(local / 0.45)) * 40}px)`;
+      el.querySelector(".verb").style.transform = `scale(${0.6 + 0.4 * easeBack(local / 0.35)})`;
+      ph.style.transform = `translateY(${(1 - easeOut(local / 0.55)) * 160}px) scale(${1 + p * 0.04})`;
+      const h = img.getBoundingClientRect().height / (1 + p * 0.04);
+      const f0 = s.f0 ?? 0, f1 = s.f1 ?? 0.04;
+      img.style.transform = `translateY(${-(f0 + (f1 - f0) * easeOut(p * 1.1)) * h}px)`;
+    } else if (s.t === "hook") {
+      const step = Math.min(0.55, (len - 0.6) / s.lines.length);
+      [...el.querySelectorAll(".hook > span")].forEach((w, i) => {
+        const q = easeBack((local - i * step) / 0.3);
+        w.style.opacity = clamp((local - i * step) / 0.12); w.style.transform = `translateY(${(1 - q) * 60}px) scale(${0.8 + 0.2 * q})`;
+      });
+    } else if (s.t === "logo") {
+      el.querySelector(".lg-emb").style.transform = `scale(${0.6 + 0.4 * easeBack(local / 0.5)}) rotate(${(1 - easeOut(local / 0.6)) * -25}deg)`;
+      el.querySelector(".lg-title").style.transform = `scale(${0.85 + 0.15 * easeBack((local - 0.2) / 0.5)})`;
+      el.querySelector(".lg-title").style.opacity = clamp((local - 0.2) / 0.25);
+      el.querySelector(".lg-sub").style.opacity = clamp((local - 0.7) / 0.4);
+    } else if (s.t === "say") {
+      const q = easeBack(local / 0.45);
+      el.querySelector(".statement").style.transform = `scale(${0.7 + 0.3 * q})`;
+    } else if (s.t === "cta") {
+      el.querySelector(".cta").style.transform = `translateY(${(1 - easeOut(local / 0.5)) * 50}px)`;
+      el.querySelector(".btn").style.transform = `scale(${1 + 0.035 * Math.sin(local * 6)})`;
+      el.querySelectorAll(".face i").forEach((e) => (e.style.transform = `scaleY(${(local % 2.2) > 2.05 ? 0.15 : 1})`));
+      document.getElementById("cta-m").style.transform = `translateY(${(1 - easeBack((local - 0.3) / 0.6)) * 500 + Math.sin(local * 3) * 10}px)`;
+    }
+  }
+};
+window.DURATION = D;
+render(0);
+</script></body></html>

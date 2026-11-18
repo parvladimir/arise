@@ -1,4 +1,4 @@
-// Рендер ролика: node promo/render.mjs [выход.mp4] [site|reels]
+// Рендер ролика: node promo/render.mjs [выход.mp4] [site|reels|c=N] [video.html|ads.html]   (MUSIC=путь — свой трек)
 // Нужны Playwright (Chromium) и ffmpeg. Кадры снимаются по одному через window.render(t), звук — трек ТАКТ.
 import { chromium } from "playwright";
 import { execFileSync } from "node:child_process";
@@ -8,7 +8,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(process.argv[2] ?? join(here, "..", "public", "promo", "ai-rise.mp4"));
-const variant = process.argv[3] ?? "site";   // site — для страницы игры, reels — для Instagram/Telegram
+const variant = process.argv[3] ?? "site";   // site — для страницы игры, reels — для Instagram/Telegram; для ads.html — «c=2» и т.п.
+const page = process.argv[4] ?? "video.html"; // video.html (основной ролик) или ads.html (рекламные сценарии)
 const music = process.env.MUSIC ?? join(here, "music.m4a");
 const FPS = 30;
 const tmp = join(here, ".frames");
@@ -16,7 +17,7 @@ rmSync(tmp, { recursive: true, force: true }); mkdirSync(tmp, { recursive: true 
 
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
-await p.goto(pathToFileURL(join(here, "video.html")).href + "#" + variant);
+await p.goto(pathToFileURL(join(here, page)).href + "#" + variant);
 await p.evaluate(() => document.fonts.ready);
 await p.waitForTimeout(500);
 const D = await p.evaluate(() => window.DURATION);
