@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Game } from "@/ui/Game";
 import { Gate } from "@/ui/Gate";
@@ -14,6 +14,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const jar = await cookies();
   if (hasAccess((name) => jar.get(name)?.value)) return <Game />;
   const from = typeof q.from === "string" ? q.from.replace(/[^\w-]/g, "").slice(0, 32) : "";
-  bump("view", from || "direct");
+  // Превью ссылок (Telegram, Instagram, поисковики) и служебные проверки в статистику не считаем.
+  const ua = (await headers()).get("user-agent") ?? "";
+  if (ua && !/bot|crawl|spider|preview|facebookexternalhit|meta-external|whatsapp|curl|wget|python|httpx|headless|playwright|node-fetch/i.test(ua)) bump("view", from || "direct");
   return <Gate botUrl={botUrl(from || "site")} igUrl={process.env.IG_URL || undefined} bad={q.access === "bad"} />;
 }
