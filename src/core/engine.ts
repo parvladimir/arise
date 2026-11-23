@@ -15,7 +15,10 @@ import type {
   TextKey,
 } from "./types";
 
+import { demoBonusFrom } from "./demo";
+
 export const SCHEMA_VERSION = 5;
+
 export const START_MONEY = 40;
 export const DAY_START_HOUR = 19;
 export const SCHOOL_PAY = 15;
@@ -68,7 +71,12 @@ export function newGameState(profile: GameState["profile"], ctx: Ctx): GameState
 }
 
 export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
-  if (action.type === "newGame") return { state: newGameState(action.profile, ctx), events: [] };
+  if (action.type === "newGame") {
+    const state = newGameState(action.profile, ctx);
+    const bonus = demoBonusFrom(String(action.bonus ?? 0));
+    if (bonus > 0 && addLedger(state, "demo", bonus, "ledger.demo")) state.toasts.push({ kind: "money", amount: bonus });
+    return { state, events: [] };
+  }
 
   const state = structuredClone(prev);
   const events: GameEvent[] = [];
@@ -554,10 +562,11 @@ function completeQuest(state: GameState, quest: QuestDef, quality: number, ctx: 
 
 /** Открывает задания, у которых выполнены все предпосылки. */
 export function refreshQuests(state: GameState, ctx: Ctx) {
-  // Новичок сначала проходит азы в школе, а потом приходят первые сообщения и задания.
-  if (needsSchool(state, ctx.content)) return;
+  // Новичок сразу получает сообщение Димы (завязка истории), а задания с промптами открываются после азов в школе.
+  const school = needsSchool(state, ctx.content);
   for (const quest of ctx.content.quests) {
     if (state.quests[quest.id]) continue;
+    if (school && quest.kind !== "dialog") continue;
     const ready = quest.requires.every((id) => state.quests[id]?.status === "done");
     if (!ready) continue;
     if (quest.requiresFlag && !state.flags.includes(quest.requiresFlag)) continue;
@@ -575,6 +584,8 @@ export function refreshQuests(state: GameState, ctx: Ctx) {
 export function currentGoal(state: GameState, content: Content): { textKey: TextKey; questId?: string; school?: boolean } {
   // Новичок начинает со Школы ТАКТ AI: пока не пройдены азы, цель ведёт туда.
   if (needsSchool(state, content)) {
+    const dialog = content.quests.find((q) => q.kind === "dialog" && state.quests[q.id]?.status === "active");
+    if (dialog) return { textKey: dialog.goalKey, questId: dialog.id };
     return { textKey: "goal.school", school: true };
   }
   const story = content.quests.filter((q) => !q.repeatable);

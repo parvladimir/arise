@@ -181,3 +181,9 @@ export function funnelStats(now = Date.now()): FunnelStats {
     days,
   };
 }
+
+/** Сколько человек уже открыли игру по ссылке из бота (для счётчика на промо-странице). */
+export function playersCount(): number {
+  const row = accessDb().prepare("SELECT COUNT(*) AS n FROM tg_players WHERE opened_at > 0").get() as { n: number };
+  return Number(row.n);
+}

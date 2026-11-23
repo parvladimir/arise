@@ -14,8 +14,20 @@ export type AuthError = "badEmail" | "shortPassword" | "taken" | "wrongLogin" | 
 
 export interface User {
   id: number;
+  /** Пустая строка у аккаунта, заведённого через Telegram без почты. */
   email: string;
+  /** Имя из Telegram, если аккаунт привязан к Telegram. */
+  name?: string | null;
 }
+
+/** Служебная «почта» аккаунта из Telegram: по ней нельзя войти паролем (не проходит проверку адреса). */
+export const tgMail = (tgId: number) => `tg${tgId}@telegram`;
+const isTgMail = (email: string) => /^tg\d+@telegram$/.test(email);
+export const publicUser = (row: { id: number; email: string; name?: string | null }): User => ({
+  id: row.id,
+  email: isTgMail(row.email) ? "" : row.email,
+  name: row.name ?? null,
+});
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -71,9 +83,11 @@ export function register(emailRaw: unknown, password: unknown): User | AuthError
 export function login(emailRaw: unknown, password: unknown): User | AuthError {
   const email = normalizeEmail(emailRaw);
   if (!email || typeof password !== "string") return "wrongLogin";
-  const row = getDb().prepare("SELECT id, email, pass FROM users WHERE email = ?").get(email) as { id: number; email: string; pass: string } | undefined;
+  const row = getDb().prepare("SELECT id, email, pass, name FROM users WHERE email = ?").get(email) as
+    | { id: number; email: string; pass: string; name: string | null }
+    | undefined;
   if (!row || !verifyPassword(password, row.pass)) return "wrongLogin";
-  return { id: row.id, email: row.email };
+  return publicUser(row);
 }
 
 /** Новая сессия: токен уходит в куку, в базе остаётся только его хеш. */
@@ -89,9 +103,9 @@ export function createSession(userId: number): { token: string; expires: Date } 
 export function userFromToken(token: string | undefined): User | null {
   if (!token) return null;
   const row = getDb()
-    .prepare("SELECT u.id, u.email FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?")
-    .get(sha(token), Date.now()) as { id: number; email: string } | undefined;
-  return row ? { id: row.id, email: row.email } : null;
+    .prepare("SELECT u.id, u.email, u.name FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?")
+    .get(sha(token), Date.now()) as { id: number; email: string; name: string | null } | undefined;
+  return row ? publicUser(row) : null;
 }
 
 export function deleteSession(token: string | undefined) {
@@ -110,4 +124,45 @@ export function storeSave(userId: number, data: unknown): boolean {
     .prepare("INSERT INTO saves (user_id, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
     .run(userId, data, Date.now());
   return true;
+}
+
+/** Аккаунт игрока из Telegram: находит привязанный к tg_id или заводит новый без почты и пароля. */
+export function userForTelegram(tgId: number, name: string | null): User {
+  const db = getDb();
+  const row = db.prepare("SELECT id, email, name FROM users WHERE tg_id = ?").get(tgId) as { id: number; email: string; name: string | null } | undefined;
+  if (row) {
+    if (name && name !== row.name) db.prepare("UPDATE users SET name = ? WHERE id = ?").run(name, row.id);
+    return publicUser({ ...row, name: name ?? row.name });
+  }
+  const r = db.prepare("INSERT INTO users (email, pass, created_at, tg_id, name) VALUES (?, '', ?, ?, ?)").run(tgMail(tgId), Date.now(), tgId, name);
+  return publicUser({ id: Number(r.lastInsertRowid), email: tgMail(tgId), name });
+}
+
+/**
+ * Игрок вошёл по почте, а в браузере есть и ключ из Telegram: привязываем Telegram к этому аккаунту,
+ * чтобы дальше ссылка из бота открывала тот же прогресс. Пустой аккаунт из Telegram удаляем.
+ */
+export function linkTelegram(userId: number, tgId: number, name: string | null) {
+  const db = getDb();
+  const me = db.prepare("SELECT tg_id FROM users WHERE id = ?").get(userId) as { tg_id: number | null } | undefined;
+  if (!me || me.tg_id !== null) return;
+  const other = db.prepare("SELECT id, email FROM users WHERE tg_id = ?").get(tgId) as { id: number; email: string } | undefined;
+  if (other) {
+    const hasSave = db.prepare("SELECT 1 FROM saves WHERE user_id = ?").get(other.id);
+    if (isTgMail(other.email) && !hasSave) db.prepare("DELETE FROM users WHERE id = ?").run(other.id);
+    else db.prepare("UPDATE users SET tg_id = NULL WHERE id = ?").run(other.id);
+  }
+  db.prepare("UPDATE users SET tg_id = ?, name = COALESCE(name, ?) WHERE id = ?").run(tgId, name, userId);
+}
+
+/** Аккаунт из Telegram получает почту и пароль, чтобы входить и без бота. Прогресс остаётся тем же. */
+export function addEmail(userId: number, emailRaw: unknown, password: unknown): User | AuthError {
+  const email = normalizeEmail(emailRaw);
+  if (!email) return "badEmail";
+  if (typeof password !== "string" || password.length < MIN_PASSWORD || password.length > 200) return "shortPassword";
+  const db = getDb();
+  if (db.prepare("SELECT 1 FROM users WHERE email = ?").get(email)) return "taken";
+  db.prepare("UPDATE users SET email = ?, pass = ? WHERE id = ?").run(email, hashPassword(password), userId);
+  const row = db.prepare("SELECT id, email, name FROM users WHERE id = ?").get(userId) as { id: number; email: string; name: string | null };
+  return publicUser(row);
 }

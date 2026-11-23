@@ -351,7 +351,7 @@ export type Toast =
   | { kind: "result"; stars: number; streak: number; prevStreak: number; streakBonus: number; rush: boolean };
 
 export type Action =
-  | { type: "newGame"; profile: GameState["profile"] }
+  | { type: "newGame"; profile: GameState["profile"]; /** ₵ из демо-заказа на промо-странице */ bonus?: number }
   | { type: "choose"; questId: string; choiceId: string }
   | { type: "acceptQuest"; questId: string }
   | { type: "submitPrompt"; questId: string; selection: Partial<Record<SlotId, string>>; freeform?: boolean }

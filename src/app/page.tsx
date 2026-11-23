@@ -2,7 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Game } from "@/ui/Game";
 import { Gate } from "@/ui/Gate";
-import { botUrl, bump, gateEnabled, hasAccess } from "@/server/access";
+import { botUrl, bump, gateEnabled, hasAccess, playersCount } from "@/server/access";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +17,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   // Превью ссылок (Telegram, Instagram, поисковики) и служебные проверки в статистику не считаем.
   const ua = (await headers()).get("user-agent") ?? "";
   if (ua && !/bot|crawl|spider|preview|facebookexternalhit|meta-external|whatsapp|curl|wget|python|httpx|headless|playwright|node-fetch/i.test(ua)) bump("view", from || "direct");
-  return <Gate botUrl={botUrl(from || "site")} igUrl={process.env.IG_URL || undefined} bad={q.access === "bad"} />;
+  return (
+    <Gate
+      botUrl={botUrl(from || "site")}
+      demoUrl={botUrl("demo")}
+      players={playersCount()}
+      igUrl={process.env.IG_URL || undefined}
+      bad={q.access === "bad"}
+    />
+  );
 }

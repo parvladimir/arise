@@ -27,6 +27,7 @@ export const ruSchool: Record<string, string> = {
   "ui.auth.registerGo": "Создать аккаунт",
   "ui.auth.loginGo": "Войти",
   "ui.auth.as": "Вы вошли как {email}",
+  "ui.auth.asTg": "Вход через Telegram: {name}",
   "ui.auth.logout": "Выйти",
   "ui.auth.imported": "Мы перенесли в аккаунт игру, которую ты начал в этом браузере. Продолжай или начни заново.",
   "ui.auth.err.badEmail": "Проверь адрес почты.",
@@ -42,7 +43,7 @@ export const ruSchool: Record<string, string> = {
   // ---------- Интерфейс школы ----------
   "app.school": "Школа",
   "ui.hint.school": "Школа ТАКТ AI",
-  "goal.school": "Пройди азы в Школе ТАКТ AI на ноутбуке: что такое ИИ, какие бывают ИИ и что такое промпт",
+  "goal.school": "Перед письмом хозяину пройди азы в Школе ТАКТ AI на ноутбуке: что такое ИИ, какие бывают ИИ и что такое промпт",
   "ui.orders.doneTitle": "Выполнено",
   "ui.orders.allDone": "Все заказы выполнены. Новые придут по сюжету — следи за телефоном.",
   "ach.graduate": "Выпускник Школы ТАКТ AI",

@@ -1,5 +1,6 @@
 // Звёзды, серии и срочные заказы.
 export const ruDrive: Record<string, string> = {
+  "ledger.demo": "Демо-заказ для кофейни «Зерно»",
   "ui.stars.label": "Оценка заказа",
   "ui.stars.how": "★★★ — качество от 95%, ★★ — от 85%",
   "ui.streak.chip": "Серия {n}",

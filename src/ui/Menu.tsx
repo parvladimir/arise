@@ -183,7 +183,7 @@ export function Menu({ game, auth, logout }: { game: GameApi; auth?: AuthSubmit;
             )}
             {game.account && (
               <p className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-2 text-sm text-muted lg:justify-start">
-                <span className="min-w-0 max-w-full truncate">{t("ui.auth.as", { email: game.account.email })}</span>
+                <span className="min-w-0 max-w-full truncate">{game.account.email ? t("ui.auth.as", { email: game.account.email }) : t("ui.auth.asTg", { name: game.account.name || "Telegram" })}</span>
                 <button onClick={logout} className="shrink-0 underline-offset-2 hover:text-ink hover:underline">{t("ui.auth.logout")}</button>
               </p>
             )}
