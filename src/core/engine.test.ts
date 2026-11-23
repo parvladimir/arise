@@ -48,13 +48,21 @@ describe("начало игры", () => {
     expect(currentGoal(s, content).textKey).toBe("q1.goal");
   });
 
-  it("любой ответ Диме открывает ТАКТ AI и задание Q2", () => {
-    for (const choiceId of ["what", "heard", "show"]) {
+  it("ответ Диме задаёт уровень и открывает ТАКТ AI; новичка сначала ведёт в школу", () => {
+    const levels = { what: "novice", heard: "practice", show: "pro" } as const;
+    for (const choiceId of ["what", "heard", "show"] as const) {
       const { state } = play([{ type: "choose", questId: "q1", choiceId }]);
       expect(state.apps).toContain("neira");
-      expect(state.quests.q2?.status).toBe("active");
       expect(state.quests.q1?.choice).toBe(choiceId);
+      expect(state.profile.level).toBe(levels[choiceId]);
+      if (choiceId === "what") expect(currentGoal(state, content).school).toBe(true);
+      else expect(state.quests.q2?.status).toBe("active");
     }
+  });
+
+  it("персонажа можно настроить по ходу игры", () => {
+    const { state } = play([{ type: "setProfile", name: "  Оля  ", pronoun: "she", avatar: "a2" }]);
+    expect(state.profile).toMatchObject({ name: "Оля", pronoun: "she", avatar: "a2" });
   });
 });
 

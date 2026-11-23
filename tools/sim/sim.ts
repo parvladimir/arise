@@ -120,7 +120,9 @@ export function simulate(profile: Profile, seed = 1, maxStage = Infinity): SimRe
       continue;
     }
     if (quest.kind === "dialog") {
-      act({ type: "choose", questId: quest.id, choiceId: quest.choices[Math.floor(rand() * quest.choices.length)]!.id });
+      // Ответ, задающий уровень, сим выбирает «практик» (как и старые сохранения без уровня).
+      const levelPick = quest.choices.find((c) => c.setLevel === "practice");
+      act({ type: "choose", questId: quest.id, choiceId: (levelPick ?? quest.choices[Math.floor(rand() * quest.choices.length)]!).id });
       seconds += SECONDS[profile].dialog;
     } else if (quest.kind === "purchase" && quest.items) {
       const wanted = profile === "hasty" ? [...quest.items].reverse() : quest.items;

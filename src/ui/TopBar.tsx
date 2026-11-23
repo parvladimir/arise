@@ -6,6 +6,7 @@ import { currentGoal, driveActive, streakBonus } from "@/core/engine";
 import { levelFromXp } from "@/core/economy";
 import type { GameState } from "@/core/types";
 import { Avatar } from "./Avatar";
+import { ProfileEditor } from "./CreateCharacter";
 import type { GameApi } from "./useGame";
 
 export function TopBar({
@@ -28,6 +29,7 @@ export function TopBar({
   const lvl = levelFromXp(state.xp);
   const goal = currentGoal(state, content);
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const bonus = driveActive(state, content) ? Math.round(streakBonus(state.streak ?? 0) * 100) : 0;
 
   return (
@@ -83,6 +85,9 @@ export function TopBar({
                 <span>{t("ui.motion")}</span>
                 <span className="text-muted">{motion ? t("ui.on") : t("ui.off")}</span>
               </button>
+              <button onClick={() => { setOpen(false); setProfileOpen(true); }} className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2">
+                👤 Персонаж: имя и внешность
+              </button>
               <button onClick={() => game.setScreen("menu")} className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2">
                 ← Главное меню
               </button>
@@ -91,6 +96,7 @@ export function TopBar({
           )}
         </div>
       </div>
+      {profileOpen && <ProfileEditor game={game} onClose={() => setProfileOpen(false)} />}
     </header>
   );
 }

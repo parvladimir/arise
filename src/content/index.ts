@@ -378,9 +378,9 @@ export const content: Content = {
       npc: "dima",
       promptKey: "q1.dima",
       choices: [
-        { id: "what", textKey: "q1.c.what", replyKey: "q1.r.what" },
-        { id: "heard", textKey: "q1.c.heard", replyKey: "q1.r.heard" },
-        { id: "show", textKey: "q1.c.show", replyKey: "q1.r.show" },
+        { id: "what", textKey: "q1.c.what", replyKey: "q1.r.what", setLevel: "novice" },
+        { id: "heard", textKey: "q1.c.heard", replyKey: "q1.r.heard", setLevel: "practice" },
+        { id: "show", textKey: "q1.c.show", replyKey: "q1.r.show", setLevel: "pro" },
       ],
       reward: { xp: 5, unlockApps: ["neira"] },
     },

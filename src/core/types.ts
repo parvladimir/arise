@@ -99,6 +99,8 @@ export interface Choice {
   replyKey: TextKey;
   /** Последствия выбора: флаги, отношения, репутация. */
   effects?: { flags?: string[]; rel?: Partial<Record<NpcId, number>>; rep?: number };
+  /** Ответ задаёт уровень игрока (первый разговор с Димой вместо анкеты). */
+  setLevel?: Level;
 }
 
 /** Мини-игра «разложи по корзинам»: факт-чек, приватность. */
@@ -351,6 +353,7 @@ export type Toast =
   | { kind: "result"; stars: number; streak: number; prevStreak: number; streakBonus: number; rush: boolean };
 
 export type Action =
+  | { type: "setProfile"; name?: string; avatar?: AvatarId; pronoun?: Pronoun }
   | { type: "newGame"; profile: GameState["profile"]; /** ₵ из демо-заказа на промо-странице */ bonus?: number }
   | { type: "choose"; questId: string; choiceId: string }
   | { type: "acceptQuest"; questId: string }

@@ -143,6 +143,7 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       const choice = quest.choices.find((c) => c.id === action.choiceId);
       if (!choice) return reject("err.questUnavailable");
       progress.choice = choice.id;
+      if (choice.setLevel) state.profile.level = choice.setLevel;
       for (const f of choice.effects?.flags ?? []) addFlag(state, f);
       for (const [npc, d] of Object.entries(choice.effects?.rel ?? {}) as [NpcId, number][]) changeRel(state, npc, d);
       if (choice.effects?.rep) state.rep = Math.max(0, state.rep + choice.effects.rep);
@@ -150,6 +151,14 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
       postMessage(state, quest.npc, "player", choice.textKey);
       postMessage(state, quest.npc, "npc", choice.replyKey);
       completeQuest(state, quest, 1, ctx, events);
+      return { state, events };
+    }
+
+    case "setProfile": {
+      const name = action.name?.trim().slice(0, 24);
+      if (name) state.profile.name = name;
+      if (action.avatar) state.profile.avatar = action.avatar;
+      if (action.pronoun) state.profile.pronoun = action.pronoun;
       return { state, events };
     }
 
