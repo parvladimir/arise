@@ -32,6 +32,11 @@ export function openDb(file?: string): DatabaseSync {
       updated_at INTEGER NOT NULL
     );
   `);
+  // Вход через Telegram: аккаунт привязан к tg_id, имя берём из Telegram.
+  const cols = (d.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("tg_id")) d.exec("ALTER TABLE users ADD COLUMN tg_id INTEGER");
+  if (!cols.includes("name")) d.exec("ALTER TABLE users ADD COLUMN name TEXT");
+  d.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_tg ON users(tg_id)");
   return d;
 }
 

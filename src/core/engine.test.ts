@@ -519,11 +519,14 @@ describe("Этап 2 — покупки, подработки, таймер", ()
 describe("уровни и Школа ТАКТ AI", () => {
   const start = (level: "novice" | "practice" | "pro") => play([{ type: "newGame", profile: { ...profile, level } }]).state;
 
-  it("новичка цель ведёт в школу, пока не пройдены азы", () => {
+  it("новичок сразу получает завязку от Димы, потом цель ведёт в школу, пока не пройдены азы", () => {
     let s = start("novice");
+    // История начинается сразу: Дима пишет, но заданий с промптами до азов нет.
+    expect(currentGoal(s, content).questId).toBe("q1");
+    expect(s.messages).toHaveLength(1);
+    s = play([{ type: "choose", questId: "q1", choiceId: "what" }], s).state;
     expect(currentGoal(s, content).school).toBe(true);
-    // Пока азы не пройдены, сюжет не начинается: ни сообщений, ни заданий.
-    expect(s.messages).toHaveLength(0);
+    expect(Object.keys(s.quests)).toEqual(["q1"]);
     for (const m of content.school.filter((x) => x.core)) s = play([{ type: "finishSchool", moduleId: m.id, correct: 1, total: 2 }], s).state;
     expect(currentGoal(s, content).school).toBeUndefined();
     expect(s.messages.length).toBeGreaterThan(0);

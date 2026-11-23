@@ -11,7 +11,9 @@ export type Screen = "menu" | "create" | "game";
 
 export interface Account {
   id: number;
+  /** Пусто у аккаунта, открытого через Telegram без почты. */
   email: string;
+  name?: string | null;
 }
 
 /** Прогресс в базе: последнюю версию сохранения отправляем на сервер с небольшой задержкой. */
@@ -132,8 +134,8 @@ export function useGame(account: Account | null) {
   }, [storage, ctx, remote]);
 
   const startNew = useCallback(
-    (profile: GameState["profile"]) => {
-      dispatch({ type: "newGame", profile });
+    (profile: GameState["profile"], bonus = 0) => {
+      dispatch({ type: "newGame", profile, bonus });
       setScreen("game");
     },
     [dispatch],

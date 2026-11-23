@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import type { AvatarId, Level, Pronoun } from "@/core/types";
+import { DEMO_COOKIE, demoBonusFrom } from "@/core/demo";
 import { MascotHead } from "./Mascot";
 import { Avatar, avatarsFor } from "./Avatar";
 import type { GameApi } from "./useGame";
 
+/** ₵ из демо-заказа на промо-странице: забираем один раз и стираем куку. */
+function takeDemoBonus(): number {
+  const raw = document.cookie.split("; ").find((c) => c.startsWith(`${DEMO_COOKIE}=`))?.split("=")[1];
+  if (raw === undefined) return 0;
+  document.cookie = `${DEMO_COOKIE}=; path=/; max-age=0`;
+  return demoBonusFrom(raw);
+}
+
 export function CreateCharacter({ game }: { game: GameApi }) {
   const { t } = game;
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => (game.account?.name ?? "").split(" ")[0]?.slice(0, 24) ?? "");
   const [avatar, setAvatar] = useState<AvatarId>("a1");
   const [pronoun, setPronoun] = useState<Pronoun>("they");
   const [step, setStep] = useState<"who" | "level">("who");
@@ -29,7 +38,7 @@ export function CreateCharacter({ game }: { game: GameApi }) {
           className="anim-rise w-full max-w-2xl rounded-2xl border border-line bg-surface p-6 shadow-2xl"
           onSubmit={(e) => {
             e.preventDefault();
-            game.startNew({ name: trimmed || "Саша", avatar, pronoun, level });
+            game.startNew({ name: trimmed || "Саша", avatar, pronoun, level }, takeDemoBonus());
           }}
         >
           <div className="flex items-center gap-3">
