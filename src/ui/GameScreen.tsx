@@ -274,7 +274,8 @@ function Laptop({
   const { t } = game;
   const openApp = app && state.apps.includes(app) ? app : null;
   // Значки на иконках: сколько новых заказов, есть ли задача для ТАКТ AI, куда ведёт текущая цель
-  const goalApp = goalTarget(state).app;
+  // Когда сюжет пройден и заказы дня сданы, не подсвечиваем иконку: делать там нечего до завтра.
+  const goalApp = nothingToDoToday(state) ? undefined : goalTarget(state).app;
   const badges: Partial<Record<AppId, string>> = {};
   const newOrders = boardQuests(state, content).filter((q) => !q.repeatable && state.quests[q.id]?.status === "available").length;
   if (newOrders > 0) badges.orders = String(newOrders);
