@@ -27,6 +27,16 @@ export function Game() {
       quickStart(game);
     }
   }, [fresh, game]);
+  // Обновили страницу с готовым сохранением: сразу в игру, меню остаётся по «⚙ → В меню».
+  // Только читает сохранение (как кнопка «Продолжить») и срабатывает один раз за загрузку страницы.
+  const autoContinued = useRef(false);
+  const resume = account.status === "user" && game.synced && game.hasSave && !game.state && game.screen === "menu";
+  useEffect(() => {
+    if (resume && !autoContinued.current) {
+      autoContinued.current = true;
+      game.continueGame();
+    }
+  }, [resume, game]);
   if (account.status === "loading" || (account.status === "user" && !game.synced)) {
     return <main className="grid min-h-dvh place-items-center text-muted">…</main>;
   }
