@@ -57,7 +57,10 @@ export function Phone({
   }, [open, state.unread, dispatch]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    // Прокручиваем только ленту чата: scrollIntoView двигал бы и всю страницу (на компьютере телефон
+    // стоит рядом с ноутбуком, и страница «уплывала» вниз при каждом новом сообщении).
+    const box = endRef.current?.parentElement;
+    if (box) box.scrollTop = box.scrollHeight;
   }, [thread.length, open, typing]);
 
   return (
