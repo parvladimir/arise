@@ -88,6 +88,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
   const cafeDone = state.quests.q3?.status === "done";
   const warm = has("lamp");
   const monitor = has("monitor");
+  const monitor3 = has("monitor3");
   const teamRate = content.items.filter((i) => has(i.id)).reduce((n, i) => n + (i.incomePerHour ?? 0), 0);
   const neira = state.apps.includes("neira");
   const tg = useTaktNews();
@@ -297,7 +298,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
 
       {/* Наушники на крючке */}
       {has("headphones") && (
-        <g aria-hidden>
+        <g aria-hidden transform={monitor3 ? "translate(-12 0)" : undefined}>
           <line x1="234" y1="146" x2="234" y2="156" stroke="#3b4778" strokeWidth="2" />
           <path d="M223 184C223 158 245 158 245 184" stroke="#8b3dff" strokeWidth="3.5" fill="none" strokeLinecap="round" />
           <rect x="218" y="178" width="10" height="17" rx="4" fill="#1c2240" stroke="#a78bfa" strokeWidth="1.2" />
@@ -316,7 +317,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
       <Ticker text={ticker} />
 
       {/* Свет лампы: мягкое пятно без резких краёв, поверх стены и пола */}
-      {warm && <ellipse cx="250" cy="300" rx="230" ry="190" fill="url(#lampGlow)" className="fx-breathe" aria-hidden />}
+      {warm && <ellipse cx={monitor ? 540 : 250} cy="300" rx="230" ry="190" fill="url(#lampGlow)" className="fx-breathe" aria-hidden />}
 
       {/* Квартира: ковёр */}
       {has("flat") && <ellipse cx="405" cy="436" rx="210" ry="16" fill="#3b1d6e" opacity="0.6" stroke="#8b3dff" strokeOpacity="0.4" strokeDasharray="6 5" aria-hidden />}
@@ -343,13 +344,21 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <ellipse cx="405" cy="445" rx="260" ry="20" fill="#0a1022" />
       </g>
 
-      {/* Лампа: тонкая LED-дуга */}
-      {warm && (
-        <g aria-hidden transform={monitor ? "translate(-34 0)" : undefined}>
+      {/* Лампа: тонкая LED-дуга. С мониторами уезжает на левый край стола и светит поверх них. */}
+      {warm && !monitor && (
+        <g aria-hidden>
           <ellipse cx="230" cy="316" rx="20" ry="4" fill="#0c1022" />
           <path d="M226 314C222 268 240 236 286 228" stroke="#2a3150" strokeWidth="5" fill="none" strokeLinecap="round" />
           <path d="M270 226l40 6" stroke="#ffe2a8" strokeWidth="6" strokeLinecap="round" className="fx-breathe" />
           <path d="M270 226l40 6" stroke="#ffd28a" strokeWidth="16" strokeLinecap="round" opacity="0.35" filter="url(#blur6)" />
+        </g>
+      )}
+      {warm && monitor && (
+        <g aria-hidden>
+          <ellipse cx="510" cy="316" rx="18" ry="4" fill="#0c1022" />
+          <path d="M508 314C502 266 514 236 554 228" stroke="#2a3150" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M540 226l40 6" stroke="#ffe2a8" strokeWidth="6" strokeLinecap="round" className="fx-breathe" />
+          <path d="M540 226l40 6" stroke="#ffd28a" strokeWidth="16" strokeLinecap="round" opacity="0.35" filter="url(#blur6)" />
         </g>
       )}
 
@@ -365,6 +374,20 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
             <rect key={i} x={257 + i * 11} y={270 - [10, 18, 14, 26, 22, 32][i]!} width="7" height={[10, 18, 14, 26, 22, 32][i]} rx="1" fill={i % 2 ? "#2dd4bf" : "#8b3dff"} opacity="0.85" className="fx-breathe" style={{ animationDelay: `${i * 0.3}s` }} />
           ))}
           <rect x="257" y="273" width="66" height="1.5" fill="#3b4778" />
+        </g>
+      )}
+
+      {/* Третий монитор: над вторым на одной стойке, на нём код и чат */}
+      {monitor && monitor3 && (
+        <g aria-hidden>
+          <rect x="287" y="216" width="6" height="12" fill="#2a3150" />
+          <rect x="246" y="164" width="90" height="54" rx="5" fill="#161c33" stroke="#3b4778" strokeWidth="2.5" />
+          <rect x="251" y="169" width="80" height="44" rx="2" fill="#0b1a44" />
+          <rect x="251" y="169" width="80" height="44" rx="2" fill="url(#screenGlow)" opacity="0.5" />
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <rect key={i} x={256 + (i % 2) * 8} y={174 + i * 6} width={[44, 30, 52, 26, 40, 34][i]} height="3" rx="1.5" fill={i % 3 === 0 ? "#2dd4bf" : "#a78bfa"} opacity="0.75" />
+          ))}
+          <circle cx="320" cy="203" r="5" fill="#8b3dff" opacity="0.8" className="fx-pulse" />
         </g>
       )}
 
@@ -408,8 +431,8 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <text x="400" y="318.5" textAnchor="middle" fontSize="5.5" fontWeight="800" fill="#c4b5fd" letterSpacing="1.5" opacity="0.8">ТАКТ</text>
       </g>
 
-      {/* Кружка с паром */}
-      <g aria-hidden>
+      {/* Кружка с паром (с мониторами и лампой справа переезжает на левый край стола) */}
+      <g aria-hidden transform={warm && monitor ? "translate(-290 0)" : undefined}>
         <rect x="500" y="294" width="18" height="22" rx="4" fill="#e8edf7" />
         <path d="M518 299a6 6 0 0 1 0 11" stroke="#e8edf7" strokeWidth="3" fill="none" />
         <path d="M506 288c-4-6 4-8 0-14M512 288c-4-6 4-8 0-14" stroke="#cbd5e1" strokeWidth="1.6" fill="none" strokeLinecap="round" className="fx-steam" />

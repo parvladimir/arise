@@ -10,6 +10,7 @@ export const shopItems: ItemDef[] = [
   item("headphones", { category: "comfort", icon: "🎧", price: 450, xpBoost: 0.1 }),
   item("chair", { category: "comfort", icon: "🪑", price: 800, payBoost: 0.05 }),
   item("monitor", { category: "work", icon: "🖥", price: 1200, xpBoost: 0.1 }),
+  item("monitor3", { category: "work", icon: "🖥", price: 2200, xpBoost: 0.05, payBoost: 0.05, requiresItem: "monitor" }),
   item("course", { category: "work", icon: "🎓", price: 2000, payBoost: 0.1, rep: 2, achievement: "certified" }),
   item("scooter", { category: "transport", icon: "🛴", price: 2500, payBoost: 0.1 }),
   item("car", { category: "transport", icon: "🚗", price: 15000, payBoost: 0.15, requiresItem: "scooter", achievement: "driver" }),
