@@ -290,6 +290,10 @@ export function apply(prev: GameState, action: Action, ctx: Ctx): ApplyResult {
 // ---------- Покупки: бонусы и пассивный доход ----------
 
 const owned = (state: GameState, ctx: Ctx) => ctx.content.items.filter((i) => state.inventory.includes(i.id));
+/** Каждый уровень навыка: +5% к оплате заказов дня. */
+export const SKILL_PAY_STEP = 0.05;
+export const skillPayBoost = (state: GameState, ctx: Ctx) =>
+  ctx.content.skills.reduce((n, s) => n + skillLevel(state.skills[s.id] ?? 0, s.levels), 0) * SKILL_PAY_STEP;
 export const itemPayBoost = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.payBoost ?? 0), 0);
 export const itemXpBoost = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.xpBoost ?? 0), 0);
 export const incomeRate = (state: GameState, ctx: Ctx) => owned(state, ctx).reduce((n, i) => n + (i.incomePerHour ?? 0), 0);
@@ -459,7 +463,7 @@ function completeDaily(state: GameState, quest: QuestDef, progress: GameState["q
   let pay = 0;
   if (r.pay) {
     const levelMul = levelOf(state) === "pro" ? 1.25 : 1;
-    const itemMul = 1 + itemPayBoost(state, ctx);
+    const itemMul = 1 + itemPayBoost(state, ctx) + skillPayBoost(state, ctx);
     pay = orderPay({ stage: quest.stage, complexity: r.pay.complexity * levelMul * itemMul * (1 + bonus), client: r.pay.client, quality, rep: state.rep, attempts: progress.attempts });
     if (pay > 0 && addLedger(state, `daily:${day}:${quest.id}`, pay, quest.titleKey)) state.toasts.push({ kind: "money", amount: pay });
     else pay = 0;

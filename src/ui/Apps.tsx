@@ -3,7 +3,7 @@
 import { todayKey } from "./nav";
 import { useEffect, useState } from "react";
 import { content } from "@/content";
-import { boardQuests, cleanRun, dailyFor, DAILY_BONUS, DAILY_COUNT, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
+import { boardQuests, cleanRun, dailyFor, DAILY_BONUS, DAILY_COUNT, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, skillPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
 import { basePay, skillLevel } from "@/core/economy";
 import type { GameState, ItemCategory, ItemDef } from "@/core/types";
 import type { GameApi } from "./useGame";
@@ -216,9 +216,12 @@ export function Shop({ game, state }: { game: GameApi; state: GameState }) {
 
 export function Skills({ game, state }: { game: GameApi; state: GameState }) {
   const { t } = game;
+  const boost = Math.round(skillPayBoost(state, ctxOf(game)) * 100);
   return (
     <div className="p-4">
       <h2 className="text-lg font-semibold">{t("ui.skills.title")}</h2>
+      <p className="mt-1 text-sm text-muted">{t("ui.skills.payHint", { step: 5 })}</p>
+      <p className="mt-2 inline-block rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold text-gold">💰 {t("ui.skills.payNow", { n: boost })}</p>
       <ul className="mt-4 space-y-3">
         {content.skills.map((s) => {
           const uses = state.skills[s.id];
@@ -238,7 +241,14 @@ export function Skills({ game, state }: { game: GameApi; state: GameState }) {
           );
         })}
       </ul>
-      <p className="mt-4 text-sm text-muted">🔒 {t("ui.skills.lockedBranches")}</p>
+      <h3 className="mt-6 text-sm font-semibold text-muted">🔒 {t("ui.skills.lockedTitle")}</h3>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        {(["creative", "automation", "dev", "business"] as const).map((b) => (
+          <li key={b} className="rounded-xl border border-dashed border-line p-3 text-sm text-muted">
+            {t(`ui.skills.branch.${b}`)}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

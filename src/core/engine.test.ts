@@ -745,4 +745,21 @@ describe("заказы дня", () => {
     if (passed.length === 3) expect(s.ledger.some((e) => e.key === `dailyAll:${day}`)).toBe(true);
     expect(apply(s, { type: "startDaily", questId: ids[0]!, day: "завтра" }, ctx).events[0]).toMatchObject({ type: "rejected" });
   });
+
+  it("каждый уровень навыка добавляет 5% к оплате заказов дня", () => {
+    const s = done();
+    const zero = { ...s, skills: { aiComm: 0, aiLiteracy: 0 } };
+    expect(engine.skillPayBoost(zero, ctx)).toBe(0);
+    expect(engine.skillPayBoost({ ...s, skills: { aiComm: 6, aiLiteracy: 3 } }, ctx)).toBeCloseTo(0.25);
+    const day = "2026-11-17";
+    const id = engine.dailyFor(s, content, day).find((x) => x.kind === "classify")?.id;
+    if (!id) return;
+    const earn = (st: GameState) => {
+      let t = apply(st, { type: "startDaily", questId: id, day }, ctx).state;
+      const m = t.money;
+      t = apply(t, { type: "submitClassify", questId: id, answers: right(id) }, ctx).state;
+      return t.money - m;
+    };
+    expect(earn({ ...s, skills: { aiComm: 6, aiLiteracy: 6 } })).toBeGreaterThan(earn(zero));
+  });
 });
