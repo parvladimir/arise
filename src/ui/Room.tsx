@@ -89,6 +89,8 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
   const warm = has("lamp");
   const monitor = has("monitor");
   const monitor3 = has("monitor3");
+  // Студия у парка меняет вид из окна; квартира с видом на город возвращает панораму города.
+  const park = has("studio") && !has("flat");
   const teamRate = content.items.filter((i) => has(i.id)).reduce((n, i) => n + (i.incomePerHour ?? 0), 0);
   const neira = state.apps.includes("neira");
   const tg = useTaktNews();
@@ -131,6 +133,12 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         <linearGradient id="taktText" x1="0" x2="1">
           <stop offset="0" stopColor="#b18aff" />
           <stop offset="1" stopColor="#00d4ff" />
+        </linearGradient>
+        <linearGradient id="parkSky" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="#1e1b4b" />
+          <stop offset="0.45" stopColor="#6d28d9" />
+          <stop offset="0.78" stopColor="#f472b6" />
+          <stop offset="1" stopColor="#fb923c" />
         </linearGradient>
         <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stopColor="#0a0f2e" />
@@ -190,6 +198,40 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
 
       {/* Окно: ночной город, вывеска, дрон */}
       <g aria-hidden>
+        {park ? (
+          <>
+        {/* Студия у парка: закат над парком, пруд, фонари и далёкий город */}
+        <rect x="520" y="56" width="220" height="180" rx="8" fill="url(#parkSky)" />
+        <circle cx="646" cy="176" r="34" fill="#fde68a" opacity="0.18" />
+        <circle cx="646" cy="176" r="17" fill="#fde68a" className="fx-breathe" />
+        <path d="M526 186v-14h10v-10h12v18h8v-30h14v36h10v-14h12v-22h14v32h10v-12h16v-16h12v28h10v-10h14v12h18v12z" fill="#3b2a6b" opacity="0.75" />
+        <path d="M520 196c34-14 70-16 104-6s72 10 116-6v52H520z" fill="#14532d" />
+        <ellipse cx="628" cy="221" rx="44" ry="6" fill="#fbbf24" opacity="0.32" />
+        <ellipse cx="628" cy="221" rx="26" ry="2.5" fill="#fde68a" opacity="0.45" className="fx-breathe" />
+        <path d="M520 214c40-10 80-4 110 4s70 6 110-6v24H520z" fill="#166534" />
+        {[[536, 206, 12], [560, 214, 9], [700, 204, 13], [726, 212, 10], [596, 218, 7]].map(([x, y, r]) => (
+          <g key={`t${x}`}>
+            <rect x={x! - 1.5} y={y} width="3" height={r! + 4} fill="#0b2a22" />
+            <circle cx={x} cy={y! - r! * 0.4} r={r} fill="#0f3d2e" />
+            <circle cx={x! + r! * 0.45} cy={y! - r! * 0.8} r={r! * 0.6} fill="#15803d" />
+          </g>
+        ))}
+        {[[582, 222], [668, 220]].map(([x, y]) => (
+          <g key={`l${x}`}>
+            <rect x={x! - 0.8} y={y! - 14} width="1.6" height="14" fill="#1f2937" />
+            <circle cx={x} cy={y! - 15} r="2.2" fill="#fde68a" />
+            <circle cx={x} cy={y! - 15} r="7" fill="#fde68a" opacity="0.25" className="fx-twinkle" />
+          </g>
+        ))}
+        <g className="fx-drone">
+          <path d="M556 96l4 3 4-3M566 90l3 2 3-2" stroke="#1e1b4b" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+        </g>
+        {[[546, 228, 0], [610, 230, 0.8], [690, 226, 1.6], [720, 230, 2.4]].map(([x, y, d]) => (
+          <circle key={`ff${x}`} cx={x} cy={y} r="1.3" fill="#fef08a" className="fx-twinkle" style={{ animationDelay: `${d}s` }} />
+        ))}
+          </>
+        ) : (
+          <>
         <rect x="520" y="56" width="220" height="180" rx="8" fill="url(#sky)" />
         <circle cx="694" cy="90" r="13" fill="#e8edf7" opacity="0.9" />
         <circle cx="694" cy="90" r="22" fill="#e8edf7" opacity="0.08" />
@@ -211,17 +253,7 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
         {has("flat") && [[540, 196], [556, 206], [598, 176], [616, 214], [662, 170], [676, 200], [704, 190], [722, 214], [588, 222], [646, 224]].map(([x, y], i) => (
           <rect key={`f${x}`} x={x} y={y} width="4" height="5" fill="#a5f3fc" className="fx-twinkle" style={{ animationDelay: `${i * 0.4}s` }} />
         ))}
-        {/* Студия у парка: деревья под окном */}
-        {has("studio") && (
-          <g>
-            {[536, 566, 700, 728].map((x) => (
-              <g key={x}>
-                <rect x={x - 1.5} y="222" width="3" height="14" fill="#0b2a22" />
-                <circle cx={x} cy="216" r="11" fill="#0f3d2e" />
-                <circle cx={x + 6} cy="211" r="7" fill="#14533d" />
-              </g>
-            ))}
-          </g>
+          </>
         )}
         {/* Своя машина: стоит внизу, фары светят */}
         {has("car") && (
@@ -356,9 +388,9 @@ export function Room({ state, highlight, open, t, compact = false, hints = {} }:
       {warm && monitor && (
         <g aria-hidden>
           <ellipse cx="628" cy="316" rx="16" ry="4" fill="#0c1022" />
-          <path d="M626 314C634 252 626 214 592 204" stroke="#2a3150" strokeWidth="5" fill="none" strokeLinecap="round" />
-          <path d="M602 202l-38 6" stroke="#ffe2a8" strokeWidth="6" strokeLinecap="round" className="fx-breathe" />
-          <path d="M602 202l-38 6" stroke="#ffd28a" strokeWidth="16" strokeLinecap="round" opacity="0.35" filter="url(#blur6)" />
+          <path d="M626 314C632 282 628 258 604 250" stroke="#2a3150" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <path d="M612 248l-36 6" stroke="#ffe2a8" strokeWidth="6" strokeLinecap="round" className="fx-breathe" />
+          <path d="M612 248l-36 6" stroke="#ffd28a" strokeWidth="16" strokeLinecap="round" opacity="0.35" filter="url(#blur6)" />
         </g>
       )}
 

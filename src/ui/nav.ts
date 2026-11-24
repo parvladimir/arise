@@ -1,5 +1,5 @@
 import { content } from "@/content";
-import { currentGoal } from "@/core/engine";
+import { currentGoal, DAILY_COUNT } from "@/core/engine";
 import type { AppId, GameState, NpcId, QuestDef } from "@/core/types";
 
 export type View = "room" | "laptop" | "phone";
@@ -10,11 +10,20 @@ export interface Target {
 }
 
 /** Куда вести игрока по кнопке «Перейти» у текущей цели. */
+/** Сегодняшняя дата по часам игрока: по ней выдаются заказы дня. */
+export function todayKey(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function goalTarget(state: GameState): Target {
   const goal = currentGoal(state, content);
   if (goal.school) return { view: "laptop", app: "school" };
   // Сюжет пройден — цель ведёт к заказам дня.
-  if (goal.textKey === content.finalGoalKey) return { view: "laptop", app: "orders" };
+  // Если все заказы дня уже сданы, звать к ноутбуку не за чем: новые будут завтра.
+  if (goal.textKey === content.finalGoalKey) {
+    const doneToday = state.daily?.day === todayKey() && state.daily.done.length >= DAILY_COUNT;
+    return doneToday ? { view: "room" } : { view: "laptop", app: "orders" };
+  }
   const id = goal.questId;
   const q = id ? content.quests.find((x) => x.id === id) : undefined;
   if (!q) return { view: "room" };

@@ -1,5 +1,6 @@
 "use client";
 
+import { todayKey } from "./nav";
 import { useEffect, useState } from "react";
 import { content } from "@/content";
 import { boardQuests, cleanRun, dailyFor, DAILY_BONUS, DAILY_COUNT, levelOf, doneGigs, starsFor, incomeRate, itemPayBoost, itemXpBoost, pendingIncome } from "@/core/engine";
@@ -352,9 +353,7 @@ export function ResultStars({ game, quality }: { game: GameApi; quality: number 
 }
 
 /** Дата игрока YYYY-MM-DD: от неё зависит набор заказов дня. */
-export function todayKey(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+export { todayKey };
 
 /** Три заказа дня из уже знакомых: деньги, опыт, звёзды и серия, бонус за все три. */
 function DailyOrders({ game, state, openNeira }: { game: GameApi; state: GameState; openNeira: () => void }) {
