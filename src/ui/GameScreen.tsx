@@ -6,7 +6,7 @@ import { currentGoal, FINALE_FLAG } from "@/core/engine";
 import type { AppId, GameState, NpcId } from "@/core/types";
 import { Journal, Orders, Shop, Skills } from "./Apps";
 import { boardQuests, levelOf } from "@/core/engine";
-import { activeClassifyQuest, activePromptQuest, goalTarget, type View } from "./nav";
+import { activeClassifyQuest, activePromptQuest, goalTarget, nothingToDoToday, type View } from "./nav";
 import { ClassifyLab } from "./ClassifyLab";
 import { LessonCard, lessonFor } from "./Learn";
 import { School } from "./School";
@@ -118,7 +118,7 @@ export function GameScreen({ game, state }: { game: GameApi; state: GameState })
       text: last ? t(last.textKey, last.vars) : "",
     };
   }
-  if (target.view === "laptop") roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : target.app === "school" ? "ui.hint.school" : "ui.hint.task");
+  if (target.view === "laptop" && !nothingToDoToday(state)) roomHints.laptop = t(target.app === "orders" ? "ui.hint.order" : target.app === "shop" ? "ui.hint.shop" : target.app === "school" ? "ui.hint.school" : "ui.hint.task");
 
   const go = (v: View, a?: AppId | null, c?: NpcId) => {
     setView(v);
