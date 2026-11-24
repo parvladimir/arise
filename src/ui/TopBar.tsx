@@ -88,6 +88,20 @@ export function TopBar({
               <button onClick={() => { setOpen(false); setProfileOpen(true); }} className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2">
                 👤 Персонаж: имя и внешность
               </button>
+              {game.account?.email === "" && (
+                <button
+                  onClick={async () => {
+                    // Аккаунт открыт через Telegram, а прогресс остался в старом аккаунте по почте:
+                    // выходим и сразу показываем вход. После входа Telegram привяжется к тому аккаунту.
+                    game.flush();
+                    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                    window.location.href = "/?login=1";
+                  }}
+                  className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2"
+                >
+                  ✉ Играл раньше по почте? Войти и вернуть прогресс
+                </button>
+              )}
               <button onClick={() => game.setScreen("menu")} className="w-full rounded-md px-2 py-2 text-left text-sm hover:bg-surface-2">
                 ← Главное меню
               </button>

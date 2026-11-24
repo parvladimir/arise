@@ -12,7 +12,15 @@ export function Game() {
   const game = useGame(account.status === "user" ? account.user : null);
   // Первый вход без сохранения: сразу в игру, без меню и анкеты (персонажа можно настроить потом в ⚙).
   const autoCreated = useRef(false);
-  const fresh = account.status === "user" && game.synced && !game.hasSave && game.screen === "menu";
+  // Только если сервер именно этого аккаунта точно ответил «сохранения нет»: ошибка сети или
+  // гонка при смене аккаунта не должны превращаться в новую игру поверх настоящего прогресса.
+  const fresh =
+    account.status === "user" &&
+    game.synced &&
+    game.serverEmptyFor === account.user.id &&
+    !game.hasSave &&
+    !game.state &&
+    game.screen === "menu";
   useEffect(() => {
     if (fresh && !autoCreated.current) {
       autoCreated.current = true;

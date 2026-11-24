@@ -44,6 +44,8 @@ export function useGame(account: Account | null) {
   const storage = useMemo(() => browserStorage(account ? `ai-rise.save.u${account.id}` : "ai-rise.save"), [account]);
   const remote = useMemo(() => (account ? remoteSaver() : null), [account]);
   const [synced, setSynced] = useState(false);
+  /** Сервер точно ответил «сохранения нет» для этого аккаунта. Только тогда можно начинать игру сам. */
+  const [serverEmptyFor, setServerEmptyFor] = useState<number | null>(null);
   const [imported, setImported] = useState(false);
   const [state, setState] = useState<GameState | null>(null);
   const [hasSave, setHasSave] = useState(false);
@@ -58,6 +60,7 @@ export function useGame(account: Account | null) {
   useEffect(() => {
     let cancelled = false;
     setSynced(false);
+    setServerEmptyFor(null);
     const finish = () => {
       if (cancelled) return;
       const raw = storage.read();
@@ -72,9 +75,9 @@ export function useGame(account: Account | null) {
     fetch("/api/save", { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<{ save: { data: string } | null }>) : null))
       .then((body) => {
-        if (cancelled || !body) return;
+        if (cancelled || !body || !("save" in body)) return;
         if (body.save && deserialize(body.save.data)) storage.write(body.save.data);
-        else {
+        else if (body.save === null) {
           const guestStore = browserStorage("ai-rise.save");
           const guest = guestStore.read();
           if (guest && deserialize(guest)) {
@@ -83,6 +86,8 @@ export function useGame(account: Account | null) {
             // Гостевой прогресс переносится один раз: другой аккаунт в этом браузере его уже не получит.
             guestStore.clear();
             setImported(true);
+          } else if (account && !storage.read()) {
+            setServerEmptyFor(account.id);
           }
         }
       })
@@ -152,7 +157,7 @@ export function useGame(account: Account | null) {
 
   const flush = useCallback(() => remote?.flush(true), [remote]);
 
-  return { state, screen, setScreen, hasSave, synced, imported, account, flush, dispatch, continueGame, startNew, reset, t, lastEvents, savedAt };
+  return { state, screen, setScreen, hasSave, synced, serverEmptyFor, imported, account, flush, dispatch, continueGame, startNew, reset, t, lastEvents, savedAt };
 }
 
 export type GameApi = ReturnType<typeof useGame>;

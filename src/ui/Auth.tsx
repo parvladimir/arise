@@ -7,7 +7,10 @@ export type AuthSubmit = (mode: "login" | "register", email: string, password: s
 
 /** Вход и регистрация по почте и паролю: прогресс игрока хранится в базе, а не в браузере. */
 export function AuthForm({ t, submit }: { t: GameApi["t"]; submit: AuthSubmit }) {
-  const [mode, setMode] = useState<"register" | "login">("register");
+  // ?login=1 — пришли из игры, чтобы войти в старый аккаунт по почте: сразу вкладка «Вход».
+  const [mode, setMode] = useState<"register" | "login">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("login") ? "login" : "register",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

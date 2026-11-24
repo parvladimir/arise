@@ -65,3 +65,20 @@ describe("вход через Telegram", () => {
     expect(userForTelegram(11, null).email).toBe("");
   });
 });
+
+describe("страховка прогресса", () => {
+  beforeEach(() => setDb(openDb(":memory:")));
+  afterEach(() => setDb(null));
+
+  it("сохранение с меньшим опытом не стирает прошлую версию", () => {
+    const u = userForTelegram(20, "Тест");
+    const ctx = { content, t: makeTranslator("ru", "he") };
+    const big = newGameState({ name: "Вова", avatar: "a1", pronoun: "he", level: "novice" }, ctx);
+    big.xp = 1470;
+    expect(storeSave(u.id, serialize(big))).toBe(true);
+    expect(storeSave(u.id, save())).toBe(true);
+    const rows = getDb().prepare("SELECT data FROM save_history WHERE user_id = ?").all(u.id) as { data: string }[];
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!.data).xp).toBe(1470);
+  });
+});

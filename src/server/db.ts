@@ -37,6 +37,16 @@ export function openDb(file?: string): DatabaseSync {
   if (!cols.includes("tg_id")) d.exec("ALTER TABLE users ADD COLUMN tg_id INTEGER");
   if (!cols.includes("name")) d.exec("ALTER TABLE users ADD COLUMN name TEXT");
   d.exec("CREATE UNIQUE INDEX IF NOT EXISTS users_tg ON users(tg_id)");
+  // Страховка прогресса: если новое сохранение «откатывает» опыт, прошлая версия остаётся здесь.
+  d.exec(`
+    CREATE TABLE IF NOT EXISTS save_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      data TEXT NOT NULL,
+      saved_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS save_history_user ON save_history(user_id, id);
+  `);
   return d;
 }
 

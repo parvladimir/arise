@@ -119,8 +119,20 @@ export function loadSave(userId: number): { data: string; updatedAt: number } | 
 
 /** Сохраняет прогресс, только если это корректное сохранение игры разумного размера. */
 export function storeSave(userId: number, data: unknown): boolean {
-  if (typeof data !== "string" || Buffer.byteLength(data) > MAX_SAVE_BYTES || !deserialize(data)) return false;
-  getDb()
+  if (typeof data !== "string" || Buffer.byteLength(data) > MAX_SAVE_BYTES) return false;
+  const next = deserialize(data);
+  if (!next) return false;
+  const db = getDb();
+  // Новое сохранение с меньшим опытом (новая игра, старая копия из другого браузера): прошлую версию не теряем.
+  const prev = loadSave(userId);
+  const old = prev ? deserialize(prev.data) : null;
+  if (prev && old && next.xp < old.xp) {
+    db.prepare("INSERT INTO save_history (user_id, data, saved_at) VALUES (?, ?, ?)").run(userId, prev.data, prev.updatedAt);
+    db.prepare(
+      "DELETE FROM save_history WHERE user_id = ? AND id NOT IN (SELECT id FROM save_history WHERE user_id = ? ORDER BY id DESC LIMIT 10)",
+    ).run(userId, userId);
+  }
+  db
     .prepare("INSERT INTO saves (user_id, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
     .run(userId, data, Date.now());
   return true;
